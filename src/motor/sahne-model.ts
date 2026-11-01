@@ -7,33 +7,71 @@ import {
   env,
   pipeline,
 } from '@huggingface/transformers';
-import { normalize } from './sahne-puan';
+import { cihazTutarliMi, normalize } from './sahne-puan';
 import type { SahneModeli } from './tipler';
 
 const CLIP = 'Xenova/clip-vit-base-patch32';
 const CEVIRI = 'Xenova/opus-mt-tr-en';
 
+/** Ekran kartını sınamak için birbirinden çok farklı iki küçük test resmi. */
+function sinamaResimleri(): RawImage[] {
+  const b = 224;
+  const egim = new Uint8ClampedArray(b * b * 3);
+  const dama = new Uint8ClampedArray(b * b * 3);
+  for (let y = 0; y < b; y++) {
+    for (let x = 0; x < b; x++) {
+      const i = (y * b + x) * 3;
+      egim[i] = x;
+      egim[i + 1] = y;
+      egim[i + 2] = 255 - x;
+      const v = ((x >> 4) + (y >> 4)) % 2 ? 230 : 20;
+      dama[i] = v;
+      dama[i + 1] = v;
+      dama[i + 2] = v;
+    }
+  }
+  return [new RawImage(egim, b, b, 3), new RawImage(dama, b, b, 3)];
+}
+
 export async function sahneModeliYukle(modelKlasoru: string): Promise<SahneModeli> {
   env.cacheDir = modelKlasoru;
-  let cihaz = 'dml'; // Windows ekran kartı (DirectML)
-  let gorsel;
-  try {
-    gorsel = await CLIPVisionModelWithProjection.from_pretrained(CLIP, { device: 'dml', dtype: 'fp32' });
-  } catch {
-    cihaz = 'cpu';
-    gorsel = await CLIPVisionModelWithProjection.from_pretrained(CLIP, { device: 'cpu', dtype: 'fp32' });
-  }
-  const metin = await CLIPTextModelWithProjection.from_pretrained(CLIP, { device: 'cpu', dtype: 'fp32' });
   const islemci = await AutoProcessor.from_pretrained(CLIP);
   const ayirici = await AutoTokenizer.from_pretrained(CLIP);
+  type GorselModel = Awaited<ReturnType<typeof CLIPVisionModelWithProjection.from_pretrained>>;
+  const vektorBul = async (m: GorselModel, resim: RawImage) => {
+    const { image_embeds } = await m(await islemci(resim));
+    return normalize(image_embeds.data as Float32Array);
+  };
+
+  // İşlemci her zaman doğru sonuç verir; ekran kartı ancak aynı sonucu verirse kullanılır.
+  const cpu = await CLIPVisionModelWithProjection.from_pretrained(CLIP, { device: 'cpu', dtype: 'fp32' });
+  let cihaz = 'cpu';
+  let gorsel = cpu;
+  try {
+    const dml = await CLIPVisionModelWithProjection.from_pretrained(CLIP, { device: 'dml', dtype: 'fp32' });
+    const resimler = sinamaResimleri();
+    const deneme: number[][] = [];
+    const referans: number[][] = [];
+    for (const r of resimler) {
+      deneme.push(await vektorBul(dml, r));
+      referans.push(await vektorBul(cpu, r));
+    }
+    if (cihazTutarliMi(deneme, referans)) {
+      cihaz = 'dml'; // Windows ekran kartı (DirectML)
+      gorsel = dml;
+      await cpu.dispose();
+    } else {
+      await dml.dispose();
+    }
+  } catch {
+    // ekran kartı açılamadı: işlemciyle devam
+  }
+  const metin = await CLIPTextModelWithProjection.from_pretrained(CLIP, { device: 'cpu', dtype: 'fp32' });
 
   return {
     cihaz,
     async resimVektoru(yol) {
-      const resim = await RawImage.read(yol);
-      const girdi = await islemci(resim);
-      const { image_embeds } = await gorsel(girdi);
-      return normalize(image_embeds.data as Float32Array);
+      return vektorBul(gorsel, await RawImage.read(yol));
     },
     async metinVektorleri(metinler) {
       const girdi = ayirici(metinler, { padding: true, truncation: true });

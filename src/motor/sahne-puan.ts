@@ -42,3 +42,17 @@ export function grupSec(resim: number[], gruplar: GrupVektoru[], esik = DIGER_ES
   if (olasilik < esik || fark < KARARSIZ_FARK) return { grupId: DIGER_ID, olasilik };
   return { grupId: gruplar[en].grupId, olasilik };
 }
+
+export const CIHAZ_ESIK = 0.98; // ekran kartı ile işlemci sonucu en az bu kadar benzemeli
+
+/**
+ * Ekran kartının verdiği vektörler, aynı test resimleri için işlemcinin verdiğiyle uyuşuyor mu?
+ * Bazı sürücülerde ekran kartı hata vermeden her resme aynı sonucu döndürüyor; bunu yakalar.
+ */
+export function cihazTutarliMi(deneme: number[][], referans: number[][], esik = CIHAZ_ESIK): boolean {
+  if (deneme.length !== referans.length || deneme.length === 0) return false;
+  return deneme.every((v, i) => {
+    const b = benzerlik(normalize(v), normalize(referans[i]));
+    return Number.isFinite(b) && b >= esik;
+  });
+}

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { normalize, benzerlik, grupSec, ortalamaVektor } from '../src/motor/sahne-puan';
+import { normalize, benzerlik, grupSec, ortalamaVektor, cihazTutarliMi } from '../src/motor/sahne-puan';
 import { DIGER_ID } from '../src/motor/gruplar';
 
 describe('sahne-puan', () => {
@@ -33,5 +33,23 @@ describe('sahne-puan', () => {
 
   it('ortalama vektör normalizedir', () => {
     expect(ortalamaVektor([[1, 0], [0, 1]])[0]).toBeCloseTo(Math.SQRT1_2);
+  });
+});
+
+describe('cihazTutarliMi', () => {
+  const referans = [normalize([1, 0, 0]), normalize([0, 1, 0])];
+
+  it('ekran kartı işlemciyle aynı sonucu verirse güvenilir', () => {
+    expect(cihazTutarliMi([normalize([1, 0.01, 0]), normalize([0, 1, 0.01])], referans)).toBe(true);
+  });
+
+  it('her resme aynı vektörü veren ekran kartını reddeder', () => {
+    const sabit = normalize([0.5, 0.5, 0.7]);
+    expect(cihazTutarliMi([sabit, sabit], referans)).toBe(false);
+  });
+
+  it('sayılar eksik veya bozuksa reddeder', () => {
+    expect(cihazTutarliMi([normalize([1, 0, 0])], referans)).toBe(false);
+    expect(cihazTutarliMi([[NaN, 0, 0], normalize([0, 1, 0])], referans)).toBe(false);
   });
 });
