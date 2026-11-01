@@ -119,6 +119,11 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
         kayit.koy(m);
         degisti = true;
       }
+      if (m.kalite.aydinlik === undefined) {
+        // Eski sürümün kaydı: karanlık kuralı değişti, kalite küçük resimden yeniden ölçülür (fotoğraf yeniden taranmaz)
+        m.kalite = await kaliteOlc(m.onizlemeler[Math.floor(m.onizlemeler.length / 2)]);
+        degisti = true;
+      }
       if (!m.renk) {
         m.renk = await ortalamaRenk(m.onizlemeler[0]);
         degisti = true;

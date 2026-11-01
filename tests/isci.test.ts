@@ -6,7 +6,7 @@ import { ayikla, grupBelirle, yenidenPuanla } from '../src/motor/isci';
 import { normalize } from '../src/motor/sahne-puan';
 import { KayitDeposu } from '../src/motor/kayit';
 import type { IsciOlayi, IslenmisMedya, SahneModeli } from '../src/motor/tipler';
-import { geciciKlasor, desenliResim, bulanikResim, karanlikResim, ornekVideo } from './yardimci';
+import { geciciKlasor, desenliResim, bulanikResim, karanlikResim, ornekVideo, geceResmi } from './yardimci';
 
 function sahteModel() {
   const sayac = { resim: 0 };
@@ -112,6 +112,27 @@ describe('isci', () => {
     expect(grupBelirle(m('C:/a.jpg'), gv)).toBe('insanlar');
     expect(grupBelirle(m('C:/a.PNG'), gv)).toBe('ekran');
     expect(grupBelirle(m('C:/Screenshot_20240101.jpg'), gv)).toBe('ekran');
+  });
+
+  it('eski kuralla "karanlık" kaydedilmiş gece fotoğrafı yeniden ölçülür ve artık elenmez', async () => {
+    const kok = await geciciKlasor();
+    await geceResmi(join(kok, 'gece.jpg'));
+    const { model, sayac } = sahteModel();
+    const calisma = join(kok, 'calisma');
+    await ayikla({ girdiler: [kok + '/gece.jpg'], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    // Eski sürümün kaydını taklit et: aydinlik yok, karanlik = true
+    const d = new KayitDeposu(join(calisma, 'kayit.json'));
+    await d.yukle();
+    const m = Object.values(d.veri.medya)[0];
+    delete m.kalite.aydinlik;
+    m.kalite.karanlik = true;
+    await d.kaydet();
+    const once = sayac.resim;
+
+    const sonuc = await ayikla({ girdiler: [kok + '/gece.jpg'], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    expect(sonuc[0].eleme).toBeNull();
+    expect(sonuc[0].kalite.aydinlik).toBeGreaterThanOrEqual(60);
+    expect(sayac.resim).toBe(once); // yapay zekâ yeniden çalışmadı
   });
 
   it('geri alınan dosya elenmez', async () => {

@@ -20,6 +20,7 @@ export interface KaliteSonucu {
   parlaklik: number;
   bulanik: boolean;
   karanlik: boolean;
+  aydinlik?: number; // en parlak %2'lik dilimin parlaklığı (0-255); eski kayıtlarda yok
 }
 
 export interface Grup {

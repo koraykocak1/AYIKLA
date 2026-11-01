@@ -3,6 +3,13 @@ import type { KaliteSonucu } from './tipler';
 
 export const BULANIK_ESIK = 80; // Laplace varyansı (256 px gri)
 export const KARANLIK_ESIK = 28; // ortalama parlaklık (0-255)
+/**
+ * Ortalaması karanlık olsa da aydınlık bir bölgesi (ışıklar, aydınlatılmış bir kişi) olan fotoğraf
+ * iyi bir gece fotoğrafıdır. Yalnızca en parlak %2'lik dilimi de bu değerin altında kalan,
+ * yani gerçekten hiçbir şeyin seçilmediği fotoğraflar "karanlık" sayılır.
+ * Gerçek arşivde eski kuralın elediği 45 gece fotoğrafının hepsinde bu değer ≥ 97 idi.
+ */
+export const AYDINLIK_ESIK = 60;
 
 export async function kaliteOlc(onizleme: string): Promise<KaliteSonucu> {
   const { data, info } = await sharp(onizleme)
@@ -14,8 +21,21 @@ export async function kaliteOlc(onizleme: string): Promise<KaliteSonucu> {
   const h = info.height;
 
   let toplam = 0;
-  for (let i = 0; i < data.length; i++) toplam += data[i];
+  const histogram = new Array<number>(256).fill(0);
+  for (let i = 0; i < data.length; i++) {
+    toplam += data[i];
+    histogram[data[i]]++;
+  }
   const parlaklik = toplam / data.length;
+  // En parlak %2'lik dilimin başladığı değer
+  let aydinlik = 255;
+  for (let v = 255, sayilan = 0; v >= 0; v--) {
+    sayilan += histogram[v];
+    if (sayilan >= data.length * 0.02) {
+      aydinlik = v;
+      break;
+    }
+  }
 
   // Welford yöntemi: Laplace değerlerinin varyansı, tek geçişte
   let n = 0;
@@ -32,6 +52,6 @@ export async function kaliteOlc(onizleme: string): Promise<KaliteSonucu> {
     }
   }
   const netlik = n > 0 ? m2 / n : 0;
-  const karanlik = parlaklik < KARANLIK_ESIK;
-  return { netlik, parlaklik, karanlik, bulanik: !karanlik && netlik < BULANIK_ESIK };
+  const karanlik = parlaklik < KARANLIK_ESIK && aydinlik < AYDINLIK_ESIK;
+  return { netlik, parlaklik, aydinlik, karanlik, bulanik: !karanlik && netlik < BULANIK_ESIK };
 }

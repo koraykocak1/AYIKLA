@@ -71,3 +71,18 @@ export async function ornekVideo(yol: string, renk = 'red', olusturma?: string):
   arg.push('-pix_fmt', 'yuv420p', yol);
   await calistir(ffmpegYolu as unknown as string, arg);
 }
+
+/** Ortalaması karanlık ama ışıkları ve aydınlatılmış bir figürü olan gece resmi. */
+export async function geceResmi(yol: string): Promise<void> {
+  const b = 256;
+  const v = Buffer.alloc(b * b * 3);
+  for (let y = 0; y < b; y++) {
+    for (let x = 0; x < b; x++) {
+      let d = 8 + ((x * 7 + y * 13) % 9) - 4;
+      if (x >= 110 && x < 150 && y >= 120 && y < 200) d = 90; // aydınlatılmış kişi
+      if ((x % 40) < 6 && (y % 40) < 6) d = 250; // ışık zinciri
+      for (let c = 0; c < 3; c++) v[(y * b + x) * 3 + c] = d;
+    }
+  }
+  await sharp(v, { raw: { width: b, height: b, channels: 3 } }).jpeg({ quality: 92 }).toFile(yol);
+}
