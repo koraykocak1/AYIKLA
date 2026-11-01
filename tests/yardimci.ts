@@ -1,4 +1,4 @@
-import { mkdtemp } from 'node:fs/promises';
+import { mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { execFile } from 'node:child_process';
@@ -85,4 +85,63 @@ export async function geceResmi(yol: string): Promise<void> {
     }
   }
   await sharp(v, { raw: { width: b, height: b, channels: 3 } }).jpeg({ quality: 92 }).toFile(yol);
+}
+
+/** Gürültülü (iyi sıkışmayan) bir JPEG: boyutu genişlik×yükseklikle büyür. */
+export async function gurultuJpeg(genislik: number, yukseklik: number, tohum = 1): Promise<Buffer> {
+  const v = Buffer.alloc(genislik * yukseklik * 3);
+  let s = tohum * 2654435761;
+  for (let i = 0; i < v.length; i++) {
+    s = (s * 1103515245 + 12345) >>> 0;
+    v[i] = s >>> 24;
+  }
+  return sharp(v, { raw: { width: genislik, height: yukseklik, channels: 3 } }).jpeg({ quality: 95 }).toBuffer();
+}
+
+/**
+ * Nikon NEF yapısını taklit eden küçük bir TIFF: IFD0'da yön (Orientation) ve SubIFD listesi;
+ * bir SubIFD ham görüntünün boyutunu, diğerleri gömülü JPEG önizlemeleri taşır.
+ */
+export async function sahteNef(
+  yol: string,
+  s: { jpegler: Buffer[]; yon?: number; genislik?: number; yukseklik?: number },
+): Promise<void> {
+  const k = s.jpegler.length;
+  const ifd0Boyu = 2 + 4 * 12 + 4;
+  const altBoyu = 2 + 3 * 12 + 4;
+  const ifd0 = 8;
+  const dizi = ifd0 + ifd0Boyu;
+  const hamIfd = dizi + (k + 1) * 4;
+  const jpegIfd = (i: number) => hamIfd + altBoyu * (i + 1);
+  let veriOfs = hamIfd + altBoyu * (k + 1);
+  const jpegOfs = s.jpegler.map((j) => {
+    const o = veriOfs;
+    veriOfs += j.length;
+    return o;
+  });
+  const b = Buffer.alloc(veriOfs);
+  b.write('II', 0, 'latin1');
+  b.writeUInt16LE(42, 2);
+  b.writeUInt32LE(ifd0, 4);
+  const ifd = (o: number, girisler: [number, number, number][]) => {
+    b.writeUInt16LE(girisler.length, o);
+    girisler.forEach(([etiket, tip, deger], i) => {
+      const e = o + 2 + i * 12;
+      b.writeUInt16LE(etiket, e);
+      b.writeUInt16LE(tip, e + 2);
+      b.writeUInt32LE(etiket === 0x14a ? k + 1 : 1, e + 4);
+      if (tip === 3) b.writeUInt16LE(deger, e + 8);
+      else b.writeUInt32LE(deger, e + 8);
+    });
+    b.writeUInt32LE(0, o + 2 + girisler.length * 12);
+  };
+  ifd(ifd0, [[0x100, 4, 160], [0x101, 4, 120], [0x112, 3, s.yon ?? 1], [0x14a, 4, dizi]]);
+  b.writeUInt32LE(hamIfd, dizi);
+  s.jpegler.forEach((_, i) => b.writeUInt32LE(jpegIfd(i), dizi + 4 * (i + 1)));
+  ifd(hamIfd, [[0x100, 4, s.genislik ?? 6000], [0x101, 4, s.yukseklik ?? 4000], [0x103, 3, 34713]]);
+  s.jpegler.forEach((j, i) => {
+    ifd(jpegIfd(i), [[0x103, 3, 6], [0x201, 4, jpegOfs[i]], [0x202, 4, j.length]]);
+    j.copy(b, jpegOfs[i]);
+  });
+  await writeFile(yol, b);
 }

@@ -46,7 +46,10 @@ export function BuyukGorunum({ liste, sira, setSira, grupAdi }: Props) {
           </motion.div>
         </AnimatePresence>
         <footer>
-          <span>{sonParca(m.yol)}</span>
+          <span>
+            {sonParca(m.yol)}
+            {m.ham?.length ? <span className="soluk"> + RAW eşi</span> : null}
+          </span>
           <span className="soluk">
             {tarihMetni(m.tarih)}
             {m.tahmini ? ' (tahmini)' : ''} · {grupAdi(m)}

@@ -1,7 +1,7 @@
 import { mkdir } from 'node:fs/promises';
 import { basename, extname, join } from 'node:path';
-import { tara } from './tarayici';
-import { tarihBul } from './tarih';
+import { tara, hamEsleriniAyir } from './tarayici';
+import { tarihBul, komsuTarihiUygula } from './tarih';
 import { fotoOnizleme } from './onizleme';
 import { videoBilgisi, kareCikar } from './ffmpeg';
 import { kaliteOlc } from './kalite';
@@ -95,7 +95,7 @@ function kopyalariIsaretle(liste: IslenmisMedya[]): string[] {
 }
 
 export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
-  const dosyalar = await tara(a.girdiler);
+  const { islenecek: dosyalar, esler } = hamEsleriniAyir(await tara(a.girdiler));
   a.olay({ tur: 'basladi', toplam: dosyalar.length });
   if (a.durdur?.aborted) return [];
 
@@ -128,6 +128,7 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
         m.renk = await ortalamaRenk(m.onizlemeler[0]);
         degisti = true;
       }
+      m.ham = esler.get(d.yol);
       m.grupId = grupBelirle(m, gv);
       m.eleme = m.geriAlindi ? null : m.tur === 'foto' ? (m.kalite.karanlik ? 'karanlik' : m.kalite.bulanik ? 'bulanik' : null) : null;
       sonuc.push(m);
@@ -145,6 +146,7 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
     if (degisti) await kayit.kaydet();
     return sonuc;
   }
+  komsuTarihiUygula(sonuc);
   a.olay({ tur: 'kopyalar', anahtarlar: kopyalariIsaretle(sonuc) });
   if (degisti) await kayit.kaydet();
   a.olay({ tur: 'bitti', sonuc });

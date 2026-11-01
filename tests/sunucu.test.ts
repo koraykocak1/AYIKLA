@@ -8,7 +8,7 @@ import { KayitDeposu } from '../src/motor/kayit';
 import type { ArayuzMedya, ArayuzOlayi, IsciIstegi, IsciMesaji, Istek, Sayim } from '../src/ortak/mesajlar';
 import type { Grup, SahneModeli } from '../src/motor/tipler';
 import type { AktarmaSonucu } from '../src/motor/disari-aktar';
-import { geciciKlasor, desenliResim, bulanikResim, ornekVideo } from './yardimci';
+import { geciciKlasor, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
 
 // Sahte model: resmin ortalama rengi vektör olur; ana konusu "blue" olan tarifler maviye, diğer her tarif yeşile denk gelir.
 const sahteModel: SahneModeli = {
@@ -48,7 +48,7 @@ async function hazirla(modelYukle: () => Promise<SahneModeli> = async () => saht
 describe('sunucu', () => {
   it('klasördeki fotoğraf ve videoları sayar', async () => {
     const s = await hazirla();
-    expect(await s.iste<Sayim>({ tur: 'say', girdiler: [s.girdi] })).toEqual({ foto: 2, video: 1 });
+    expect(await s.iste<Sayim>({ tur: 'say', girdiler: [s.girdi] })).toEqual({ foto: 2, video: 1, ham: 0 });
   });
 
   it('ayıklarken olayları sırayla yollar, son arşivi kaydeder', async () => {
@@ -112,6 +112,25 @@ describe('sunucu', () => {
     expect(r).toEqual({ kopyalanan: 2, atlanan: 0, hatalar: [] });
     expect(await readdir(hedef)).toHaveLength(1); // ikisi de aynı gruba düşer (sahte modelde grup adı önemsiz)
     expect(s.olaylar().filter((o) => o.tur === 'aktarim').at(-1)).toEqual({ tur: 'aktarim', bitti: 2, toplam: 2 });
+  });
+
+  it('RAW eşini sayar; klasörlere kaydederken JPG’nin yanına NEF’i de kopyalar', async () => {
+    const s = await hazirla();
+    await sahteNef(join(s.girdi, 'mavi.NEF'), { jpegler: [await gurultuJpeg(800, 600)] });
+    expect(await s.iste<Sayim>({ tur: 'say', girdiler: [s.girdi] })).toEqual({ foto: 2, video: 1, ham: 1 });
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    const bitti = s.olaylar().at(-1);
+    if (bitti?.tur !== 'bitti') throw new Error('bitmedi');
+    expect(bitti.sonuc).toHaveLength(3);
+    expect(bitti.sonuc.find((m) => m.yol.endsWith('mavi.jpg'))?.ham).toEqual([join(s.girdi, 'mavi.NEF')]);
+    const hedef = join(s.kok, 'hedef');
+    const r = await s.iste<AktarmaSonucu>({ tur: 'aktar', hedef });
+    expect(r.kopyalanan).toBe(3); // mavi.jpg + mavi.NEF + video (bulanık elenmiş)
+    const [grup] = await readdir(hedef);
+    const ay = await readdir(join(hedef, grup));
+    const dosyalar = (await Promise.all(ay.map(async (y) => Promise.all((await readdir(join(hedef, grup, y))).map((a) => readdir(join(hedef, grup, y, a)))))))
+      .flat(2);
+    expect(dosyalar).toEqual(expect.arrayContaining(['mavi.jpg', 'mavi.NEF']));
   });
 
   it('model yüklenemezse hata bildirir, sonraki denemede yeniden yükler', async () => {

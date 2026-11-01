@@ -1,9 +1,10 @@
 import { readdir, stat } from 'node:fs/promises';
-import { join, extname, basename } from 'node:path';
+import { join, extname, basename, dirname } from 'node:path';
+import { HAM_UZANTILARI, hamMi } from './ham';
 import type { MedyaDosyasi, MedyaTuru } from './tipler';
 
-const FOTO = new Set(['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp']);
-const VIDEO = new Set(['.mp4', '.mov', '.3gp', '.m4v']);
+const FOTO = new Set(['.jpg', '.jpeg', '.png', '.heic', '.heif', '.webp', ...HAM_UZANTILARI]);
+const VIDEO = new Set(['.mp4', '.mov', '.3gp', '.m4v', '.avi']);
 
 export function turBul(yol: string): MedyaTuru | null {
   const e = extname(yol).toLowerCase();
@@ -36,4 +37,23 @@ export async function tara(girdiler: string[]): Promise<MedyaDosyasi[]> {
 
   for (const g of girdiler) await gez(g);
   return sonuc.sort((a, b) => a.yol.localeCompare(b.yol));
+}
+
+/**
+ * Fotoğraf makinesi aynı kareyi hem JPG hem RAW (NEF) olarak kaydeder. Aynı klasörde aynı adlı JPG'si
+ * olan NEF ayrıca işlenmez (aynı fotoğraf iki kez görünmesin); JPG'ye "RAW eşi" olarak bağlanır ve
+ * dışa aktarırken JPG'nin yanına kopyalanır. Eşi olmayan NEF normal fotoğraf gibi işlenir.
+ */
+export function hamEsleriniAyir(dosyalar: MedyaDosyasi[]): { islenecek: MedyaDosyasi[]; esler: Map<string, string[]> } {
+  const anahtar = (y: string) => join(dirname(y), basename(y, extname(y))).toLowerCase();
+  const fotolar = new Map<string, string>();
+  for (const d of dosyalar) if (d.tur === 'foto' && !hamMi(d.yol)) fotolar.set(anahtar(d.yol), d.yol);
+  const islenecek: MedyaDosyasi[] = [];
+  const esler = new Map<string, string[]>();
+  for (const d of dosyalar) {
+    const es = hamMi(d.yol) ? fotolar.get(anahtar(d.yol)) : undefined;
+    if (es) esler.set(es, [...(esler.get(es) ?? []), d.yol]);
+    else islenecek.push(d);
+  }
+  return { islenecek, esler };
 }

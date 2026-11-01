@@ -7,7 +7,7 @@ export interface MedyaDosyasi {
   degisme: number; // mtimeMs
 }
 
-export type TarihKaynagi = 'exif' | 'video' | 'takeout' | 'dosya-adi' | 'dosya-tarihi';
+export type TarihKaynagi = 'exif' | 'video' | 'takeout' | 'dosya-adi' | 'dosya-tarihi' | 'komsu';
 
 export interface TarihSonucu {
   tarih: Date;
@@ -53,6 +53,7 @@ export interface IslenmisMedya {
   elleGrup?: string;
   geriAlindi?: boolean; // kullanıcı "Geri al" dedi: elenmez
   renk?: string; // kartın rengi (#rrggbb), animasyon için
+  ham?: string[]; // aynı karenin RAW (NEF) eşleri: ayrıca gösterilmez, dışa aktarırken yanına kopyalanır
 }
 
 export interface SahneModeli {

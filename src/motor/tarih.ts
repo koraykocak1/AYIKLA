@@ -1,8 +1,8 @@
-import { readFile } from 'node:fs/promises';
-import { basename } from 'node:path';
+import { open, readFile } from 'node:fs/promises';
+import { basename, dirname, extname } from 'node:path';
 import exifr from 'exifr';
 import { videoBilgisi } from './ffmpeg';
-import type { MedyaDosyasi, TarihSonucu } from './tipler';
+import type { IslenmisMedya, MedyaDosyasi, TarihSonucu } from './tipler';
 
 function gecerliTarih(y: number, ay: number, g: number, s = 0, d = 0, sn = 0): Date | null {
   if (y < 1990 || y > 2100 || ay < 1 || ay > 12 || g < 1 || g > 31 || s > 23 || d > 59 || sn > 59) return null;
@@ -32,13 +32,35 @@ export function tarihDosyaAdindan(ad: string): Date | null {
   return null;
 }
 
-async function exifTarihi(yol: string): Promise<Date | null> {
+/** Dosyanın yalnızca başını okur (EXIF orada durur); 50+ MB'lık RAW'larda tüm dosyayı okumamak için. */
+async function basiniOku(yol: string, bayt: number): Promise<Buffer> {
+  const f = await open(yol, 'r');
   try {
-    // exifr dosya yolundan okurken Node 26'da çöküyor (FileHandle.stat'a yol veriyor);
-    // bu yüzden dosyayı kendimiz okuyup içeriğini veriyoruz.
-    const v = await exifr.parse(await readFile(yol), { pick: ['DateTimeOriginal', 'CreateDate'] });
+    const { buffer, bytesRead } = await f.read(Buffer.alloc(bayt), 0, bayt, 0);
+    return buffer.subarray(0, bytesRead);
+  } finally {
+    await f.close();
+  }
+}
+
+async function exifCoz(veri: Buffer): Promise<Date | null> {
+  try {
+    const v = await exifr.parse(veri, { pick: ['DateTimeOriginal', 'CreateDate'] });
     const t = v?.DateTimeOriginal ?? v?.CreateDate;
     return t instanceof Date && !Number.isNaN(t.getTime()) && t.getFullYear() >= 1990 ? t : null;
+  } catch {
+    return null;
+  }
+}
+
+async function exifTarihi(yol: string): Promise<Date | null> {
+  // exifr dosya yolundan okurken Node 26'da çöküyor (FileHandle.stat'a yol veriyor);
+  // bu yüzden içeriği kendimiz okuyup veriyoruz. Önce ilk 1 MB; HEIC'te EXIF sonda olabilir.
+  try {
+    const t = await exifCoz(await basiniOku(yol, 1 << 20));
+    if (t) return t;
+    const e = extname(yol).toLowerCase();
+    return e === '.heic' || e === '.heif' ? await exifCoz(await readFile(yol)) : null;
   } catch {
     return null;
   }
@@ -74,4 +96,33 @@ export async function tarihBul(d: MedyaDosyasi): Promise<TarihSonucu> {
   const ad = tarihDosyaAdindan(basename(d.yol));
   if (ad) return { tarih: ad, kaynak: 'dosya-adi', tahmini: false };
   return { tarih: new Date(d.degisme), kaynak: 'dosya-tarihi', tahmini: true };
+}
+
+function sonNumara(yol: string): number | null {
+  const m = basename(yol, extname(yol)).match(/(\d+)(?!.*\d)/);
+  return m ? Number(m[1]) : null;
+}
+
+/**
+ * Çekim tarihi bulunamayan dosyalar (ör. tarih etiketi olmayan AVI) için: aynı klasörde dosya numarası
+ * en yakın, tarihi kesin olan dosyanın tarihi kullanılır (makineler dosyaları sırayla numaralar).
+ * Sonuç yine "tahmini" işaretlidir.
+ */
+export function komsuTarihiUygula(liste: IslenmisMedya[]): void {
+  const kesin = liste.filter((m) => !m.tahmini && sonNumara(m.yol) !== null);
+  for (const m of liste) {
+    if (m.tarihKaynagi !== 'dosya-tarihi') continue;
+    const n = sonNumara(m.yol);
+    if (n === null) continue;
+    let en: IslenmisMedya | null = null;
+    for (const k of kesin) {
+      if (dirname(k.yol) !== dirname(m.yol)) continue;
+      if (!en || Math.abs(sonNumara(k.yol)! - n) < Math.abs(sonNumara(en.yol)! - n)) en = k;
+    }
+    if (en) {
+      m.tarih = en.tarih;
+      m.tarihKaynagi = 'komsu';
+      m.tahmini = true;
+    }
+  }
 }

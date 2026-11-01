@@ -8,10 +8,11 @@ describe('bicim', () => {
   });
 
   it('bulunan dosya metni', () => {
-    expect(bulunduMetni({ foto: 1240, video: 86 })).toBe('1.240 fotoğraf · 86 video bulundu');
-    expect(bulunduMetni({ foto: 3, video: 0 })).toBe('3 fotoğraf bulundu');
-    expect(bulunduMetni({ foto: 0, video: 2 })).toBe('2 video bulundu');
-    expect(bulunduMetni({ foto: 0, video: 0 })).toBe('Desteklenen fotoğraf veya video bulunamadı');
+    expect(bulunduMetni({ foto: 1240, video: 86, ham: 0 })).toBe('1.240 fotoğraf · 86 video bulundu');
+    expect(bulunduMetni({ foto: 3, video: 0, ham: 0 })).toBe('3 fotoğraf bulundu');
+    expect(bulunduMetni({ foto: 0, video: 2, ham: 0 })).toBe('2 video bulundu');
+    expect(bulunduMetni({ foto: 0, video: 0, ham: 0 })).toBe('Desteklenen fotoğraf veya video bulunamadı');
+    expect(bulunduMetni({ foto: 1733, video: 5, ham: 1178 })).toBe('1.733 fotoğraf · 5 video bulundu · 1.178 RAW eşi bağlandı');
   });
 
   it('kalan süre metni', () => {

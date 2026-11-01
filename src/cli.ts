@@ -65,7 +65,9 @@ async function main() {
   const aktarIndex = secenekler.indexOf('--aktar');
   if (aktarIndex >= 0) {
     const hedef = secenekler[aktarIndex + 1];
-    const ogeler = sonuc.filter((m) => !m.eleme).map((m) => ({ yol: m.yol, grupAdi: ad(m.grupId), tarih: m.tarih }));
+    const ogeler = sonuc
+      .filter((m) => !m.eleme)
+      .flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, grupAdi: ad(m.grupId), tarih: m.tarih })));
     const r = await disariAktar(ogeler, hedef);
     console.log(`\nKopyalanan: ${r.kopyalanan}, zaten vardı: ${r.atlanan}, hata: ${r.hatalar.length}`);
   }

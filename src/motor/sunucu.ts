@@ -1,7 +1,7 @@
 import { ortalamaRenk } from './renk';
 import { join } from 'node:path';
 import { ayikla, yenidenPuanla } from './isci';
-import { tara } from './tarayici';
+import { tara, hamEsleriniAyir } from './tarayici';
 import { KayitDeposu } from './kayit';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './gruplar';
 import { disariAktar, type AktarmaSonucu } from './disari-aktar';
@@ -118,7 +118,10 @@ export function sunucuOlustur(a: SunucuAyarlari) {
   async function aktar(hedef: string): Promise<AktarmaSonucu> {
     const gs = await gruplar();
     const ad = (id: string) => gs.find((g) => g.id === id)?.ad ?? (id === DIGER_ID ? 'Diğer' : id);
-    const ogeler = son.filter((m) => !m.eleme).map((m) => ({ yol: m.yol, grupAdi: ad(m.grupId), tarih: m.tarih }));
+    // RAW (NEF) eşleri JPG'nin yanına, aynı klasöre kopyalanır: hiçbir RAW kaybolmaz.
+    const ogeler = son
+      .filter((m) => !m.eleme)
+      .flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, grupAdi: ad(m.grupId), tarih: m.tarih })));
     return disariAktar(ogeler, hedef, (bitti, toplam) => {
       if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'aktarim', bitti, toplam });
     });
@@ -128,8 +131,12 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     switch (i.tur) {
       case 'say': {
         void model().catch(() => {}); // kullanıcı "Ayıkla"ya basmadan model ısınsın
-        const d = await tara(i.girdiler);
-        const sayim: Sayim = { foto: d.filter((x) => x.tur === 'foto').length, video: d.filter((x) => x.tur === 'video').length };
+        const { islenecek: d, esler } = hamEsleriniAyir(await tara(i.girdiler));
+        const sayim: Sayim = {
+          foto: d.filter((x) => x.tur === 'foto').length,
+          video: d.filter((x) => x.tur === 'video').length,
+          ham: [...esler.values()].reduce((t, l) => t + l.length, 0),
+        };
         return sayim;
       }
       case 'baslat':

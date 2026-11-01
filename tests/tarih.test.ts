@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { writeFile, stat } from 'node:fs/promises';
-import { tarihDosyaAdindan, tarihBul } from '../src/motor/tarih';
+import { tarihDosyaAdindan, tarihBul, komsuTarihiUygula } from '../src/motor/tarih';
 import { geciciKlasor, exifliResim, ornekVideo } from './yardimci';
+import type { IslenmisMedya, TarihKaynagi } from '../src/motor/tipler';
 
 const yerel = (y: number, ay: number, g: number, s = 0, d = 0, sn = 0) => new Date(y, ay - 1, g, s, d, sn);
 
@@ -71,5 +72,22 @@ describe('tarihBul', () => {
     const t = await tarihBul({ yol: b, tur: 'foto', boyut: 1, degisme: sb.mtimeMs });
     expect(t.kaynak).toBe('dosya-tarihi');
     expect(t.tahmini).toBe(true);
+  });
+});
+
+describe('komsuTarihiUygula', () => {
+  const m = (yol: string, tarih: string, tarihKaynagi: TarihKaynagi, tahmini = tarihKaynagi === 'dosya-tarihi') =>
+    ({ yol, tarih, tarihKaynagi, tahmini }) as IslenmisMedya;
+
+  it('tarihi bilinmeyen dosyaya aynı klasördeki en yakın numaralı dosyanın tarihini (tahmini) verir', () => {
+    const exif = m(join('D:', 'k', 'SDC10352.JPG'), '2012-05-14T10:00:00.000Z', 'exif');
+    const uzak = m(join('D:', 'k', 'SDC10400.JPG'), '2013-01-01T10:00:00.000Z', 'exif');
+    const avi = m(join('D:', 'k', 'SDC10353.AVI'), '2024-07-22T10:00:00.000Z', 'dosya-tarihi');
+    const baska = m(join('D:', 'x', 'SDC10354.AVI'), '2024-07-22T10:00:00.000Z', 'dosya-tarihi');
+    const numarasiz = m(join('D:', 'k', 'video.avi'), '2024-07-22T10:00:00.000Z', 'dosya-tarihi');
+    komsuTarihiUygula([exif, uzak, avi, baska, numarasiz]);
+    expect(avi).toMatchObject({ tarih: '2012-05-14T10:00:00.000Z', tarihKaynagi: 'komsu', tahmini: true });
+    expect(baska.tarihKaynagi).toBe('dosya-tarihi');
+    expect(numarasiz.tarihKaynagi).toBe('dosya-tarihi');
   });
 });

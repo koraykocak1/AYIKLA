@@ -11,7 +11,8 @@ export function bulunduMetni(s: Sayim): string {
   const p: string[] = [];
   if (s.foto) p.push(`${sayi(s.foto)} fotoğraf`);
   if (s.video) p.push(`${sayi(s.video)} video`);
-  return p.length ? `${p.join(' · ')} bulundu` : 'Desteklenen fotoğraf veya video bulunamadı';
+  if (!p.length) return 'Desteklenen fotoğraf veya video bulunamadı';
+  return `${p.join(' · ')} bulundu${s.ham ? ` · ${sayi(s.ham)} RAW eşi bağlandı` : ''}`;
 }
 
 export function sureMetni(sn: number | null): string {

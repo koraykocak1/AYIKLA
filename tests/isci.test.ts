@@ -6,7 +6,7 @@ import { ayikla, grupBelirle, yenidenPuanla } from '../src/motor/isci';
 import { normalize } from '../src/motor/sahne-puan';
 import { KayitDeposu } from '../src/motor/kayit';
 import type { IsciOlayi, IslenmisMedya, SahneModeli } from '../src/motor/tipler';
-import { geciciKlasor, desenliResim, bulanikResim, karanlikResim, ornekVideo, geceResmi } from './yardimci';
+import { geciciKlasor, desenliResim, bulanikResim, karanlikResim, ornekVideo, geceResmi, sahteNef, gurultuJpeg } from './yardimci';
 
 function sahteModel() {
   const sayac = { resim: 0 };
@@ -133,6 +133,21 @@ describe('isci', () => {
     expect(sonuc[0].eleme).toBeNull();
     expect(sonuc[0].kalite.aydinlik).toBeGreaterThanOrEqual(60);
     expect(sayac.resim).toBe(once); // yapay zekâ yeniden çalışmadı
+  });
+
+  it('NEF: JPG eşi olan bağlanır ve işlenmez, eşi olmayan fotoğraf olarak işlenir', async () => {
+    const kok = await geciciKlasor();
+    await desenliResim(join(kok, '_DSC1.JPG'), { renk: [220, 40, 40], tohum: 1 });
+    await sahteNef(join(kok, '_DSC1.NEF'), { jpegler: [await gurultuJpeg(800, 600, 1)] });
+    await sahteNef(join(kok, '_DSC2.NEF'), { jpegler: [await gurultuJpeg(800, 600, 2)], genislik: 6000, yukseklik: 4000 });
+    const { model } = sahteModel();
+    const olaylar: IsciOlayi[] = [];
+    const sonuc = await ayikla({ girdiler: [kok], calismaKlasoru: join(kok, 'calisma'), gruplar: GRUPLAR, model, olay: (o) => olaylar.push(o) });
+    expect(olaylar[0]).toEqual({ tur: 'basladi', toplam: 2 });
+    expect(sonuc.map((m) => m.yol.slice(-9))).toEqual(['_DSC1.JPG', '_DSC2.NEF']);
+    expect(sonuc[0].ham).toEqual([join(kok, '_DSC1.NEF')]);
+    expect(sonuc[1]).toMatchObject({ genislik: 6000, yukseklik: 4000 });
+    expect(sonuc[1].onizlemeler).toHaveLength(1);
   });
 
   it('geri alınan dosya elenmez', async () => {

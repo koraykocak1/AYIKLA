@@ -236,6 +236,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .rozet.video { right: 6px; bottom: 6px; color: var(--altin); }
 .rozet.eleme { left: 6px; top: 6px; color: #f0b3a1; }
 .rozet.tahmini { right: 6px; top: 6px; color: var(--soluk); }
+.rozet.ham { left: 6px; bottom: 6px; color: var(--altin); letter-spacing: 0.08em; }
 .geri-al { position: absolute; left: 50%; bottom: 8px; transform: translateX(-50%); z-index: 2; font-size: 11px; padding: 4px 12px; border-radius: 999px; background: rgba(232, 201, 138, 0.92); color: #1a140a; opacity: 0; transition: opacity 0.2s; }
 .kare-kap:hover .geri-al { opacity: 1; }
 .bos { color: var(--soluk); padding: 80px 0; text-align: center; font-family: var(--serif); font-size: 22px; }

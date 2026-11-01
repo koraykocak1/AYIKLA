@@ -6,6 +6,7 @@ export type ArayuzMedya = Omit<IslenmisMedya, 'vektor'> & { renk: string };
 export interface Sayim {
   foto: number;
   video: number;
+  ham: number; // JPG'sine bağlanan RAW (NEF) eşleri
 }
 
 /** Ana süreç → işçi */

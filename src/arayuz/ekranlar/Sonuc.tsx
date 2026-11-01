@@ -190,6 +190,11 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                       >
                         <img src={onizlemeAdresi(m.onizlemeler[0])} loading="lazy" alt="" style={{ background: m.renk }} />
                         {m.tur === 'video' && <span className="rozet video">▶ Video</span>}
+                        {m.ham?.length ? (
+                          <span className="rozet ham" title="Bu karenin RAW (NEF) dosyası da var; klasörlere kaydederken yanına kopyalanır">
+                            RAW
+                          </span>
+                        ) : null}
                         {m.eleme && <span className="rozet eleme">{elemeAdi(m.eleme)}</span>}
                         {m.tahmini && (
                           <span className="rozet tahmini" title="Çekim tarihi bulunamadı, dosya tarihi kullanıldı">
