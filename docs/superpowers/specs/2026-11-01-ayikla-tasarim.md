@@ -37,7 +37,7 @@ Başarı ölçütü: Kullanıcı bir klasörü sürükleyip "Ayıkla"ya basar; b
 | Küçük önizleme, netlik ve parlaklık ölçümü | sharp |
 | Sahne tanıma | transformers.js + CLIP (zero-shot; ONNX, mümkünse ekran kartı) |
 | Kopya bulma | Görsel parmak izi (dHash/pHash) + Hamming mesafesi |
-| Kayıt / önbellek | SQLite (better-sqlite3) |
+| Kayıt / önbellek | JSON dosyası (`kayit.json`) — SQLite yerine; yerel derleme gerektirmez |
 
 Ayrıntılı araç notları: `~/.claude/skills/medya-arsivi-araclari/SKILL.md`.
 
@@ -84,7 +84,7 @@ Her dosya için, sırayla (ve önbellekte varsa atlanarak):
 4. **Kalite:** Netlik (Laplace varyansı) ve ortalama parlaklık ölçülür; eşik altı → bulanık / karanlık.
 5. **Kopya:** Görsel parmak izi; çok yakın olanlardan en net ve en büyük çözünürlüklü olan kalır, diğerleri "Elenecekler › Kopya".
 6. **Sahne:** CLIP görüntü vektörü hesaplanır ve **saklanır**; gruplara göre puanlanır (video: karelerin ortalaması).
-7. **Kayıt:** Sonuçlar SQLite'a yazılır. Aynı dosya (yol + boyut + değiştirilme tarihi) tekrar gelirse yeniden işlenmez.
+7. **Kayıt:** Sonuçlar kayit.json dosyasına yazılır. Aynı dosya (yol + boyut + değiştirilme tarihi) tekrar gelirse yeniden işlenmez.
 
 Ağır işler arayüzü dondurmamak için ayrı bir işçi süreçte (worker) yapılır; ilerleme arayüze olay olarak akar ve animasyonu besler.
 
@@ -98,7 +98,7 @@ Ağır işler arayüzü dondurmamak için ayrı bir işçi süreçte (worker) ya
 | `kalite` | Netlik ve parlaklık ölçer | küçük resim → bulanık mı, karanlık mı |
 | `parmakizi` | Kopyaları bulur | küçük resimler → kopya grupları |
 | `sahne` | CLIP ile vektör ve grup puanı | küçük resim + grup listesi → grup + puan |
-| `kayit` | SQLite önbelleği | sonuçları yazar/okur |
+| `kayit` | JSON önbellek | sonuçları yazar/okur |
 | `isci` | Yukarıdakileri sırayla çalıştırır, ilerleme yollar | dosya listesi → olay akışı |
 | `disari-aktar` | Kopyaları klasörlere çıkarır | seçim + hedef → kopyalanan dosyalar |
 | Arayüz | Karşılama, Ayıklama, Sonuç ekranları | olay akışı + kayıt → ekran |
