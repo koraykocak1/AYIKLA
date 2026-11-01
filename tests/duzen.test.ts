@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { grupMerkezi, ELENECEK_KOSESI, yiginKonumu, kumeKonumu, yuzde, etiketBoyu, type Nokta } from '../src/arayuz/mantik/duzen';
+import { grupMerkezi, ELENECEK_KOSESI, yiginKonumu, kumeKonumu, yuzde, etiketBoyu, etiketNoktasi, type Nokta } from '../src/arayuz/mantik/duzen';
 
 const uzaklik = (a: Nokta, b: Nokta) => Math.hypot(a.x - b.x, a.y - b.y);
 const EN = 1.6;
@@ -46,6 +46,19 @@ describe('duzen', () => {
   it('yüzde: merkez %50, sol üst köşe %0', () => {
     expect(yuzde({ x: 0, y: 0 }, EN)).toEqual({ sol: 50, ust: 50 });
     expect(yuzde({ x: -10 * EN, y: 10 }, EN)).toEqual({ sol: 0, ust: 0 });
+  });
+
+  it('etiket kümenin hemen üstünde durur, kartları örtmez, üst şeride taşmaz', () => {
+    for (const adet of [1, 30, 300, 5000]) {
+      for (let i = 0; i < 11; i++) {
+        const m = grupMerkezi(i, 11, EN);
+        const e = etiketNoktasi(m, adet);
+        expect(e.x).toBe(m.x);
+        for (let k = 0; k < Math.min(adet, 300); k += 7) expect(e.y).toBeGreaterThan(kumeKonumu(m, k).y);
+        expect(yuzde(e, EN).ust).toBeGreaterThan(8); // üst şerit ekranın ~%7'si
+      }
+    }
+    expect(etiketNoktasi({ x: 0, y: 0 }, 1).y).toBeLessThan(etiketNoktasi({ x: 0, y: 0 }, 200).y);
   });
 
   it('etiket büyüklüğü adetle artar ama sınırlı', () => {

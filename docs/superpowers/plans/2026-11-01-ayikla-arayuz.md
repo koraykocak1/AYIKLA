@@ -2052,7 +2052,13 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
   useEffect(() => {
     api.sonArsivler().then(setArsivler).catch(() => {});
     if (onceki?.length) void sec(onceki);
-    else api.baslangicKlasoru().then((k) => k && sec([k])).catch(() => {});
+    else
+      api
+        .baslangicKlasoru()
+        .then((k) => {
+          if (k) void sec([k]);
+        })
+        .catch(() => {});
   }, []);
 
   function birak(e: DragEvent) {

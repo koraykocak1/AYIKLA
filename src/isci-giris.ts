@@ -4,7 +4,8 @@ import { sunucuOlustur } from './motor/sunucu';
 import { sahneModeliYukle, ingilizceyeCevir } from './motor/sahne-model';
 import type { IsciIstegi } from './ortak/mesajlar';
 
-const calisma = join(homedir(), '.ayikla');
+// AYIKLA_CALISMA: denemelerde gerçek önbelleğe dokunmamak için başka bir çalışma klasörü
+const calisma = process.env.AYIKLA_CALISMA ?? join(homedir(), '.ayikla');
 const modeller = join(calisma, 'modeller');
 
 const sunucu = sunucuOlustur({

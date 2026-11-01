@@ -10,7 +10,7 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'ayikla', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
 ]);
 
-const ONIZLEME_KLASORU = join(homedir(), '.ayikla', 'onizleme');
+const ONIZLEME_KLASORU = join(process.env.AYIKLA_CALISMA ?? join(homedir(), '.ayikla'), 'onizleme');
 /** Arayüzün işçiye doğrudan iletebileceği istekler. "aktar" yalnızca klasör seçme penceresinden sonra ana süreçten gider. */
 const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler']);
 /** Bu oturumda işçinin bildirdiği dosyalar: yalnızca bunların orijinali ayikla://dosya ile açılır. */
