@@ -9,6 +9,7 @@ import { parmakiziHesapla, kopyalariBul } from './parmakizi';
 import { grupSec, ortalamaVektor, type GrupVektoru } from './sahne-puan';
 import { DIGER_ID, EKRAN_ID, ekranGoruntusuAdiMi } from './gruplar';
 import { KayitDeposu, anahtarUret } from './kayit';
+import { ortalamaRenk } from './renk';
 import type { Grup, IsciOlayi, IslenmisMedya, MedyaDosyasi, SahneModeli } from './tipler';
 
 export interface IsciAyarlari {
@@ -102,6 +103,8 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
   const gv = await grupVektorleriHazirla(a.gruplar, a.model);
 
   const sonuc: IslenmisMedya[] = [];
+  // Kayıt yalnızca yeni bir şey öğrenildiyse yazılır: önbellekten gelen arşivde büyük JSON'u boşuna yazmamak için.
+  let degisti = false;
   for (let i = 0; i < dosyalar.length; i++) {
     if (a.durdur?.aborted) break;
     const d = dosyalar[i];
@@ -111,6 +114,11 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
       if (!m) {
         m = await dosyayiIsle(d, anahtar, onizlemeKlasoru, a.model);
         kayit.koy(m);
+        degisti = true;
+      }
+      if (!m.renk) {
+        m.renk = await ortalamaRenk(m.onizlemeler[0]);
+        degisti = true;
       }
       m.grupId = grupBelirle(m, gv);
       m.eleme = m.geriAlindi ? null : m.tur === 'foto' ? (m.kalite.karanlik ? 'karanlik' : m.kalite.bulanik ? 'bulanik' : null) : null;
@@ -119,15 +127,18 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
     } catch (h) {
       a.olay({ tur: 'okunamadi', yol: d.yol, hata: h instanceof Error ? h.message : String(h) });
     }
-    if ((i + 1) % 25 === 0) await kayit.kaydet();
+    if ((i + 1) % 25 === 0 && degisti) {
+      await kayit.kaydet();
+      degisti = false;
+    }
   }
 
   if (a.durdur?.aborted) {
-    await kayit.kaydet();
+    if (degisti) await kayit.kaydet();
     return sonuc;
   }
   a.olay({ tur: 'kopyalar', anahtarlar: kopyalariIsaretle(sonuc) });
-  await kayit.kaydet();
+  if (degisti) await kayit.kaydet();
   a.olay({ tur: 'bitti', sonuc });
   return sonuc;
 }

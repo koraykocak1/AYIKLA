@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, stat, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { ayikla, yenidenPuanla } from '../src/motor/isci';
 import { normalize } from '../src/motor/sahne-puan';
@@ -88,6 +88,19 @@ describe('isci', () => {
 
     const ikinci = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
     expect(ikinci[0].grupId).toBe('m');
+  });
+
+  it('kart rengini kaydeder; hiçbir şey değişmediyse kayıt dosyasını yeniden yazmaz', async () => {
+    const kok = await geciciKlasor();
+    await desenliResim(join(kok, 'a.jpg'), { renk: [220, 40, 40], tohum: 1 });
+    const { model } = sahteModel();
+    const calisma = join(kok, 'calisma');
+    const ilk = await ayikla({ girdiler: [join(kok, 'a.jpg')], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    expect(ilk[0].renk).toMatch(/^#[0-9a-f]{6}$/);
+    const once = (await stat(join(calisma, 'kayit.json'))).mtimeMs;
+    await new Promise((r) => setTimeout(r, 50));
+    await ayikla({ girdiler: [join(kok, 'a.jpg')], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    expect((await stat(join(calisma, 'kayit.json'))).mtimeMs).toBe(once);
   });
 
   it('geri alınan dosya elenmez', async () => {

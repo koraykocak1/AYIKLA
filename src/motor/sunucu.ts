@@ -1,4 +1,4 @@
-import sharp from 'sharp';
+import { ortalamaRenk } from './renk';
 import { join } from 'node:path';
 import { ayikla, yenidenPuanla } from './isci';
 import { tara } from './tarayici';
@@ -22,7 +22,7 @@ function hataMetni(h: unknown): string {
 /** İşçi sürecin beyni: istekleri işler, motor olaylarını arayüze uygun hâle getirip yollar. */
 export function sunucuOlustur(a: SunucuAyarlari) {
   const kayitYolu = join(a.calismaKlasoru, 'kayit.json');
-  const renkler = new Map<string, string>();
+
   let modelSozu: Promise<SahneModeli> | null = null;
   let durdurucu: AbortController | null = null;
   let son: IslenmisMedya[] = [];
@@ -47,19 +47,10 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     return modelSozu;
   }
 
-  /** Kartın rengi: küçük resmin baskın rengi. */
+  /** Kartın rengi: motor kaydettiyse o, yoksa (eski kayıt) bir kez hesaplanır. */
   async function renk(m: IslenmisMedya): Promise<string> {
-    let r = renkler.get(m.anahtar);
-    if (!r) {
-      try {
-        const { dominant } = await sharp(m.onizlemeler[0]).stats();
-        r = '#' + [dominant.r, dominant.g, dominant.b].map((x) => x.toString(16).padStart(2, '0')).join('');
-      } catch {
-        r = '#808080';
-      }
-      renkler.set(m.anahtar, r);
-    }
-    return r;
+    if (!m.renk) m.renk = await ortalamaRenk(m.onizlemeler[0]);
+    return m.renk;
   }
   const disa = async (m: IslenmisMedya): Promise<ArayuzMedya> => arayuzIcin(m, await renk(m));
   const disaListe = (l: IslenmisMedya[]) => Promise.all(l.map(disa));

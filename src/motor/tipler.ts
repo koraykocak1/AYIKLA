@@ -50,6 +50,7 @@ export interface IslenmisMedya {
   eleme: ElemeNedeni | null;
   elleGrup?: string;
   geriAlindi?: boolean; // kullanıcı "Geri al" dedi: elenmez
+  renk?: string; // kartın rengi (#rrggbb), animasyon için
 }
 
 export interface SahneModeli {
