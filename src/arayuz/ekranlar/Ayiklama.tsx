@@ -1,4 +1,6 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { AkanSayi } from '../bilesenler/AkanSayi';
+import { egri, sure, yay } from '../hareket';
 import { AnimatePresence, motion } from 'motion/react';
 import { Color } from 'three';
 import { api } from '../api';
@@ -44,6 +46,7 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
   const [simdiki, setSimdiki] = useState<ArayuzMedya | null>(null);
   const [durduruluyor, setDurduruluyor] = useState(false);
   const [deneme, setDeneme] = useState(0);
+  const [bitis, setBitis] = useState<{ adet: number; sure: number } | null>(null);
 
   // Kartın hedefi o anki ekran oranından hesaplanır: pencere büyüyünce kümeler de kayar.
   veri.current.hedef = (grup, k, oran) => {
@@ -72,12 +75,15 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
     let gruplanan = 0;
     let elenecek = 0;
     let sonKalkis = 0;
+    const baslangic = performance.now();
 
     function ucur(i: number, grup: string, renk: string) {
       while (v.kartlar.length <= i) v.kartlar.push(yeniKart());
       const k = kumeSayisi.get(grup) ?? 0;
       kumeSayisi.set(grup, k + 1);
-      sonKalkis = Math.max(performance.now() / 1000, sonKalkis + 0.012); // kartlar art arda kalkar
+      // Kartlar art arda kalkar; önbellekten gelen arşivde sıra uzarsa aralık kısalır (binlerce kart dakikalarca beklemesin)
+      const simdi = performance.now() / 1000;
+      sonKalkis = Math.max(simdi, sonKalkis + (sonKalkis - simdi > 1.5 ? 0.003 : 0.012));
       const kart = v.kartlar[i];
       kart.grup = grup;
       kart.k = k;
@@ -85,13 +91,33 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
       kart.kalkis = sonKalkis;
       kart.basladi = false;
     }
-    const artir = (grup: string, n: number) => setAdetler((a) => ({ ...a, [grup]: (a[grup] ?? 0) + n }));
+    // Önbellekten gelen arşivde binlerce olay art arda gelir: ekran durumu olay başına değil,
+    // kare başına bir kez güncellenir (akıcılık).
+    const adetYerel: Record<string, number> = {};
+    let sayacYerel: Sayaclar | null = null;
+    let simdikiYerel: ArayuzMedya | null = null;
+    let planli = 0;
+    const yenile = () => {
+      if (planli) return;
+      planli = requestAnimationFrame(() => {
+        planli = 0;
+        setAdetler({ ...adetYerel });
+        if (sayacYerel) setSayac(sayacYerel);
+        if (simdikiYerel) setSimdiki(simdikiYerel);
+      });
+    };
+    const artir = (grup: string, n: number) => {
+      adetYerel[grup] = (adetYerel[grup] ?? 0) + n;
+      yenile();
+    };
 
     const birak = api.olaylariDinle((o) => {
       if (o.tur === 'model') {
         setModel({ durum: o.durum, cihaz: o.cihaz, hata: o.hata });
       } else if (o.tur === 'basladi') {
         v.toplam = o.toplam;
+        // Önbellekte küçük resmi olanlar: yığın baştan gerçek fotoğraflarla dolar
+        o.onizlemeler.forEach((p, i) => p && v.resimIste?.(i, onizlemeAdresi(p)));
         setCalisiyor(true);
         setModel((m) => ({ ...m, durum: 'hazir' }));
         setSayac((s) => ({ ...s, toplam: o.toplam }));
@@ -100,11 +126,13 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
         if (o.medya.eleme) elenecek++;
         else gruplanan++;
         kartlar.set(o.medya.anahtar, { i: o.sira - 1, grup, renk: o.medya.renk });
+        v.resimIste?.(o.sira - 1, onizlemeAdresi(o.medya.onizlemeler[0]));
         ucur(o.sira - 1, grup, o.medya.renk);
         artir(grup, 1);
         hiz.ekle(performance.now());
-        setSimdiki(o.medya);
-        setSayac({ taranan: o.sira, gruplanan, elenecek, kalan: hiz.kalan(o.toplam - o.sira), toplam: o.toplam });
+        simdikiYerel = o.medya;
+        sayacYerel = { taranan: o.sira, gruplanan, elenecek, kalan: hiz.kalan(o.toplam - o.sira), toplam: o.toplam };
+        yenile();
       } else if (o.tur === 'kopyalar') {
         for (const a of o.anahtarlar) {
           const k = kartlar.get(a);
@@ -116,15 +144,28 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
           k.grup = ELENECEK_ID;
           ucur(k.i, ELENECEK_ID, k.renk);
         }
-        setSayac((s) => ({ ...s, gruplanan, elenecek }));
+        if (sayacYerel) sayacYerel = { ...sayacYerel, gruplanan, elenecek };
+        yenile();
       } else if (o.tur === 'bitti') {
         v.bitti = true;
-        setSayac((s) => ({ ...s, kalan: 0 }));
-        window.setTimeout(() => onBitti(o.sonuc, o.durduruldu), o.durduruldu ? 300 : 2200);
+        if (sayacYerel) sayacYerel = { ...sayacYerel, kalan: 0 };
+        yenile();
+        if (o.durduruldu) {
+          window.setTimeout(() => onBitti(o.sonuc, true), 300);
+        } else {
+          // Son kart yerine oturunca "tamamlandı" anı, ardından sonuç ekranı
+          const inis = Math.max(0, sonKalkis + 1.2 - performance.now() / 1000) * 1000;
+          const sureSn = (performance.now() - baslangic) / 1000;
+          window.setTimeout(() => setBitis({ adet: o.sonuc.length, sure: sureSn }), inis);
+          window.setTimeout(() => onBitti(o.sonuc, false), inis + 2400);
+        }
       }
     });
     api.baslat(girdiler).catch((h) => setModel({ durum: 'hata', hata: hataMetni(h) }));
-    return birak;
+    return () => {
+      birak();
+      cancelAnimationFrame(planli);
+    };
   }, [deneme]);
 
   const grupAdi = (m: ArayuzMedya) => (m.eleme ? `Elenecek › ${elemeAdi(m.eleme)}` : (bolgeler.find((b) => b.id === m.grupId)?.ad ?? 'Diğer'));
@@ -157,9 +198,16 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
       </div>
 
       <div className="sayaclar">
-        <SayacKarti etiket="Taranan" deger={`${sayi(sayac.taranan)} / ${sayi(sayac.toplam)}`} />
-        <SayacKarti etiket="Gruplanan" deger={sayi(sayac.gruplanan)} vurgu />
-        <SayacKarti etiket="Elenecek" deger={sayi(sayac.elenecek)} />
+        <SayacKarti
+          etiket="Taranan"
+          deger={
+            <>
+              <AkanSayi deger={sayac.taranan} /> / {sayi(sayac.toplam)}
+            </>
+          }
+        />
+        <SayacKarti etiket="Gruplanan" deger={<AkanSayi deger={sayac.gruplanan} />} vurgu />
+        <SayacKarti etiket="Elenecek" deger={<AkanSayi deger={sayac.elenecek} />} />
         <SayacKarti etiket="Kalan süre" deger={sureMetni(sayac.kalan)} />
       </div>
 
@@ -190,6 +238,30 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {bitis && (
+          <motion.div
+            className="bitis"
+            initial={{ opacity: 0, scale: 0.92, filter: 'blur(8px)' }}
+            animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
+            transition={{ duration: sure.yavas, ease: egri.yumusak }}
+          >
+            <motion.div
+              className="bitis-isaret"
+              initial={{ scale: 0, rotate: -30 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ ...yay.zipla, delay: 0.15 }}
+            >
+              ✓
+            </motion.div>
+            <p className="bitis-baslik">Ayıklama tamamlandı</p>
+            <p className="soluk">
+              {sayi(bitis.adet)} dosya · {sureMetni(bitis.sure)}
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {model.durum === 'hata' && (
         <div className="model-uyari">
           <p className="birakma-baslik">Ayıklama başlatılamadı</p>
@@ -210,12 +282,17 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
   );
 }
 
-function SayacKarti({ etiket, deger, vurgu }: { etiket: string; deger: string; vurgu?: boolean }) {
+function SayacKarti({ etiket, deger, vurgu }: { etiket: string; deger: ReactNode; vurgu?: boolean }) {
   return (
-    <div className={`sayac${vurgu ? ' vurgu' : ''}`}>
+    <motion.div
+      className={`sayac${vurgu ? ' vurgu' : ''}`}
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: sure.yavas, ease: egri.yumusak, delay: 0.15 }}
+    >
       <div className="etiket">{etiket}</div>
       <div className="deger">{deger}</div>
-    </div>
+    </motion.div>
   );
 }
 
@@ -234,7 +311,15 @@ function Etiket({ ad, adet, konum, elenecek }: { ad: string; adet: number; konum
           <span className="ad" style={{ fontSize: etiketBoyu(adet) }}>
             {ad}
           </span>
-          <span className="adet">{sayi(adet)}</span>
+          <motion.span
+            key={adet}
+            className="adet"
+            initial={{ scale: 1.35, opacity: 0.6 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={yay.zipla}
+          >
+            {sayi(adet)}
+          </motion.span>
         </motion.div>
       )}
     </AnimatePresence>

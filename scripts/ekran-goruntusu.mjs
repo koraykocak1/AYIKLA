@@ -1,7 +1,9 @@
 // Programı açar, üç ekranın ve animasyonun ekran görüntülerini alır. Dosyalara yalnızca okumak için dokunur.
 // Kullanım: npm run ekran -- "<klasör>" [çıktı klasörü]
 import { _electron as electron } from 'playwright-core';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, rmSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
+import ffmpegYolu from 'ffmpeg-static';
 import { join, resolve } from 'node:path';
 
 const [klasor, cikti = 'ekran-goruntuleri'] = process.argv.slice(2);
@@ -26,7 +28,23 @@ try {
 
   await p.getByRole('button', { name: 'Ayıkla', exact: true }).click();
   await p.locator('[data-durum="calisiyor"]').waitFor({ timeout: 600_000 });
-  await p.waitForTimeout(2500);
+  // Yığının kısa GIF'i: kareler alınır, ffmpeg ile GIF'e çevrilir
+  const kareKlasoru = join(cikti, 'kareler');
+  mkdirSync(kareKlasoru, { recursive: true });
+  const kareBasi = Date.now();
+  let kare = 0;
+  // Kartların uçuşu bitip sonuç ekranına geçilene kadar (en fazla 90 kare) hızlı JPEG kareler
+  while (kare < 90 && !(await p.locator('[data-ekran="sonuc"]').count())) {
+    await p.screenshot({ path: join(kareKlasoru, `${String(kare++).padStart(3, '0')}.jpg`), type: 'jpeg', quality: 70 });
+  }
+  const fps = Math.max(4, Math.round(kare / ((Date.now() - kareBasi) / 1000)));
+  execFileSync(ffmpegYolu, [
+    '-y', '-v', 'error', '-framerate', String(fps), '-i', join(kareKlasoru, '%03d.jpg'),
+    '-vf', 'scale=760:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=160[p];[b][p]paletteuse=dither=bayer:bayer_scale=4',
+    join(cikti, 'yigin.gif'),
+  ]);
+  rmSync(kareKlasoru, { recursive: true, force: true });
+  console.log('kaydedildi:', join(cikti, 'yigin.gif'));
   await resim('2-ayiklama-baslangic.png');
   await p.waitForTimeout(5000);
   await resim('3-ayiklama-ilerliyor.png');

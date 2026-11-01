@@ -63,7 +63,7 @@ export interface SahneModeli {
 }
 
 export type IsciOlayi =
-  | { tur: 'basladi'; toplam: number }
+  | { tur: 'basladi'; toplam: number; onizlemeler: (string | null)[] }
   | { tur: 'dosya'; medya: IslenmisMedya; sira: number; toplam: number }
   | { tur: 'okunamadi'; yol: string; hata: string }
   | { tur: 'kopyalar'; anahtarlar: string[] }

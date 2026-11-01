@@ -49,7 +49,7 @@ describe('isci', () => {
 
     const bul = (ad: string) => sonuc.find((m) => m.yol.endsWith(ad))!;
     expect(sonuc).toHaveLength(6);
-    expect(olaylar[0]).toEqual({ tur: 'basladi', toplam: 7 });
+    expect(olaylar[0]).toMatchObject({ tur: 'basladi', toplam: 7 });
     expect(olaylar.some((o) => o.tur === 'okunamadi' && o.yol.endsWith('bozuk.jpg'))).toBe(true);
     expect(olaylar.at(-1)?.tur).toBe('bitti');
 
@@ -64,9 +64,17 @@ describe('isci', () => {
     expect(bul('IMG_20240812_100001.jpg').grupId).toBe('k');
     expect(bul('IMG_20240812_100000.jpg').eleme).toBe('kopya');
 
-    // İkinci çalıştırma: hiçbir resim yeniden işlenmez
+    // İlk çalıştırmada önbellek boş: yığın için hazır küçük resim yok
+    expect(olaylar[0]).toMatchObject({ onizlemeler: [null, null, null, null, null, null, null] });
+
+    // İkinci çalıştırma: hiçbir resim yeniden işlenmez; yığın baştan küçük resimlerle dolar
     const ilk = sayac.resim;
-    const sonuc2 = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    const olaylar2: IsciOlayi[] = [];
+    const sonuc2 = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: (o) => olaylar2.push(o) });
+    const b = olaylar2[0];
+    if (b.tur !== 'basladi') throw new Error('basladi bekleniyordu');
+    expect(b.onizlemeler).toHaveLength(7);
+    expect(b.onizlemeler.filter(Boolean)).toHaveLength(6); // bozuk.jpg önbellekte yok
     expect(sayac.resim).toBe(ilk);
     expect(sonuc2).toHaveLength(6);
   });
@@ -143,7 +151,7 @@ describe('isci', () => {
     const { model } = sahteModel();
     const olaylar: IsciOlayi[] = [];
     const sonuc = await ayikla({ girdiler: [kok], calismaKlasoru: join(kok, 'calisma'), gruplar: GRUPLAR, model, olay: (o) => olaylar.push(o) });
-    expect(olaylar[0]).toEqual({ tur: 'basladi', toplam: 2 });
+    expect(olaylar[0]).toMatchObject({ tur: 'basladi', toplam: 2 });
     expect(sonuc.map((m) => m.yol.slice(-9))).toEqual(['_DSC1.JPG', '_DSC2.NEF']);
     expect(sonuc[0].ham).toEqual([join(kok, '_DSC1.NEF')]);
     expect(sonuc[1]).toMatchObject({ genislik: 6000, yukseklik: 4000 });

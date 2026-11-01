@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { AnimatePresence, MotionConfig, motion } from 'motion/react';
+import { egri, sure } from './hareket';
 import { api } from './api';
 import { Karsilama } from './ekranlar/Karsilama';
 import { Ayiklama } from './ekranlar/Ayiklama';
@@ -22,15 +23,16 @@ export function App() {
   }, []);
 
   return (
+    // reducedMotion="user": sistemde "hareketi azalt" açıksa Motion dönüşümleri kapatır, yalnız solma kalır
+    <MotionConfig reducedMotion="user">
     <AnimatePresence mode="wait">
       <motion.main
         key={ekran.ad}
         className="ekran"
         data-ekran={ekran.ad}
-        initial={{ opacity: 0, scale: 1.02 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.98 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+        initial={{ opacity: 0, scale: 1.035, filter: 'blur(14px)' }}
+        animate={{ opacity: 1, scale: 1, filter: 'blur(0px)', transition: { duration: sure.sinematik, ease: egri.yumusak } }}
+        exit={{ opacity: 0, scale: 0.97, transition: { duration: sure.normal, ease: egri.cikis } }}
       >
         {ekran.ad === 'karsilama' && (
           <Karsilama not={ekran.not} onceki={ekran.girdiler} onBaslat={(girdiler, sayim) => setEkran({ ad: 'ayiklama', girdiler, sayim })} />
@@ -55,5 +57,6 @@ export function App() {
         )}
       </motion.main>
     </AnimatePresence>
+    </MotionConfig>
   );
 }

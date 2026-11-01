@@ -7,7 +7,7 @@ import { adresCoz, baslangicKlasoru, onizlemeYolu } from './yollar';
 import type { ArayuzOlayi, IsciIstegi, IsciMesaji, Istek } from '../ortak/mesajlar';
 
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'ayikla', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true } },
+  { scheme: 'ayikla', privileges: { standard: true, secure: true, supportFetchAPI: true, stream: true, corsEnabled: true } },
 ]);
 
 const ONIZLEME_KLASORU = join(process.env.AYIKLA_CALISMA ?? join(homedir(), '.ayikla'), 'onizleme');
@@ -85,13 +85,17 @@ function pencereAc(): void {
 void app.whenReady().then(() => {
   Menu.setApplicationMenu(null);
 
-  protocol.handle('ayikla', (istek) => {
+  protocol.handle('ayikla', async (istek) => {
     const c = adresCoz(istek.url);
     let yol: string | null = null;
     if (c?.tur === 'onizleme') yol = onizlemeYolu(ONIZLEME_KLASORU, c.ad);
     else if (c?.tur === 'dosya' && izinliDosyalar.has(c.yol)) yol = c.yol;
     if (!yol) return new Response('Bulunamadı', { status: 404 });
-    return net.fetch(pathToFileURL(yol).toString(), { headers: istek.headers });
+    const cevap = await net.fetch(pathToFileURL(yol).toString(), { headers: istek.headers });
+    // Arayüz küçük resimleri WebGL dokusuna çizebilsin diye (aynı uygulamanın kendi adresleri)
+    const basliklar = new Headers(cevap.headers);
+    basliklar.set('Access-Control-Allow-Origin', '*');
+    return new Response(cevap.body, { status: cevap.status, headers: basliklar });
   });
 
   ipcMain.handle('istek', (_e, istek: Istek) => {

@@ -102,11 +102,12 @@ function kopyalariIsaretle(liste: IslenmisMedya[]): string[] {
 
 export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
   const { islenecek: dosyalar, esler } = hamEsleriniAyir(await tara(a.girdiler));
-  a.olay({ tur: 'basladi', toplam: dosyalar.length });
-  if (a.durdur?.aborted) return [];
-
   const kayit = new KayitDeposu(join(a.calismaKlasoru, 'kayit.json'));
   await kayit.yukle();
+  // Önbellekteki küçük resimler: arayüz dönen yığını baştan gerçek fotoğraflarla doldurur
+  const onizlemeler = dosyalar.map((d) => kayit.al(anahtarUret(d))?.onizlemeler[0] ?? null);
+  a.olay({ tur: 'basladi', toplam: dosyalar.length, onizlemeler });
+  if (a.durdur?.aborted) return [];
   const onizlemeKlasoru = join(a.calismaKlasoru, 'onizleme');
   await mkdir(onizlemeKlasoru, { recursive: true });
   const gv = await grupVektorleriHazirla(a.gruplar, a.model);

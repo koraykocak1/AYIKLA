@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { dosyaAdresi, onizlemeAdresi, sonParca, tarihMetni } from '../mantik/bicim';
+import { egri, sure, yay } from '../hareket';
 import type { ArayuzMedya } from '../../ortak/mesajlar';
 
 interface Props {
@@ -8,11 +9,36 @@ interface Props {
   sira: number;
   setSira: (n: number | null) => void;
   grupAdi: (m: ArayuzMedya) => string;
+  /** Tıklanan küçük resmin ekrandaki yeri: fotoğraf oradan büyüyerek açılır. */
+  acilis: DOMRect | null;
 }
 
+/** Büyük görünümde fotoğrafın kaplayacağı alan (CSS'teki .buyuk-ic ile aynı ölçüler). */
+function hedefKutu(m: ArayuzMedya): DOMRect {
+  const kw = window.innerWidth * 0.86;
+  const kh = window.innerHeight * 0.86 - 42; // alt bilgi şeridi
+  const oran = m.genislik && m.yukseklik ? m.genislik / m.yukseklik : 4 / 3;
+  const w = Math.min(kw, kh * oran);
+  const h = w / oran;
+  return new DOMRect((window.innerWidth - w) / 2, window.innerHeight * 0.07 + (kh - h) / 2, w, h);
+}
+
+const kayma = {
+  gir: (yon: number) => ({ opacity: 0, x: yon * 70, scale: 0.98 }),
+  cik: (yon: number) => ({ opacity: 0, x: -yon * 70, scale: 0.98, transition: { duration: sure.hizli, ease: egri.cikis } }),
+};
+
 /** Tıklanan dosyayı büyük gösterir; videolar oynar; ← → ile gezilir, Esc kapatır. */
-export function BuyukGorunum({ liste, sira, setSira, grupAdi }: Props) {
+export function BuyukGorunum({ liste, sira, setSira, grupAdi, acilis }: Props) {
   const m = liste[sira];
+  const azalt = useReducedMotion();
+  const onceki = useRef(sira);
+  const yon = sira >= onceki.current ? 1 : -1;
+  useEffect(() => {
+    onceki.current = sira;
+  }, [sira]);
+  // Açılış: küçük resmin kopyası onun yerinden hedef boyuta uçar, sonra asıl görüntüye bırakır
+  const [ucus, setUcus] = useState(() => (acilis && m && !azalt ? { kaynak: acilis, hedef: hedefKutu(m), anahtar: m.anahtar } : null));
   const git = (n: number) => setSira(Math.max(0, Math.min(liste.length - 1, n)));
 
   useEffect(() => {
@@ -26,17 +52,25 @@ export function BuyukGorunum({ liste, sira, setSira, grupAdi }: Props) {
   }, [sira, liste.length]);
 
   if (!m) return null;
+  const ucusta = ucus?.anahtar === m.anahtar;
   return (
-    <motion.div className="buyuk" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSira(null)}>
+    <motion.div
+      className="buyuk"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1, transition: { duration: sure.normal } }}
+      exit={{ opacity: 0, transition: { duration: sure.hizli } }}
+      onClick={() => setSira(null)}
+    >
       <div className="buyuk-ic" onClick={(e) => e.stopPropagation()}>
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="popLayout" custom={yon} initial={false}>
           <motion.div
             key={m.anahtar}
             className="buyuk-medya"
-            initial={{ opacity: 0, scale: 0.985 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
+            custom={yon}
+            variants={kayma}
+            initial="gir"
+            animate={{ x: 0, scale: 1, opacity: ucusta ? 0 : 1, transition: { ...yay.canli, opacity: { duration: sure.normal } } }}
+            exit="cik"
           >
             {m.tur === 'video' ? (
               <video src={dosyaAdresi(m.yol)} controls autoPlay poster={onizlemeAdresi(m.onizlemeler[1] ?? m.onizlemeler[0])} />
@@ -59,26 +93,51 @@ export function BuyukGorunum({ liste, sira, setSira, grupAdi }: Props) {
           </span>
         </footer>
       </div>
-      <button
+
+      {ucus && (
+        <motion.img
+          className="ucan-resim"
+          src={onizlemeAdresi(m.onizlemeler[0])}
+          alt=""
+          style={{ left: ucus.hedef.x, top: ucus.hedef.y, width: ucus.hedef.width, height: ucus.hedef.height }}
+          initial={{
+            x: ucus.kaynak.x + ucus.kaynak.width / 2 - (ucus.hedef.x + ucus.hedef.width / 2),
+            y: ucus.kaynak.y + ucus.kaynak.height / 2 - (ucus.hedef.y + ucus.hedef.height / 2),
+            scale: ucus.kaynak.width / ucus.hedef.width,
+            borderRadius: 24,
+          }}
+          animate={{ x: 0, y: 0, scale: 1, borderRadius: 6 }}
+          transition={{ duration: sure.yavas, ease: egri.yumusak }}
+          onAnimationComplete={() => setUcus(null)}
+        />
+      )}
+
+      <motion.button
         className="ok sol"
+        style={{ y: "-50%" }}
         aria-label="Önceki"
+        whileHover={{ x: -3 }}
+        whileTap={{ scale: 0.9 }}
         onClick={(e) => {
           e.stopPropagation();
           git(sira - 1);
         }}
       >
         ‹
-      </button>
-      <button
+      </motion.button>
+      <motion.button
         className="ok sag"
+        style={{ y: "-50%" }}
         aria-label="Sonraki"
+        whileHover={{ x: 3 }}
+        whileTap={{ scale: 0.9 }}
         onClick={(e) => {
           e.stopPropagation();
           git(sira + 1);
         }}
       >
         ›
-      </button>
+      </motion.button>
       <button className="kapat" aria-label="Kapat" onClick={() => setSira(null)}>
         ✕
       </button>

@@ -57,7 +57,7 @@ describe('sunucu', () => {
     const o = s.olaylar();
     expect(o[0]).toEqual({ tur: 'model', durum: 'yukleniyor' });
     expect(o[1]).toEqual({ tur: 'model', durum: 'hazir', cihaz: 'sahte' });
-    expect(o[2]).toEqual({ tur: 'basladi', toplam: 3 });
+    expect(o[2]).toMatchObject({ tur: 'basladi', toplam: 3 });
     const dosyalar = o.filter((x) => x.tur === 'dosya');
     expect(dosyalar).toHaveLength(3);
     for (const d of dosyalar) {

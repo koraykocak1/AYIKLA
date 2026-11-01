@@ -28,7 +28,7 @@ export type Istek = IdsizIstek<IsciIstegi>;
 /** İşçi → ana süreç → arayüz: canlı olaylar */
 export type ArayuzOlayi =
   | { tur: 'model'; durum: 'yukleniyor' | 'hazir' | 'hata'; cihaz?: string; hata?: string }
-  | { tur: 'basladi'; toplam: number }
+  | { tur: 'basladi'; toplam: number; onizlemeler: (string | null)[] }
   | { tur: 'dosya'; medya: ArayuzMedya; sira: number; toplam: number }
   | { tur: 'okunamadi'; yol: string; hata: string }
   | { tur: 'kopyalar'; anahtarlar: string[] }
