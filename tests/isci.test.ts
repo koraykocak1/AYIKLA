@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { mkdir, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
-import { ayikla } from '../src/motor/isci';
+import { ayikla, yenidenPuanla } from '../src/motor/isci';
 import { normalize } from '../src/motor/sahne-puan';
 import { KayitDeposu } from '../src/motor/kayit';
 import type { IsciOlayi, SahneModeli } from '../src/motor/tipler';
@@ -88,6 +88,37 @@ describe('isci', () => {
 
     const ikinci = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
     expect(ikinci[0].grupId).toBe('m');
+  });
+
+  it('geri alınan dosya elenmez', async () => {
+    const kok = await geciciKlasor();
+    const girdi = join(kok, 'girdi');
+    await mkdir(girdi);
+    await bulanikResim(join(girdi, 'bulanik.jpg'), 3);
+    const { model } = sahteModel();
+    const calisma = join(kok, 'calisma');
+    const ilk = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    expect(ilk[0].eleme).toBe('bulanik');
+
+    const d = new KayitDeposu(join(calisma, 'kayit.json'));
+    await d.yukle();
+    Object.values(d.veri.medya)[0].geriAlindi = true;
+    await d.kaydet();
+
+    const ikinci = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    expect(ikinci[0].eleme).toBeNull();
+  });
+
+  it('yenidenPuanla yeni grup listesine göre dağıtır, resimleri yeniden işlemez', async () => {
+    const kok = await geciciKlasor();
+    await desenliResim(join(kok, 'a.jpg'), { renk: [40, 40, 220], tohum: 2 });
+    const { model, sayac } = sahteModel();
+    const sonuc = await ayikla({ girdiler: [join(kok, 'a.jpg')], calismaKlasoru: join(kok, 'calisma'), gruplar: [GRUPLAR[0]], model, olay: () => {} });
+    expect(sonuc[0].grupId).toBe('k');
+    const once = sayac.resim;
+    await yenidenPuanla(sonuc, GRUPLAR, model);
+    expect(sonuc[0].grupId).toBe('m');
+    expect(sayac.resim).toBe(once);
   });
 
   it('durdurulunca hiçbir dosyayı işlemez', async () => {

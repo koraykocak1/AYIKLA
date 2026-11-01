@@ -32,6 +32,13 @@ export function grupBelirle(m: IslenmisMedya, gv: GrupVektoru[]): string {
   return grupSec(m.vektor, gv).grupId;
 }
 
+/** Kayıtlı vektörlerle grupları yeniden belirler; fotoğraflar yeniden taranmaz. */
+export async function yenidenPuanla(liste: IslenmisMedya[], gruplar: Grup[], model: SahneModeli): Promise<IslenmisMedya[]> {
+  const gv = await grupVektorleriHazirla(gruplar, model);
+  for (const m of liste) m.grupId = grupBelirle(m, gv);
+  return liste;
+}
+
 async function dosyayiIsle(d: MedyaDosyasi, anahtar: string, klasor: string, model: SahneModeli): Promise<IslenmisMedya> {
   const tarih = await tarihBul(d);
   const onizlemeler: string[] = [];
@@ -73,7 +80,7 @@ async function dosyayiIsle(d: MedyaDosyasi, anahtar: string, klasor: string, mod
 function kopyalariIsaretle(liste: IslenmisMedya[]): string[] {
   const anahtarlar: string[] = [];
   for (const tur of ['foto', 'video'] as const) {
-    const adaylar = liste.filter((m) => m.tur === tur && m.eleme === null);
+    const adaylar = liste.filter((m) => m.tur === tur && m.eleme === null && !m.geriAlindi);
     const elenen = kopyalariBul(adaylar, (m) => m.genislik * m.yukseklik + m.kalite.netlik);
     for (const m of elenen) {
       m.eleme = 'kopya';
@@ -106,7 +113,7 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
         kayit.koy(m);
       }
       m.grupId = grupBelirle(m, gv);
-      m.eleme = m.tur === 'foto' ? (m.kalite.karanlik ? 'karanlik' : m.kalite.bulanik ? 'bulanik' : null) : null;
+      m.eleme = m.geriAlindi ? null : m.tur === 'foto' ? (m.kalite.karanlik ? 'karanlik' : m.kalite.bulanik ? 'bulanik' : null) : null;
       sonuc.push(m);
       a.olay({ tur: 'dosya', medya: m, sira: i + 1, toplam: dosyalar.length });
     } catch (h) {

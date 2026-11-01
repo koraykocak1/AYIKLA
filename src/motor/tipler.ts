@@ -49,6 +49,7 @@ export interface IslenmisMedya {
   grupId: string;
   eleme: ElemeNedeni | null;
   elleGrup?: string;
+  geriAlindi?: boolean; // kullanıcı "Geri al" dedi: elenmez
 }
 
 export interface SahneModeli {
@@ -63,3 +64,10 @@ export type IsciOlayi =
   | { tur: 'okunamadi'; yol: string; hata: string }
   | { tur: 'kopyalar'; anahtarlar: string[] }
   | { tur: 'bitti'; sonuc: IslenmisMedya[] };
+
+export interface SonArsiv {
+  girdiler: string[];
+  tarih: string; // ISO
+  foto: number;
+  video: number;
+}

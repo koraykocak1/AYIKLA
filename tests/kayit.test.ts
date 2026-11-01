@@ -32,6 +32,23 @@ describe('kayit', () => {
     expect(d2.veri.kullaniciGruplari[0].ad).toBe('Araba');
   });
 
+  it('son arşivleri tekrarsız, en yeni başta ve en fazla 8 tane tutar', async () => {
+    const dosya = join(await geciciKlasor(), 'kayit.json');
+    const d = new KayitDeposu(dosya);
+    await d.yukle();
+    for (let i = 0; i < 10; i++) d.arsivEkle({ girdiler: [`K${i}`], tarih: '2026-11-01T00:00:00.000Z', foto: i, video: 0 });
+    d.arsivEkle({ girdiler: ['K5'], tarih: '2026-11-02T00:00:00.000Z', foto: 50, video: 1 });
+    await d.kaydet();
+
+    const d2 = new KayitDeposu(dosya);
+    await d2.yukle();
+    const liste = d2.veri.sonArsivler ?? [];
+    expect(liste).toHaveLength(8);
+    expect(liste[0]).toMatchObject({ girdiler: ['K5'], foto: 50 });
+    expect(liste.filter((a) => a.girdiler[0] === 'K5')).toHaveLength(1);
+    expect(liste[1].girdiler).toEqual(['K9']);
+  });
+
   it('dosya yoksa boş başlar', async () => {
     const d = new KayitDeposu(join(await geciciKlasor(), 'yok.json'));
     await d.yukle();

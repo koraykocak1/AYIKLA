@@ -1,13 +1,16 @@
 import { createHash } from 'node:crypto';
 import { mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { dirname } from 'node:path';
-import type { Grup, IslenmisMedya, MedyaDosyasi } from './tipler';
+import type { Grup, IslenmisMedya, MedyaDosyasi, SonArsiv } from './tipler';
 
 export interface KayitVerisi {
   surum: 1;
   medya: Record<string, IslenmisMedya>;
   kullaniciGruplari: Grup[];
+  sonArsivler?: SonArsiv[];
 }
+
+export const SON_ARSIV_SINIRI = 8;
 
 export function anahtarUret(d: MedyaDosyasi): string {
   return createHash('sha1').update(`${d.yol}|${d.boyut}|${Math.round(d.degisme)}`).digest('hex');
@@ -36,6 +39,13 @@ export class KayitDeposu {
 
   koy(m: IslenmisMedya): void {
     this.veri.medya[m.anahtar] = m;
+  }
+
+  /** Son açılan arşivleri en yeni başta, tekrarsız ve en fazla SON_ARSIV_SINIRI tane tutar. */
+  arsivEkle(a: SonArsiv): void {
+    const anahtar = JSON.stringify(a.girdiler);
+    const eski = (this.veri.sonArsivler ?? []).filter((x) => JSON.stringify(x.girdiler) !== anahtar);
+    this.veri.sonArsivler = [a, ...eski].slice(0, SON_ARSIV_SINIRI);
   }
 
   /** Önce geçici dosyaya yazar, sonra yerine koyar: yarıda kesilirse eski kayıt bozulmaz. */
