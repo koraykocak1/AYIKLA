@@ -5,7 +5,8 @@ import { tarihBul, komsuTarihiUygula } from './tarih';
 import { fotoOnizleme } from './onizleme';
 import { videoBilgisi, kareCikar } from './ffmpeg';
 import { kaliteOlc } from './kalite';
-import { parmakiziHesapla, kopyalariBul } from './parmakizi';
+import { parmakiziHesapla, kopyaKumeleri } from './parmakizi';
+import { hamMi } from './ham';
 import { grupSec, ortalamaVektor, type GrupVektoru } from './sahne-puan';
 import { DIGER_ID, EKRAN_ID, ekranGoruntusuAdiMi, puanlamaTarifleri } from './gruplar';
 import { KayitDeposu, anahtarUret } from './kayit';
@@ -85,10 +86,15 @@ function kopyalariIsaretle(liste: IslenmisMedya[]): string[] {
   const anahtarlar: string[] = [];
   for (const tur of ['foto', 'video'] as const) {
     const adaylar = liste.filter((m) => m.tur === tur && m.eleme === null && !m.geriAlindi);
-    const elenen = kopyalariBul(adaylar, (m) => m.genislik * m.yukseklik + m.kalite.netlik);
-    for (const m of elenen) {
-      m.eleme = 'kopya';
-      anahtarlar.push(m.anahtar);
+    // JPG gibi görüntülenebilir dosya, aynı karenin RAW'ına tercih edilir (çözünürlüğü düşük olsa da);
+    // elenen RAW kaybolmasın diye kalan dosyaya "RAW eşi" olarak bağlanır ve onunla birlikte dışa aktarılır.
+    const puan = (m: IslenmisMedya) => (hamMi(m.yol) ? 0 : 1e12) + m.genislik * m.yukseklik + m.kalite.netlik;
+    for (const { kalan, elenen } of kopyaKumeleri(adaylar, puan)) {
+      for (const m of elenen) {
+        m.eleme = 'kopya';
+        anahtarlar.push(m.anahtar);
+        if (hamMi(m.yol) && !hamMi(kalan.yol)) kalan.ham = [...(kalan.ham ?? []), m.yol];
+      }
     }
   }
   return anahtarlar;

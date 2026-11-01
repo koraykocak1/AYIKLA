@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { ayikla, grupBelirle, yenidenPuanla } from '../src/motor/isci';
 import { normalize } from '../src/motor/sahne-puan';
@@ -148,6 +148,23 @@ describe('isci', () => {
     expect(sonuc[0].ham).toEqual([join(kok, '_DSC1.NEF')]);
     expect(sonuc[1]).toMatchObject({ genislik: 6000, yukseklik: 4000 });
     expect(sonuc[1].onizlemeler).toHaveLength(1);
+  });
+
+  it('başka klasördeki görsel kopyası olan NEF: JPG görünür kalır, NEF kopya sayılır ve JPG’ye RAW eşi olarak bağlanır', async () => {
+    const kok = await geciciKlasor();
+    await mkdir(join(kok, 'a'));
+    await mkdir(join(kok, 'b'));
+    const jpg = join(kok, 'a', '_DSC1.JPG');
+    await desenliResim(jpg, { renk: [220, 40, 40], tohum: 1, boyut: 512 });
+    const nef = join(kok, 'b', '_DSC1.NEF'); // farklı klasör: adla eşleşmez, görsel olarak kopya
+    await sahteNef(nef, { jpegler: [await readFile(jpg)], genislik: 8000, yukseklik: 8000 });
+    const { model } = sahteModel();
+    const sonuc = await ayikla({ girdiler: [kok], calismaKlasoru: join(kok, 'calisma'), gruplar: GRUPLAR, model, olay: () => {} });
+    const j = sonuc.find((m) => m.yol === jpg)!;
+    const n = sonuc.find((m) => m.yol === nef)!;
+    expect(j.eleme).toBeNull();
+    expect(n.eleme).toBe('kopya');
+    expect(j.ham).toEqual([nef]);
   });
 
   it('geri alınan dosya elenmez', async () => {

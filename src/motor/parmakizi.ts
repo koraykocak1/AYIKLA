@@ -30,7 +30,12 @@ export function mesafe(a: string, b: string): number {
 
 /** Birbirine çok benzeyenleri kümeler; her kümede en yüksek puanlı kalır, gerisi döner. */
 export function kopyalariBul<T extends { parmakizi: string }>(liste: T[], puan: (t: T) => number): Set<T> {
-  const elenen = new Set<T>();
+  return new Set(kopyaKumeleri(liste, puan).flatMap((k) => k.elenen));
+}
+
+/** Kopya kümeleri: her kümede kalan (en yüksek puanlı) ve elenenler. */
+export function kopyaKumeleri<T extends { parmakizi: string }>(liste: T[], puan: (t: T) => number): { kalan: T; elenen: T[] }[] {
+  const kumeler: { kalan: T; elenen: T[] }[] = [];
   const ziyaret = new Set<number>();
   for (let i = 0; i < liste.length; i++) {
     if (ziyaret.has(i)) continue;
@@ -44,8 +49,8 @@ export function kopyalariBul<T extends { parmakizi: string }>(liste: T[], puan: 
     }
     if (kume.length > 1) {
       const enIyi = kume.reduce((a, b) => (puan(liste[b]) > puan(liste[a]) ? b : a));
-      for (const k of kume) if (k !== enIyi) elenen.add(liste[k]);
+      kumeler.push({ kalan: liste[enIyi], elenen: kume.filter((k) => k !== enIyi).map((k) => liste[k]) });
     }
   }
-  return elenen;
+  return kumeler;
 }
