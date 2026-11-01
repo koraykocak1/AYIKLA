@@ -1,5 +1,5 @@
 import { mkdir } from 'node:fs/promises';
-import { basename, join } from 'node:path';
+import { basename, extname, join } from 'node:path';
 import { tara } from './tarayici';
 import { tarihBul } from './tarih';
 import { fotoOnizleme } from './onizleme';
@@ -7,7 +7,7 @@ import { videoBilgisi, kareCikar } from './ffmpeg';
 import { kaliteOlc } from './kalite';
 import { parmakiziHesapla, kopyalariBul } from './parmakizi';
 import { grupSec, ortalamaVektor, type GrupVektoru } from './sahne-puan';
-import { DIGER_ID, EKRAN_ID, ekranGoruntusuAdiMi } from './gruplar';
+import { DIGER_ID, EKRAN_ID, ekranGoruntusuAdiMi, puanlamaTarifleri } from './gruplar';
 import { KayitDeposu, anahtarUret } from './kayit';
 import { ortalamaRenk } from './renk';
 import type { Grup, IsciOlayi, IslenmisMedya, MedyaDosyasi, SahneModeli } from './tipler';
@@ -23,14 +23,17 @@ export interface IsciAyarlari {
 
 export async function grupVektorleriHazirla(gruplar: Grup[], model: SahneModeli): Promise<GrupVektoru[]> {
   const sonuc: GrupVektoru[] = [];
-  for (const g of gruplar) sonuc.push({ grupId: g.id, vektorler: await model.metinVektorleri(g.tarifler) });
+  for (const p of puanlamaTarifleri(gruplar)) sonuc.push({ grupId: p.grupId, vektorler: await model.metinVektorleri(p.tarifler) });
   return sonuc;
 }
 
 export function grupBelirle(m: IslenmisMedya, gv: GrupVektoru[]): string {
   if (m.elleGrup) return m.elleGrup;
-  if (m.tur === 'foto' && ekranGoruntusuAdiMi(basename(m.yol)) && gv.some((g) => g.grupId === EKRAN_ID)) return EKRAN_ID;
-  return grupSec(m.vektor, gv).grupId;
+  const ad = basename(m.yol);
+  if (m.tur === 'foto' && ekranGoruntusuAdiMi(ad) && gv.some((g) => g.grupId === EKRAN_ID)) return EKRAN_ID;
+  // Yapay zekâ insanlı fotoğrafları da "ekran görüntüsü" sanabiliyor: bu grup yalnızca PNG'lerde yarışır.
+  const png = m.tur === 'foto' && extname(ad).toLowerCase() === '.png';
+  return grupSec(m.vektor, png ? gv : gv.filter((g) => g.grupId !== EKRAN_ID)).grupId;
 }
 
 /** Kayıtlı vektörlerle grupları yeniden belirler; fotoğraflar yeniden taranmaz. */

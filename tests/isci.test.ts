@@ -2,10 +2,10 @@ import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
 import { mkdir, stat, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
-import { ayikla, yenidenPuanla } from '../src/motor/isci';
+import { ayikla, grupBelirle, yenidenPuanla } from '../src/motor/isci';
 import { normalize } from '../src/motor/sahne-puan';
 import { KayitDeposu } from '../src/motor/kayit';
-import type { IsciOlayi, SahneModeli } from '../src/motor/tipler';
+import type { IsciOlayi, IslenmisMedya, SahneModeli } from '../src/motor/tipler';
 import { geciciKlasor, desenliResim, bulanikResim, karanlikResim, ornekVideo } from './yardimci';
 
 function sahteModel() {
@@ -103,6 +103,17 @@ describe('isci', () => {
     expect((await stat(join(calisma, 'kayit.json'))).mtimeMs).toBe(once);
   });
 
+  it('ekran görüntüsü grubu yalnızca dosya adı veya PNG biçimi ekran görüntüsü diyorsa seçilir', () => {
+    const gv = [
+      { grupId: 'ekran', vektorler: [[1, 0, 0]] },
+      { grupId: 'insanlar', vektorler: [normalize([0.8, 0.6, 0])] },
+    ];
+    const m = (yol: string) => ({ yol, tur: 'foto', vektor: [1, 0, 0] }) as IslenmisMedya;
+    expect(grupBelirle(m('C:/a.jpg'), gv)).toBe('insanlar');
+    expect(grupBelirle(m('C:/a.PNG'), gv)).toBe('ekran');
+    expect(grupBelirle(m('C:/Screenshot_20240101.jpg'), gv)).toBe('ekran');
+  });
+
   it('geri alınan dosya elenmez', async () => {
     const kok = await geciciKlasor();
     const girdi = join(kok, 'girdi');
@@ -127,7 +138,7 @@ describe('isci', () => {
     await desenliResim(join(kok, 'a.jpg'), { renk: [40, 40, 220], tohum: 2 });
     const { model, sayac } = sahteModel();
     const sonuc = await ayikla({ girdiler: [join(kok, 'a.jpg')], calismaKlasoru: join(kok, 'calisma'), gruplar: [GRUPLAR[0]], model, olay: () => {} });
-    expect(sonuc[0].grupId).toBe('k');
+    expect(sonuc[0].grupId).toBe('diger'); // yalnızca "Kırmızı" varken mavi resim Diğer'e düşer
     const once = sayac.resim;
     await yenidenPuanla(sonuc, GRUPLAR, model);
     expect(sonuc[0].grupId).toBe('m');

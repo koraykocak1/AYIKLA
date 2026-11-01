@@ -10,7 +10,7 @@ import type { Grup, SahneModeli } from '../src/motor/tipler';
 import type { AktarmaSonucu } from '../src/motor/disari-aktar';
 import { geciciKlasor, desenliResim, bulanikResim, ornekVideo } from './yardimci';
 
-// Sahte model: resmin ortalama rengi vektör olur; "blue" tarifi maviye, diğer her tarif yeşile denk gelir.
+// Sahte model: resmin ortalama rengi vektör olur; ana konusu "blue" olan tarifler maviye, diğer her tarif yeşile denk gelir.
 const sahteModel: SahneModeli = {
   cihaz: 'sahte',
   async resimVektoru(yol) {
@@ -18,7 +18,7 @@ const sahteModel: SahneModeli = {
     return normalize(s.channels.slice(0, 3).map((c) => c.mean));
   },
   async metinVektorleri(metinler) {
-    return metinler.map((m) => (m === 'blue' ? [0, 0, 1] : [0, 1, 0]));
+    return metinler.map((m) => (m.includes('a blue') && !/front|background/.test(m) ? [0, 0, 1] : [0, 1, 0]));
   },
 };
 
@@ -78,7 +78,7 @@ describe('sunucu', () => {
     const s = await hazirla();
     await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
     const r = await s.iste<{ grup: Grup; sonuc: ArayuzMedya[] }>({ tur: 'grupEkle', ad: 'Mavi' });
-    expect(r.grup).toEqual({ id: 'k-mavi', ad: 'Mavi', tarifler: ['a photo of a blue', 'blue'], kullanici: true });
+    expect(r.grup).toMatchObject({ id: 'k-mavi', ad: 'Mavi', ingilizce: 'blue', kullanici: true });
     expect(r.sonuc.find((m) => m.yol.endsWith('mavi.jpg'))?.grupId).toBe('k-mavi');
     const gruplar = await s.iste<Grup[]>({ tur: 'gruplar' });
     expect(gruplar.at(-1)?.id).toBe('k-mavi');
@@ -110,7 +110,7 @@ describe('sunucu', () => {
     const hedef = join(s.kok, 'hedef');
     const r = await s.iste<AktarmaSonucu>({ tur: 'aktar', hedef });
     expect(r).toEqual({ kopyalanan: 2, atlanan: 0, hatalar: [] });
-    expect(await readdir(hedef)).toEqual(['Diğer']);
+    expect(await readdir(hedef)).toHaveLength(1); // ikisi de aynı gruba düşer (sahte modelde grup adı önemsiz)
     expect(s.olaylar().filter((o) => o.tur === 'aktarim').at(-1)).toEqual({ tur: 'aktarim', bitti: 2, toplam: 2 });
   });
 

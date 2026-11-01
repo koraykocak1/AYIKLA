@@ -27,12 +27,17 @@ export function ortalamaVektor(vs: number[][]): number[] {
   return normalize(t);
 }
 
-/** CLIP usulü: benzerlik ×100 → softmax. Kararsız veya zayıf eşleşme "Diğer" olur. */
+/**
+ * CLIP usulü: her tarifin benzerliği ×100 → tüm tarifler üzerinde softmax; bir grubun olasılığı
+ * tariflerinin olasılıkları toplamıdır. Böylece fotoğrafı birçok yönden anlatan grup (ör. "masada
+ * oturan insanlar", "kadeh kaldıran insanlar") tek bir tarifi az farkla önde olan gruba üstün gelir.
+ * Kararsız veya zayıf eşleşme "Diğer" olur.
+ */
 export function grupSec(resim: number[], gruplar: GrupVektoru[], esik = DIGER_ESIK): { grupId: string; olasilik: number } {
   if (gruplar.length === 0) return { grupId: DIGER_ID, olasilik: 0 };
-  const puanlar = gruplar.map((g) => 100 * Math.max(...g.vektorler.map((t) => benzerlik(resim, t))));
-  const enBuyuk = Math.max(...puanlar);
-  const us = puanlar.map((p) => Math.exp(p - enBuyuk));
+  const puanlar = gruplar.map((g) => g.vektorler.map((t) => 100 * benzerlik(resim, t)));
+  const enBuyuk = Math.max(...puanlar.flat());
+  const us = puanlar.map((p) => p.reduce((s, x) => s + Math.exp(x - enBuyuk), 0));
   const toplam = us.reduce((a, b) => a + b, 0);
   let en = 0;
   for (let i = 1; i < us.length; i++) if (us[i] > us[en]) en = i;

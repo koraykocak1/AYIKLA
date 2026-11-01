@@ -27,6 +27,7 @@ export interface Grup {
   ad: string;
   tarifler: string[]; // CLIP'e verilen İngilizce tarifler
   kullanici?: boolean;
+  ingilizce?: string; // kullanıcı grubunun İngilizce karşılığı (tarifler bundan üretilir)
 }
 
 export type ElemeNedeni = 'kopya' | 'bulanik' | 'karanlik';

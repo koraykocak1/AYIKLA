@@ -27,6 +27,15 @@ describe('sahne-puan', () => {
     expect(grupSec(normalize([1, 0, 1]), gruplar).grupId).toBe(DIGER_ID);
   });
 
+  it('birçok tarifi uyan grup, tek tarifi az farkla önde olan gruba üstün gelir', () => {
+    const v = normalize([1, 1, 0]);
+    const g = [
+      { grupId: 'tek', vektorler: [normalize([1, 0.05, 0])] }, // en iyi tek tarif bu grupta
+      { grupId: 'cok', vektorler: [normalize([0.04, 1, 0]), normalize([0.04, 1, 0]), normalize([0.04, 1, 0])] },
+    ];
+    expect(grupSec(v, g).grupId).toBe('cok');
+  });
+
   it('grup yoksa Diğer', () => {
     expect(grupSec([1, 0, 0], []).grupId).toBe(DIGER_ID);
   });
