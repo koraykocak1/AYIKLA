@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>AYIKLA · Uygulama planı</title>
+<style>
+:root{--sari:#facc15}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;color:#e7e5e4;font-family:"Segoe UI",system-ui,sans-serif;
+  background:radial-gradient(ellipse at 55% 110%,#1a0904,#0b0402 45%,#030101)}
+.mono{font-family:ui-monospace,"Cascadia Mono",Consolas,monospace;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.kap{max-width:760px;margin:0 auto;padding:40px 20px 60px}
+.ust{color:#78716c}
+h1{font:300 40px/1.1 "Segoe UI",system-ui,sans-serif;margin:8px 0 6px}
+.not{color:#8a8580;margin-bottom:28px;line-height:1.7}
+.adimlar{position:relative;padding-left:34px}
+.adimlar::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;background:#2a2522}
+.adim{position:relative;margin-bottom:12px;border:1px solid #2a2522;background:rgba(14,11,9,.75);cursor:pointer;
+  opacity:0;transform:translateY(12px);animation:gel .6s cubic-bezier(.2,.9,.3,1) forwards}
+.adim:hover{border-color:#4a423c}
+.adim.acik{border-color:var(--sari)}
+.nokta{position:absolute;left:-30px;top:17px;width:16px;height:16px;border-radius:50%;border:2px solid #57534e;background:#0b0402}
+.adim.simdi .nokta{border-color:var(--sari);box-shadow:0 0 12px var(--sari);background:var(--sari)}
+.bas{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 16px}
+.bas .no{color:var(--sari);margin-right:12px}
+.bas .ad{font-size:17px}
+.dur{color:#78716c;white-space:nowrap}
+.adim.simdi .dur{color:var(--sari)}
+.ic{display:none;padding:0 16px 16px 16px;color:#a8a29e;line-height:1.65;font-size:14px}
+.adim.acik .ic{display:block}
+.ic ul{margin:4px 0 10px;padding-left:18px}
+.ic .kontrol{color:#78716c;border-top:1px solid #2a2522;padding-top:10px}
+.ic .kontrol b{color:var(--sari);font-weight:400}
+.alt{margin-top:26px;color:#78716c;line-height:1.8}
+.alt b{color:#d6d3d1;font-weight:400}
+@keyframes gel{to{opacity:1;transform:none}}
+</style></head><body><div class="kap">
+<div class="ust mono">AYIKLA · YENİ TASARIM</div>
+<h1>Uygulama planı</h1>
+<div class="not mono">YALNIZCA ARAYÜZ DEĞİŞİR · MOTOR AYNEN KALIR · HER EKRAN SİZİN ONAYINIZLA KAYDEDİLİR<br>BİR ADIMA TIKLAYINCA AYRINTISI AÇILIR</div>
+
+<div class="adimlar" id="adimlar"></div>
+
+<div class="alt mono">HER EKRANDAN SONRA: <b>TEST</b> › <b>GERÇEK KLASÖRLE DENEME</b> › <b>EKRAN GÖRÜNTÜSÜ SİZE</b> › <b>ONAY</b> › <b>KAYIT</b><br>
+SONRA (BU PLANIN DIŞINDA): WINDOWS EKSİKLERİ › YAYINA HAZIRLIK › MAC SÜRÜMÜ</div>
+</div>
+<script>
+const A=[
+ {ad:'Ortak temel',dur:'SIRADAKİ',m:['Renkler: siyah ve sıcak zemin, sarı #FACC15, küçük büyük harf etiketler','Sarı düğme ve çerçeveli düğme her ekranda aynı','Kor kıvılcımlı arka plan: tüm ekranların altında tek katman, ekran değişince yeniden başlamaz'],k:'Üç ekranda da arka plan görünür, bilgisayarı yormaz'},
+ {ad:'Karşılama ekranı',dur:'BEKLİYOR',m:['Büyük sarı noktalı küre yavaşça döner','Fare yaklaşınca noktalar uzay boşluğundaki gibi dağılıp yavaşça geri gelir','Ortada "KLASÖRÜ KÜREYE BIRAK", altta sarı "AYIKLA ›", köşelerde son arşivler ve "KLASÖR SEÇ"'],k:'Klasör bırakma, klasör seçme ve son arşivden açma çalışır'},
+ {ad:'Ayıklama ekranı',dur:'BEKLİYOR',m:['Ortada içten dışa açılan sarı enerji halkası; fareyle teller itilir','Her fotoğraf halkadan kopan yıldız tozu olup grubuna süzülür; elenecekler gri','Üstte grup küreleri büyür, altında sayılar; füme "AYIKLA" yazısı','Üstte ince sarı ilerleme çizgisi, altta "AYIKLANIYOR · %" ve "DURDUR"'],k:'2.000+ dosyada akıcı; durdurunca kaldığı yerden devam eder'},
+ {ad:'Sonuç ekranı',dur:'BEKLİYOR',m:['IZGARA (asıl çalışma alanı): büyük kartlar, altında gün ay yıl · saat, yıl › ay başlıkları','KÜRE (gösteri): fotoğraflar uçarak küreye dizilir, sürükleyince döner','Sol grup listesi, sağ tıkla başka gruba taşı + GERİ AL, tıklayınca büyük görünüm','"KLASÖRLERE KAYDET ›" ve ilerleme çizgisi','Binlerce fotoğrafta takılmasın diye ızgarada yalnız görünenler çizilir'],k:'Taşıma, geri alma, grup ekleme, büyük görünüm ve kaydetme gerçek arşivle çalışır'},
+ {ad:'Son kontrol',dur:'BEKLİYOR',m:['Tüm testler ve tip kontrolü','Gerçek arşivle baştan sona deneme','"Hareketi azalt" ayarı açıkken deneme','Kullanılmayan eski parçaların temizlenmesi'],k:'Ekran görüntüleri size gösterilir, Windows sürümü tasarım olarak tamam'}];
+const kutu=document.getElementById('adimlar');
+A.forEach((a,i)=>{const d=document.createElement('div');d.className='adim'+(i===0?' simdi acik':'');d.style.animationDelay=(i*.12)+'s';
+ d.innerHTML=`<span class="nokta"></span><div class="bas"><div><span class="no mono">ADIM ${i}</span><span class="ad">${a.ad}</span></div><span class="dur mono">${a.dur}</span></div>
+ <div class="ic"><ul>${a.m.map(x=>`<li>${x}</li>`).join('')}</ul><div class="kontrol mono"><b>KONTROL ›</b> ${a.k}</div></div>`;
+ d.onclick=()=>d.classList.toggle('acik');kutu.appendChild(d)});
+</script></body></html>

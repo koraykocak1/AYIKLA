@@ -24,6 +24,14 @@ export const yay = {
   sayac: { stiffness: 90, damping: 20, restDelta: 0.5 },
 } as const;
 
+/** Kor kıvılcımlı arka plan (tüm ekranların altında). */
+export const kor = {
+  sayi: 200, // aynı anda ekrandaki kıvılcım
+  itmeYaricapi: 120, // fare bu kadar yaklaşınca kıvılcım kenara kayar (px)
+  itmeGucu: 0.06,
+  esintiOlasiligi: 0.004, // her karede ara sıra yana savuran esinti
+} as const;
+
 /** Sıralı giriş gecikmesi: ilk birkaç öğe sırayla gelir, gerisi beklemez (binlerce öğede gecikme birikmesin). */
 export function siraliGecikme(i: number, adim = 0.03, ust = 24): number {
   return Math.min(i, ust) * adim;

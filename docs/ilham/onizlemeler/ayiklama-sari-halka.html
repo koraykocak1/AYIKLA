@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="tr"><head><meta charset="utf-8"><title>Ayıklama · sarı enerji halkası</title>
+<style>
+html,body{margin:0;height:100%;background:#000;overflow:hidden}
+canvas{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair}
+#arka{pointer-events:none}
+.mo{position:absolute;font:11px ui-monospace,monospace;letter-spacing:1px}
+#pb{position:absolute;top:0;left:0;height:2px;background:#facc15}
+</style></head><body>
+<canvas id="arka"></canvas>
+<canvas id="kc"></canvas>
+<script>
+// Arka plan: sıcak siyah zemin üzerinde yukarı süzülen kıvılcımlar (ateş közü)
+(()=>{const c=document.getElementById('arka'),x=c.getContext('2d'),D=Math.min(devicePixelRatio||1,1.5);let W,H;
+function rs(){W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0)}rs();addEventListener('resize',rs);
+const K=[];function yeni(ilk){const z=.15+Math.random()**1.6*.85;
+  return{x:Math.random()*W,y:ilk?Math.random()*H:H+10+Math.random()*60,z,vx:0,vy:-(.25+Math.random()*.9)*z*1.6,
+    s:Math.random()*100,omur:0,max:400+Math.random()*900,renk:Math.random()}}
+for(let i=0;i<230;i++)K.push(yeni(true));
+let t=0,ruzgar=0,ruzgarHedef=0,m={x:-999,y:-999};
+addEventListener('pointermove',e=>{m.x=e.clientX;m.y=e.clientY});
+(function f(){t+=1/60;
+  if(Math.random()<.004)ruzgarHedef=(Math.random()-.5)*1.6; // ara sıra esinti
+  ruzgarHedef*=.995;ruzgar+=(ruzgarHedef-ruzgar)*.01;
+  const zem=x.createRadialGradient(W*.55,H*1.05,0,W*.55,H*1.05,Math.max(W,H));
+  zem.addColorStop(0,'#1a0904');zem.addColorStop(.45,'#0b0402');zem.addColorStop(1,'#030101');
+  x.globalCompositeOperation='source-over';x.fillStyle=zem;x.fillRect(0,0,W,H);
+  x.globalCompositeOperation='lighter';x.lineCap='round';
+  for(let i=0;i<K.length;i++){const k=K[i];k.omur++;
+    // türbülans: yumuşak, katmanlı sinüs alanı
+    const tx=Math.sin(k.y*.006+t*.7+k.s)*.35+Math.sin(k.y*.017-t*1.3+k.s*2)*.18;
+    const ty=Math.cos(k.x*.005+t*.5+k.s)*.12;
+    k.vx+=(tx+ruzgar)*.02*k.z;k.vy+=ty*.01*k.z-.002*k.z;k.vx*=.985;k.vy*=.995;
+    if(m.x>-999){const dx=k.x-m.x,dy=k.y-m.y,d2=dx*dx+dy*dy;if(d2<14400){const d=Math.sqrt(d2)||1,g=(1-d/120)*.06*k.z;k.vx+=dx/d*g;k.vy+=dy/d*g}}
+    k.x+=k.vx;k.y+=k.vy;
+    const yas=k.omur/k.max,sonme=yas<.1?yas/.1:Math.max(0,1-(yas-.6)/.4);
+    const kirp=.55+.45*Math.sin(t*(6+k.s%5)+k.s); // titreyen kor
+    const a=sonme*kirp*(.25+k.z*.75);
+    if(a<=0||k.y<-30||k.x<-30||k.x>W+30||yas>=1){K[i]=yeni(false);continue}
+    const uz=Math.hypot(k.vx,k.vy)*(2+k.z*5),ux=k.vx/(Math.hypot(k.vx,k.vy)||1),uy=k.vy/(Math.hypot(k.vx,k.vy)||1);
+    const g=150+k.renk*80|0,b=30+k.renk*40|0;
+    x.strokeStyle=`rgba(255,${g},${b},${a*.18})`;x.lineWidth=(.8+k.z*2.6)*2.2;
+    x.beginPath();x.moveTo(k.x,k.y);x.lineTo(k.x-ux*uz,k.y-uy*uz);x.stroke();
+    x.strokeStyle=`rgba(255,${g+30},${b+60},${a})`;x.lineWidth=.5+k.z*1.3;x.stroke()}
+  requestAnimationFrame(f)})()})();
+</script>
+<canvas id="yazi" style="pointer-events:none"></canvas>
+<script>
+// "AYIKLA" yazısı: soldan sağa akan duman/toz akımının ardında zerreciklerden belirir, altında ayna yansıması
+(()=>{const c=document.getElementById('yazi'),x=c.getContext('2d'),D=Math.min(Math.max(devicePixelRatio||1,1.25),2);let W,H,ZB=2,Z=[],tx0=0,tx1=0,ty0=0,ty1=0;
+const METIN='AYIKLA';
+function kur(){W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0);
+  const boy=Math.round(Math.min(W*.11,H*.11)),oc=document.createElement('canvas'),ow=Math.ceil(boy*6),oh=Math.ceil(boy*1.3);
+  oc.width=ow;oc.height=oh;const o=oc.getContext('2d');o.fillStyle='#fff';o.font=`900 ${boy}px "Segoe UI",system-ui,sans-serif`;
+  o.textBaseline='middle';if('letterSpacing' in o)o.letterSpacing=`${boy*.12}px`;
+  const gen=o.measureText(METIN).width;o.fillText(METIN,(ow-gen)/2,oh/2);
+  const d=o.getImageData(0,0,ow,oh).data,ox=W/2-ow/2,oy=H*.37-oh/2,ad=Math.max(3,boy*.065);ZB=Math.max(2,boy*.046);Z=[];
+  for(let yy=0;yy<oh;yy+=ad)for(let xx=0;xx<ow;xx+=ad){if(d[((yy|0)*ow+(xx|0))*4+3]>128){
+    Z.push({hx:ox+xx,hy:oy+yy,x:ox+xx+(Math.random()-.5)*14,y:oy+yy+(Math.random()-.5)*14,vx:0,vy:0,s:Math.random()*10,r:.5+Math.random()*.5})}}
+  tx0=ox+(ow-gen)/2;tx1=tx0+gen;ty0=oy+oh*.12;ty1=oy+oh*.88}
+kur();addEventListener('resize',kur);
+let t=0,m={x:-999,y:-999},pm={x:-999,y:-999};addEventListener('pointermove',e=>{m.x=e.clientX;m.y=e.clientY});
+const SURE=3.4; // akımın yazıyı baştan sona geçme süresi
+(function f(){t+=1/60;x.clearRect(0,0,W,H);
+  const on=1e9; const belir=Math.min(t/.9,1); // silüet: tüm yazı birlikte belirir
+  const mvx=m.x-pm.x,mvy=m.y-pm.y;pm.x=m.x;pm.y=m.y;const hiz=Math.min(Math.hypot(mvx,mvy)||0,30);
+  x.globalCompositeOperation='lighter';
+  // zerrecikler: cephe geçtikten sonra yerlerine yaylı oturur, öncesinde akımla sürüklenir
+  for(const p of Z){const gecti=p.hx<on;
+    if(gecti){p.vx+=(p.hx-p.x)*.06;p.vy+=(p.hy-p.y)*.06;p.vx*=.8;p.vy*=.8}
+    else{p.vx+=.6+Math.sin(p.y*.05+t*3+p.s)*.4;p.vy+=Math.sin(p.x*.03+t*2+p.s)*.25;p.vx*=.9;p.vy*=.9}
+    if(m.x>-999&&gecti){const dx=p.x-m.x,dy=p.y-m.y,d2=dx*dx+dy*dy;if(d2<8100){const d=Math.sqrt(d2)||1,k=1-d/90;p.vx+=dx/d*k*k*(1.2+hiz*.25);p.vy+=dy/d*k*k*(1.2+hiz*.25)}}
+    p.x+=p.vx;p.y+=p.vy;
+    const yakin=Math.max(0,1-Math.abs(p.hx-on)/140),otur=gecti?1:Math.max(0,1-(on-p.x)/-200)*.0;
+    const a=gecti?.75+.25*Math.sin(t*2+p.s):Math.max(0,.6-(p.x<on-150?0:0))*(p.x<on+40?.7:0);
+    if(a<=0.01)continue;
+    const fu=185+(p.s%1)*35|0; x.fillStyle=`rgba(${fu},${fu+4},${fu+10},${Math.min(1,a*belir*1.1)})`;
+    const z=gecti?ZB*(.75+p.r*.45):1;x.fillRect(p.x-z/2,p.y-z/2,z,z)}
+  // duman/toz akımı: cephe etrafında kıvrılan ince yarı saydam teller
+  const sonmeA=0;
+  if(sonmeA>0){for(let s=0;s<7;s++){x.beginPath();for(let i=0;i<=40;i++){const u=i/40;
+      const px=on-160+u*200+Math.sin(u*6+t*2+s)*14,py=(ty0+ty1)/2+Math.sin(u*5+t*2.4+s*1.3)*(ty1-ty0)*.75*(1-u*.3)+Math.cos(u*9-t*3+s)*10;
+      i?x.lineTo(px,py):x.moveTo(px,py)}
+    x.strokeStyle=`rgba(255,230,170,${.07*sonmeA})`;x.lineWidth=6;x.stroke();x.strokeStyle=`rgba(255,240,200,${.22*sonmeA})`;x.lineWidth=.8;x.stroke()}
+    for(let i=0;i<40;i++){const px=on-120+Math.random()*170,py=(ty0+ty1)/2+(Math.random()-.5)*(ty1-ty0)*1.8;x.fillStyle=`rgba(255,240,210,${Math.random()*.5*sonmeA})`;x.fillRect(px,py,1,1)}}
+  // ayna yansıması: yazının ters, soluk ve aşağı doğru sönen kopyası
+  x.globalCompositeOperation='source-over';
+  const yh=(ty1-ty0),yb=ty1+yh*.08;
+  // yalnızca yazı bandını kopyala (tüm ekranı değil)
+  const bx=Math.max(0,tx0-40),bw=Math.min(W,tx1+40)-bx,bh=yh*.9,sy=yb-bh;
+  x.save();x.translate(0,yb*2);x.scale(1,-1);x.globalAlpha=.18;
+  x.drawImage(c,bx*D,sy*D,bw*D,bh*D,bx,sy,bw,bh);x.restore();
+  const sn=x.createLinearGradient(0,yb,0,yb+bh);sn.addColorStop(0,'rgba(0,0,0,0)');sn.addColorStop(1,'rgba(0,0,0,1)');
+  x.globalCompositeOperation='destination-out';x.fillStyle=sn;x.fillRect(bx,yb,bw,bh);
+  x.globalCompositeOperation='source-over';
+  requestAnimationFrame(f)})()})();
+</script>
+<div id="pb"></div>
+<div class="mo" style="bottom:16px;left:20px;color:#facc15">AYIKLANIYOR · <span id="pc">0</span>%</div>
+<div class="mo" style="bottom:16px;right:20px;color:#a3a3a3;border:1px solid #404040;padding:4px 10px">DURDUR</div>
+<script>
+const c=document.getElementById('kc'),x=c.getContext('2d'),D=Math.min(Math.max(devicePixelRatio||1,1.5),2);let W,H;
+function rs(){W=innerWidth;H=innerHeight;c.width=W*D;c.height=H*D;x.setTransform(D,0,0,D,0,0)}rs();addEventListener('resize',rs);
+const TAU=Math.PI*2;
+// yumuşak, organik dalga: birkaç sinüsün toplamı (pürüzsüz)
+function dalga(a,t,s){return Math.sin(a*3+t*1.3+s)*.5+Math.sin(a*7-t*2.1+s*1.7)*.28+Math.sin(a*13+t*3.2+s*2.3)*.14+Math.sin(a*2-t*.7+s*.4)*.6}
+
+// halka telleri: her tel kendi dalgasıyla çemberin etrafında titrer
+const TEL=11,NOKTA=260;
+const teller=[];for(let s=0;s<TEL;s++){const n=[];for(let i=0;i<=NOKTA;i++)n.push({ox:0,oy:0,vx:0,vy:0});
+  teller.push({tohum:s*1.37+Math.random(),gen:.6+Math.random()*1.4,kal:.5+Math.random()*1.1,par:.25+Math.random()*.75,n})}
+// dumanımsı kıvrımlar: halkadan dışarı kıvrılıp sönen alev dilleri
+let kivrim=[];
+function yeniKivrim(R){const a=-.6+Math.random()*1.6+(Math.random()<.35?Math.PI:0);
+  kivrim.push({a,yas:0,omur:1.6+Math.random()*1.8,uz:R*(.25+Math.random()*.45),bk:(Math.random()-.5)*2.6,s:Math.random()*10,n:Array.from({length:40},()=>({ox:0,oy:0,vx:0,vy:0}))})}
+
+let m={x:-999,y:-999,px:-999,py:-999},mvx=0,mvy=0,hiz=0;
+c.addEventListener('pointermove',e=>{m.x=e.clientX;m.y=e.clientY});
+c.addEventListener('pointerleave',()=>{m.x=m.y=-999;m.px=m.py=-999});
+// uzay hissi: fare noktaları iter, noktalar yavaşça ve az sürtünmeyle yerine döner
+function it(p,bx,by){if(m.x>-999){const dx=bx+p.ox-m.x,dy=by+p.oy-m.y,d2=dx*dx+dy*dy;
+  if(d2<19600){const d=Math.sqrt(d2)||1,k=1-d/140,f=k*k*(.09+hiz*.03);p.vx+=dx/d*f+mvx*k*.014;p.vy+=dy/d*f+mvy*k*.014}}
+  p.vx=(p.vx-p.ox*.0024)*.972;p.vy=(p.vy-p.oy*.0024)*.972;p.ox+=p.vx;p.oy+=p.vy}
+
+// üç katmanlı çizim: geniş soluk ışıma + orta ışık + ince parlak çekirdek → pürüzsüz neon
+function cizgi(yol,genislik,isik,alfa){if(yol.length<2)return;
+  x.beginPath();x.moveTo(yol[0][0],yol[0][1]);
+  for(let i=1;i<yol.length-1;i++){const mx=(yol[i][0]+yol[i+1][0])/2,my=(yol[i][1]+yol[i+1][1])/2;x.quadraticCurveTo(yol[i][0],yol[i][1],mx,my)}
+  x.lineTo(yol[yol.length-1][0],yol[yol.length-1][1]);
+  x.lineCap='round';x.lineJoin='round';
+  x.strokeStyle=`rgba(250,190,20,${alfa*.06})`;x.lineWidth=genislik*9;x.stroke();
+  x.strokeStyle=`rgba(250,204,21,${alfa*.18})`;x.lineWidth=genislik*3.2;x.stroke();
+  x.strokeStyle=`rgba(255,${230+isik*20|0},${150+isik*90|0},${alfa})`;x.lineWidth=genislik;x.stroke()}
+
+// gruplar ve yıldız tozu (ilk C ile aynı)
+const AD=['İNSANLAR','HAYVANLAR','YEMEK','DOĞA','ELENECEK'],W8=[.42,.13,.12,.1,.23];
+const gA=Math.PI*(3-Math.sqrt(5)),GP=[];
+for(let k=0;k<5;k++){const a=[];for(let i=0;i<90;i++){const y=1-(i/89)*2,r=Math.sqrt(1-y*y),t=gA*i;a.push([Math.cos(t)*r,y,Math.sin(t)*r])}GP.push(a)}
+const cnt=[0,0,0,0,0];let F=[],rot=0,t=0,done=0,tot=260,wait=0;
+function pick(){let r=Math.random(),k=0;while(r>W8[k]&&k<4){r-=W8[k];k++}return k}
+function gpos(k){return[W*(.12+k*.19),H*.16]}
+function proj(p,R,cx,cy,rt){const cr=Math.cos(rt),sr=Math.sin(rt),X=p[0]*cr-p[2]*sr,Z=p[0]*sr+p[2]*cr,Y=p[1]*.97-Z*.25,Z2=p[1]*.25+Z*.97,s=1/(1.9-Z2*.6);return[cx+X*R*s*1.5,cy+Y*R*s*1.5,(Z2+1)/2]}
+function glow(px,py,r,col,a){const gr=x.createRadialGradient(px,py,0,px,py,r);gr.addColorStop(0,`rgba(${col},${a})`);gr.addColorStop(1,`rgba(${col},0)`);x.fillStyle=gr;x.fillRect(px-r,py-r,r*2,r*2)}
+
+const DOGUS=1.4; // halkanın çizilip tamamlanma süresi (sn)
+(function f(){t+=1/60;rot+=.004;
+  if(m.px>-999&&m.x>-999){mvx=m.x-m.px;mvy=m.y-m.py}else{mvx=mvy=0}m.px=m.x;m.py=m.y;hiz=Math.min(Math.hypot(mvx,mvy),30);
+  x.globalCompositeOperation='source-over';x.clearRect(0,0,W,H);
+  const prog=done/tot,cx=W/2,cy=H*.64,R=Math.min(W,H)*.19*(1-prog*.25);
+  const dogus=Math.min(t/DOGUS,1),ease=1-Math.pow(1-dogus,3);
+  x.globalCompositeOperation='lighter';
+
+  // doğuş: soldan dalgalı alev çizgisi gelir, çember çizerek halkayı tamamlar
+  const basA=Math.PI*.85;
+  for(const tel of teller){
+    const yol=[],gorunen=NOKTA;
+    for(let i=0;i<=gorunen;i++){const u=i/NOKTA,a=basA+u*TAU;
+      const nefes=1+Math.sin(t*1.1+tel.tohum)*.015;
+      const r=R*(.82+.18*ease)*nefes+dalga(a,t*tel.gen,tel.tohum)*R*.035*tel.kal;
+      const bx=cx+Math.cos(a)*r,by=cy+Math.sin(a)*r;
+      const p=tel.n[i];it(p,bx,by);yol.push([bx+p.ox,by+p.oy])}
+    if(false){const bas=[cx+Math.cos(basA)*R,cy+Math.sin(basA)*R],kuyruk=[];
+      const uz=W*.35*(1-ease);for(let i=24;i>=0;i--){const u=i/24;kuyruk.push([bas[0]-u*uz-u*40,bas[1]+Math.sin(u*9+t*4+tel.tohum)*6*u+u*18])}
+      cizgi(kuyruk.concat(yol.slice(0,1)),.7,.3,.5*tel.par*(1-ease))}
+    cizgi(yol,.55+tel.par*.7,tel.par,(.35+tel.par*.55)*(.55+.45*Math.sin(t*2.3+tel.tohum*3))*ease);
+    if(false){const u=yol[yol.length-1];glow(u[0],u[1],18,'255,236,140',.35*tel.par)}
+  }
+
+  if(dogus>=1&&Math.random()<.06&&kivrim.length<9)yeniKivrim(R);
+  kivrim=kivrim.filter(k=>{k.yas+=1/60;const u=k.yas/k.omur;if(u>=1)return false;
+    const al=Math.sin(Math.PI*u),yol=[];
+    for(let i=0;i<k.n.length;i++){const v=i/(k.n.length-1),uz=k.uz*v*(.4+u*.8);
+      const a=k.a+v*k.bk*.5+Math.sin(v*5+t*2+k.s)*.12*v;
+      const r=R+uz,bx=cx+Math.cos(a)*r+Math.sin(v*8+t*3+k.s)*6*v,by=cy+Math.sin(a)*r+Math.cos(v*7+t*2.5+k.s)*6*v-uz*.25*v;
+      const p=k.n[i];it(p,bx,by);yol.push([bx+p.ox,by+p.oy])}
+    cizgi(yol,.6,.2,.55*al);cizgi(yol.map((q,i)=>[q[0]+Math.sin(i*.4+t*3)*2.5,q[1]+Math.cos(i*.3+t*2)*2.5]),.35,0,.35*al);return true});
+
+  if(dogus>=1&&done<tot&&Math.random()<.16){const an=Math.random()*TAU;
+    const dust=[];for(let i=0;i<9;i++)dust.push([(Math.random()-.5)*10,(Math.random()-.5)*10,.3+Math.random()*.7,Math.random()*6.28]);
+    F.push({sx:cx+Math.cos(an)*R,sy:cy+Math.sin(an)*R,k:pick(),u:0,ph:an,sp:.0032+Math.random()*.0016,dust});done++}
+  F=F.filter(o=>{o.u+=o.sp;const u=Math.min(o.u,1),e=.5-Math.cos(Math.PI*u)/2,tg=gpos(o.k),el=o.k===4,col=el?'170,170,170':'250,204,21';
+    const a=e*Math.PI*3+o.ph,rr=W*.12*Math.sin(Math.PI*Math.min(e*1.1,1));
+    const qx=o.sx+Math.cos(a)*rr*.5+(tg[0]-o.sx)*e*e,qy=o.sy+(tg[1]-o.sy)*e;
+    const spread=1+Math.sin(Math.PI*e)*1.8,fade=u<.08?u/.08:(u>.9?(1-u)/.1:1);
+    glow(qx,qy,14*spread*.6,col,.18*fade);
+    for(const d of o.dust){const w=Math.sin(t*2+d[3])*2;x.fillStyle=`rgba(${el?'200,200,200':'255,236,140'},${d[2]*fade})`;x.beginPath();x.arc(qx+(d[0]+w)*spread,qy+(d[1]+Math.cos(t*1.7+d[3])*2)*spread,.75,0,TAU);x.fill()}
+    x.fillStyle=`rgba(${el?'220,220,220':'255,248,200'},${.9*fade})`;x.beginPath();x.arc(qx,qy,1.1,0,TAU);x.fill();
+    if(u>=1){cnt[o.k]++;return false}return true});
+
+  x.globalCompositeOperation='source-over';
+  for(let k=0;k<5;k++){const tg=gpos(k),r=6+Math.sqrt(cnt[k])*2.6,el=k===4;
+    for(const p of GP[k]){const q=proj(p,r,tg[0],tg[1],rot*2+k);x.fillStyle=el?`rgba(160,160,160,${.1+q[2]*.5})`:`rgba(250,204,21,${.15+q[2]*.8})`;x.beginPath();x.arc(q[0],q[1],.65,0,TAU);x.fill()}
+    x.font='11px ui-monospace,monospace';x.textAlign='center';x.fillStyle=el?'#737373':'#d4d4d4';x.fillText(AD[k],tg[0],tg[1]+r*1.6+15);x.fillStyle=el?'#525252':'#facc15';x.fillText(cnt[k],tg[0],tg[1]+r*1.6+29)}
+  document.getElementById('pc').textContent=Math.round(prog*100);document.getElementById('pb').style.width=(prog*100)+'%';
+  if(done>=tot&&!F.length){wait+=1/60;if(wait>3){done=0;cnt.fill(0);wait=0}}
+  requestAnimationFrame(f)})();
+</script></body></html>

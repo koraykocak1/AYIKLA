@@ -5,6 +5,7 @@ import { api } from './api';
 import { Karsilama } from './ekranlar/Karsilama';
 import { Ayiklama } from './ekranlar/Ayiklama';
 import { Sonuc } from './ekranlar/Sonuc';
+import { KorArkaPlan } from './bilesenler/KorArkaPlan';
 import type { ArayuzMedya, Sayim } from '../ortak/mesajlar';
 import type { Grup } from '../motor/tipler';
 
@@ -25,6 +26,7 @@ export function App() {
   return (
     // reducedMotion="user": sistemde "hareketi azalt" açıksa Motion dönüşümleri kapatır, yalnız solma kalır
     <MotionConfig reducedMotion="user">
+    <KorArkaPlan />
     <AnimatePresence mode="wait">
       <motion.main
         key={ekran.ad}
