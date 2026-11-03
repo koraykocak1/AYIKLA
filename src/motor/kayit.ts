@@ -24,13 +24,35 @@ export class KayitDeposu {
     this.dosya = dosya;
   }
 
+  /** Okunamayan eski kaydın saklandığı yer (bu açılışta bozuk kayıt bulunduysa). */
+  kurtarilan: string | null = null;
+
+  /**
+   * Kaydı okur. Dosya yoksa boş başlar. Dosya bozuksa ya da bilinmeyen bir sürümse silinmez:
+   * önce `kayit.json.bozuk-<zaman>` adıyla kenara alınır, sonra boş kayıtla devam edilir; böylece
+   * sonraki kaydetme kullanıcının düzeltmelerini geri dönülmez biçimde ezmez.
+   * Başka bir okuma hatasında (ör. dosya kilitli) boş kayıtla devam edilmez, hata yükselir.
+   */
   async yukle(): Promise<void> {
+    let metin: string;
     try {
-      const v = JSON.parse(await readFile(this.dosya, 'utf8')) as KayitVerisi;
-      if (v.surum === 1) this.veri = v;
-    } catch {
-      // ilk açılış veya bozuk dosya: boş kayıtla devam
+      metin = await readFile(this.dosya, 'utf8');
+    } catch (h) {
+      if ((h as NodeJS.ErrnoException).code === 'ENOENT') return; // ilk açılış
+      throw h;
     }
+    try {
+      const v = JSON.parse(metin) as KayitVerisi;
+      if (v?.surum === 1 && v.medya && Array.isArray(v.kullaniciGruplari)) {
+        this.veri = v;
+        return;
+      }
+    } catch {
+      // bozuk JSON: aşağıda kenara alınır
+    }
+    const yedek = `${this.dosya}.bozuk-${new Date().toISOString().replace(/[:.]/g, '-')}`;
+    await rename(this.dosya, yedek);
+    this.kurtarilan = yedek;
   }
 
   al(anahtar: string): IslenmisMedya | undefined {

@@ -101,7 +101,7 @@ function kopyalariIsaretle(liste: IslenmisMedya[]): string[] {
 }
 
 export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
-  const { islenecek: dosyalar, esler } = hamEsleriniAyir(await tara(a.girdiler));
+  const { islenecek: dosyalar, esler } = hamEsleriniAyir(await tara(a.girdiler, { haric: [a.calismaKlasoru] }));
   const kayit = new KayitDeposu(join(a.calismaKlasoru, 'kayit.json'));
   await kayit.yukle();
   // Önbellekteki küçük resimler: arayüz dönen yığını baştan gerçek fotoğraflarla doldurur

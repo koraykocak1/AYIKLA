@@ -110,8 +110,18 @@ describe('sunucu', () => {
     const hedef = join(s.kok, 'hedef');
     const r = await s.iste<AktarmaSonucu>({ tur: 'aktar', hedef });
     expect(r).toEqual({ kopyalanan: 2, atlanan: 0, hatalar: [] });
-    expect(await readdir(hedef)).toHaveLength(1); // ikisi de aynı gruba düşer (sahte modelde grup adı önemsiz)
+    expect(await readdir(hedef)).toEqual(['.ayikla-arsiv', expect.any(String)]); // işaret + tek grup (ikisi de aynı gruba düşer)
     expect(s.olaylar().filter((o) => o.tur === 'aktarim').at(-1)).toEqual({ tur: 'aktarim', bitti: 2, toplam: 2 });
+  });
+
+  it('kayıt klasörü kaynağın içindeyse ya da çalışma klasörüyse reddeder ve hiçbir şey yazmaz', async () => {
+    const s = await hazirla();
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    const once = await readdir(s.girdi);
+    await expect(s.iste({ tur: 'aktar', hedef: join(s.girdi, 'Ayiklanmis') })).rejects.toThrow(/içinde olamaz/);
+    await expect(s.iste({ tur: 'aktar', hedef: s.kok })).rejects.toThrow(/içine alamaz/);
+    await expect(s.iste({ tur: 'aktar', hedef: join(s.calisma, 'x') })).rejects.toThrow(/çalışma klasörü/);
+    expect(await readdir(s.girdi)).toEqual(once);
   });
 
   it('RAW eşini sayar; klasörlere kaydederken JPG’nin yanına NEF’i de kopyalar', async () => {
@@ -126,7 +136,7 @@ describe('sunucu', () => {
     const hedef = join(s.kok, 'hedef');
     const r = await s.iste<AktarmaSonucu>({ tur: 'aktar', hedef });
     expect(r.kopyalanan).toBe(3); // mavi.jpg + mavi.NEF + video (bulanık elenmiş)
-    const [grup] = await readdir(hedef);
+    const [grup] = (await readdir(hedef)).filter((a) => !a.startsWith('.'));
     const ay = await readdir(join(hedef, grup));
     const dosyalar = (await Promise.all(ay.map(async (y) => Promise.all((await readdir(join(hedef, grup, y))).map((a) => readdir(join(hedef, grup, y, a)))))))
       .flat(2);

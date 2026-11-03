@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { ayikla } from './motor/isci';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './motor/gruplar';
 import { sahneModeliYukle, ingilizceyeCevir } from './motor/sahne-model';
-import { disariAktar } from './motor/disari-aktar';
+import { disariAktar, hedefSorunu } from './motor/disari-aktar';
 import { KayitDeposu } from './motor/kayit';
 
 const ELEME_ADI = { kopya: 'Elenecek › Kopya', bulanik: 'Elenecek › Bulanık', karanlik: 'Elenecek › Karanlık' } as const;
@@ -65,6 +65,11 @@ async function main() {
   const aktarIndex = secenekler.indexOf('--aktar');
   if (aktarIndex >= 0) {
     const hedef = secenekler[aktarIndex + 1];
+    const sorun = hedefSorunu(hedef, [klasor], calisma);
+    if (sorun) {
+      console.error(`\n${sorun}`);
+      process.exit(1);
+    }
     const ogeler = sonuc
       .filter((m) => !m.eleme)
       .flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, grupAdi: ad(m.grupId), tarih: m.tarih })));

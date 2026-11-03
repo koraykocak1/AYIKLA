@@ -1,0 +1,61 @@
+# AYIKLA — Uygulama Yol Haritası
+
+Tarih: 3 Kasım 2026 · Durum kaynağı: [FEATURE_GAP_MATRIX.md](FEATURE_GAP_MATRIX.md) · Kurallar: [PRODUCT_REQUIREMENTS_130_TR.md](PRODUCT_REQUIREMENTS_130_TR.md)
+
+Sıra: **önce Windows, sonra Mac; telefon ertelendi; ücretsiz açık kaynak yayın.** Kaynak dosya güvenliği hiçbir zaman sonraki faza bırakılmaz. Her görev küçük, testli ve tek commit'tir. Arayüz tasarımı korunur; yeni ekran gerekiyorsa mevcut siyah-sarı sistemle yapılır ve önce kullanıcıya gösterilir.
+
+## Parti 1 — En riskli P0 açıklar (uygulandı, 3 Kasım 2026; commit bekliyor)
+
+Yalnız `src/motor` ve testler; arayüz görünümü değişmez.
+
+| # | Görev | Maddeler | Dosyalar | Bitti sayılması için |
+|---|---|---|---|---|
+| 1.1 | Güvenli kopya: geçici dosya + SHA-256 (kaynak ve kopya) + kaynak değişim kontrolü + atomik bitiş + hata/disk dolunda geçiciyi silme. "Zaten vardı" kararı ad+boyut yerine hash ile | 029, 041, 048, 116 | `disari-aktar.ts`, `tests/disari-aktar.test.ts` | Bozuk/yarım kopya final adla kalmaz; aynı adlı farklı içerik "(2)" olur; sonuçta doğrulanan/atlanan/hata ayrı |
+| 1.2 | Hedef güvenliği: hedef kaynak klasörün içindeyse, kaynak hedefin içindeyse ya da hedef çalışma klasörüyse aktarma reddedilir | 075, 115 | `disari-aktar.ts`, `sunucu.ts`, `cli.ts` | Reddedilen aktarma hiçbir dosya yazmaz; anlaşılır Türkçe hata |
+| 1.3 | Arşiv işareti: hedef köke `.ayikla-arsiv` yazılır; tarayıcı işaretli alt klasörleri, çalışma klasörünü ve Windows sistem klasörlerini atlar; bağlantı (junction/symlink) klasörlerine girmez | 004, 050, 115 | `disari-aktar.ts`, `tarayici.ts`, `isci.ts`, `sunucu.ts` | Kaynak içine konmuş eski bir dışa aktarma klasörü yeniden taranmaz |
+| 1.4 | Bozuk katalog koruması: `kayit.json` okunamazsa önce `kayit.json.bozuk-<zaman>` olarak saklanır, sonra boş kayıtla devam edilir | 041, 058 | `kayit.ts`, `tests/kayit.test.ts` | Bozuk dosya kaybolmaz; kullanıcı düzeltmeleri kurtarılabilir |
+| 1.5 | Kaynak dokunulmazlık testi: tüm akış (ayıkla + dışa aktar) öncesi/sonrası kaynak klasörün dosya listesi ve SHA-256'ları aynı | Kural 1, DoD 1 | `tests/kaynak-korunur.test.ts` | Test geçer |
+
+Parti 1 dışında kalanlar (YAPILMADI): disk alanı ön hesabı (048'in geri kalanı), kalıcı hata günlüğü, arayüzde doğrulanmış sayıların ayrıntılı gösterimi.
+
+## FAZ 1 — Arşiv çekirdeği (P0), Parti 1'den sonra
+
+| # | Görev | Maddeler | Önkoşul | Bitti şartı |
+|---|---|---|---|---|
+| 2 | Model indirme onayı: ilk indirmeden önce boyut, kaynak ve lisansı göster | 055, 073, 081 | — | Onaysız ağ çağrısı yok (test: sahte indirici çağrılmaz) |
+| 3 | Lisans tablosu: tüm bağımlılıklar + model ağırlıkları (`docs/LISANSLAR.md`) | 064, 086, 087 | — | Her paket için kod ve ağırlık lisansı, kaynak, tarih |
+| 4 | SQLite paket seçimi ve katalog modülü; `kayit.json`'dan migration | 058, 070, 107 | 3 | Migration testi: eski JSON → DB, kullanıcı düzeltmeleri korunur |
+| 5 | Arşiv kökü (`.ayikla-arsiv` kimliği), dizin yapısı, tek-yazıcı kilidi | 006, 071, 072, 121 | 4 | İki süreç aynı arşive yazamaz; disk harfi değişince arşiv bulunur |
+| 6 | İçerik adresli içe aktarma (blob + ref sayısı), birebir tekilleştirme | 032, 047, 053 | 1.1, 4, 5 | Aynı bayt 2 kaynak → 1 blob, 2 kaynak yolu |
+| 7 | Geri dönüşüm kutusu + albümden kaldır / sil / kalıcı sil ayrımı | 013, 117 | 6 | 30 gün; paylaşılan blob korunur |
+| 8 | Sanal albüm + temel etiket + klasik arama | 009, 010, 026 | 4 | Bir öğe iki albümde, tek kopya; ad/tarih/tür araması |
+| 9 | Doğrulanmış yedek ve geri yükleme | 015, 080 | 4, 5 | Yedek → geri yükle → katalog + hash aynı |
+| 10 | Arşiv sağlık denetimi (düşük öncelikte, isteğe bağlı) | 130 | 6 | Değiştirilmiş kopya bulunur |
+| 11 | Ayrılmış dosya adları, uzun yol, Unicode NFC | 120 | — | `CON`, 260+ karakter, Türkçe ad testleri |
+| 12 | Uçtan uca kabul testi (talimattaki DoD 1–4) | DoD | 1–11 | Her senaryo geçti / başarısız / çalıştırılamadı diye raporlanır |
+
+## FAZ 2 — Akıllı yerel medya (P1)
+
+Önerilen sıra: AI sonuç sürümü (093) → güven eşiği ve "öneri" gösterimi (037) → metinden yerel arama (CLIP vektörleri zaten var; 089, 010) → bayt-aynı / görsel-benzer ayrımı ve karşılaştırma (007, 036) → renk paleti ve HEX arama (022) → iş kuyruğu, duraklat/sürdür (016, 040, 094) → biçim genişletme TIFF/GIF/CR2/CR3/ARW/DNG/MKV (005, 074, 109) → bulut yer tutucu tespiti (112, 114) → video sahne örnekleme (019, 091) → OCR (020, 088) → etkinlik önerileri (021) → yüz gruplama (008, 095, 096; KVKK incelemesinden sonra).
+
+## FAZ 3 — Profesyonel araçlar ve cihazlar (P2)
+
+Tahribatsız düzenleme ve sürümler (011, 052), puan/favori (035), toplu adlandırma (110), contact sheet (111), gizlilik dışa aktarma profilleri (054), Live Photo ve XMP (051, 109), dış uygulamalar (044), profiller ve gizleme (018, 024, 097, 118), çok dil (065). **Ertelenenler:** telefon/Wi-Fi aktarımı (033, 034), Mac ve çok cihaz senkronu (028, 102, 113).
+
+## FAZ 4 — Uzun ömür ve dağıtım (P3, sürekli)
+
+Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme, güncelleme ve kanallar (059, 077), kaldırıcı politikası (062), imzalama ve imzasız dağıtım uyarıları (100), erişilebilirlik denetimi (067), eklenti sınırları (104).
+
+## İlerleme kaydı
+
+| Tarih | Parti | Sonuç |
+|---|---|---|
+| 2026-11-03 | FAZ 0 belgeleri | Matris 130/130 ve dört belge yazıldı |
+| 2026-11-03 | Parti 1 (1.1–1.5) | Uygulandı. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 23 dosya, 125 test geçti (önce 105); `npm.cmd run derle` temiz. Gerçek arşivde ve uygulama penceresinde denenmedi |
+
+**Parti 1 ayrıntıları ve sınırları**
+- Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
+- Kayıt klasörü kaynağın içinde seçilirse arayüzde mevcut "Kaydedilemedi: …" mesajıyla Türkçe neden görünür.
+- Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
+- Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
+- Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.

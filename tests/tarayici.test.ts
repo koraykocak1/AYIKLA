@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, symlink, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { tara, turBul, hamEsleriniAyir } from '../src/motor/tarayici';
 import { geciciKlasor } from './yardimci';
@@ -37,6 +37,31 @@ describe('tarayici', () => {
     expect(r.islenecek.map((x) => x.yol)).toEqual([jpg, yalniz, baskaKlasor]);
     expect(r.esler.get(jpg)).toEqual([es]);
     expect(r.esler.size).toBe(1);
+  });
+
+  it('AYIKLA’nın kendi dışa aktarma klasörünü, çalışma klasörünü ve sistem klasörlerini taramaz', async () => {
+    const k = await geciciKlasor();
+    for (const alt of ['arsiv', 'calisma', 'AppData', '$RECYCLE.BIN', 'normal']) await mkdir(join(k, alt));
+    await writeFile(join(k, 'arsiv', '.ayikla-arsiv'), '{}');
+    for (const alt of ['arsiv', 'calisma', 'AppData', '$RECYCLE.BIN', 'normal']) await writeFile(join(k, alt, 'a.jpg'), 'x');
+    const sonuc = await tara([k], { haric: [join(k, 'calisma')] });
+    expect(sonuc.map((d) => d.yol)).toEqual([join(k, 'normal', 'a.jpg')]);
+  });
+
+  it('kullanıcı işaretli klasörü doğrudan seçerse taranır', async () => {
+    const k = await geciciKlasor();
+    await writeFile(join(k, '.ayikla-arsiv'), '{}');
+    await writeFile(join(k, 'a.jpg'), 'x');
+    expect(await tara([k])).toHaveLength(1);
+  });
+
+  it('alt klasördeki bağlantıları (junction) izlemez', async () => {
+    const k = await geciciKlasor();
+    await mkdir(join(k, 'gercek'));
+    await writeFile(join(k, 'gercek', 'a.jpg'), 'x');
+    await symlink(join(k, 'gercek'), join(k, 'baglanti'), 'junction');
+    const sonuc = await tara([k]);
+    expect(sonuc.map((d) => d.yol)).toEqual([join(k, 'gercek', 'a.jpg')]);
   });
 
   it('aynı dosya iki kez verilirse bir kez sayar; tek dosya da kabul eder', async () => {

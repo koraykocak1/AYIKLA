@@ -1,10 +1,11 @@
 import { ortalamaRenk } from './renk';
+import { stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { ayikla, yenidenPuanla } from './isci';
 import { tara, hamEsleriniAyir } from './tarayici';
 import { KayitDeposu } from './kayit';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './gruplar';
-import { disariAktar, type AktarmaSonucu } from './disari-aktar';
+import { disariAktar, hedefSorunu, type AktarmaSonucu } from './disari-aktar';
 import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type IsciIstegi, type IsciMesaji, type Sayim } from '../ortak/mesajlar';
 import type { Grup, IslenmisMedya, SahneModeli } from './tipler';
 
@@ -26,6 +27,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
   let modelSozu: Promise<SahneModeli> | null = null;
   let durdurucu: AbortController | null = null;
   let son: IslenmisMedya[] = [];
+  let sonGirdiler: string[] = [];
 
   const olay = (o: ArayuzOlayi) => a.gonder({ tur: 'olay', olay: o });
 
@@ -101,6 +103,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     });
     await zincir;
     son = sonuc;
+    sonGirdiler = girdiler;
     durdurucu = null;
     const durduruldu = durdur.signal.aborted;
     const k = await kayitAc();
@@ -115,7 +118,22 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     return { adet: sonuc.length, durduruldu };
   }
 
+  /** Girdilerden klasör olanlar: hedef bunların içinde ya da onları içine alan bir yer olamaz. */
+  async function kaynakKlasorleri(): Promise<string[]> {
+    const liste: string[] = [];
+    for (const g of sonGirdiler) {
+      try {
+        if ((await stat(g)).isDirectory()) liste.push(g);
+      } catch {
+        // artık olmayan girdi: denetlenecek bir şey yok
+      }
+    }
+    return liste;
+  }
+
   async function aktar(hedef: string): Promise<AktarmaSonucu> {
+    const sorun = hedefSorunu(hedef, await kaynakKlasorleri(), a.calismaKlasoru);
+    if (sorun) throw new Error(sorun);
     const gs = await gruplar();
     const ad = (id: string) => gs.find((g) => g.id === id)?.ad ?? (id === DIGER_ID ? 'Diğer' : id);
     // RAW (NEF) eşleri JPG'nin yanına, aynı klasöre kopyalanır: hiçbir RAW kaybolmaz.
@@ -131,7 +149,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     switch (i.tur) {
       case 'say': {
         void model().catch(() => {}); // kullanıcı "Ayıkla"ya basmadan model ısınsın
-        const { islenecek: d, esler } = hamEsleriniAyir(await tara(i.girdiler));
+        const { islenecek: d, esler } = hamEsleriniAyir(await tara(i.girdiler, { haric: [a.calismaKlasoru] }));
         const sayim: Sayim = {
           foto: d.filter((x) => x.tur === 'foto').length,
           video: d.filter((x) => x.tur === 'video').length,
