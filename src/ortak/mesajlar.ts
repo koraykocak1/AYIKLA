@@ -1,4 +1,5 @@
 import type { IslenmisMedya } from '../motor/tipler';
+import type { ModelPaketi } from '../motor/model-izni';
 
 /** Arayüze giden medya: büyük CLIP vektörü çıkarılır, kartın rengi eklenir. */
 export type ArayuzMedya = Omit<IslenmisMedya, 'vektor'> & { renk: string };
@@ -19,7 +20,17 @@ export type IsciIstegi =
   | { id: number; tur: 'grupTasi'; anahtar: string; grupId: string }
   | { id: number; tur: 'geriAl'; anahtar: string }
   | { id: number; tur: 'sonArsivler' }
-  | { id: number; tur: 'aktar'; hedef: string };
+  | { id: number; tur: 'aktar'; hedef: string }
+  | { id: number; tur: 'modelDurumu' }
+  | { id: number; tur: 'modelIzniVer' };
+
+/** Onay adımı için: indirilecek modeller ve bilgileri (dosya listesi arayüze gitmez). */
+export type ArayuzModelPaketi = Omit<ModelPaketi, 'dosyalar'>;
+export interface ModelDurumuCevabi {
+  indirmeGerekli: boolean;
+  paketler: ArayuzModelPaketi[]; // yalnız diskte eksik olanlar
+  toplamMB: number;
+}
 
 type IdsizIstek<T> = T extends unknown ? Omit<T, 'id'> : never;
 /** Kimliği ana süreç ekler; arayüz kimliksiz gönderir. */
@@ -27,7 +38,7 @@ export type Istek = IdsizIstek<IsciIstegi>;
 
 /** İşçi → ana süreç → arayüz: canlı olaylar */
 export type ArayuzOlayi =
-  | { tur: 'model'; durum: 'yukleniyor' | 'hazir' | 'hata'; cihaz?: string; hata?: string }
+  | { tur: 'model'; durum: 'izinGerekli' | 'yukleniyor' | 'hazir' | 'hata'; cihaz?: string; hata?: string }
   | { tur: 'basladi'; toplam: number; onizlemeler: (string | null)[] }
   | { tur: 'dosya'; medya: ArayuzMedya; sira: number; toplam: number }
   | { tur: 'okunamadi'; yol: string; hata: string }

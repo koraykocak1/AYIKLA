@@ -1,15 +1,34 @@
-import { mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
 import ffmpegYolu from 'ffmpeg-static';
+import { MODEL_PAKETLERI, ModelIzni, type ModelPaketi } from '../src/motor/model-izni';
 
 const calistir = promisify(execFile);
 
 export function geciciKlasor(): Promise<string> {
   return mkdtemp(join(tmpdir(), 'ayikla-test-'));
+}
+
+/** Model dosyalarının yerine boş dosyalar: "modeller zaten inmiş" durumunu taklit eder. */
+export async function sahteModelDosyalari(modelKlasoru: string, paketler: ModelPaketi[] = MODEL_PAKETLERI): Promise<void> {
+  for (const p of paketler) {
+    for (const d of p.dosyalar) {
+      const yol = join(modelKlasoru, p.id, d);
+      await mkdir(dirname(yol), { recursive: true });
+      await writeFile(yol, '');
+    }
+  }
+}
+
+/** Modelleri inmiş sayılan bir izin denetçisi (çoğu sunucu testi model indirmeyle ilgilenmez). */
+export async function inmisModelIzni(calismaKlasoru: string): Promise<ModelIzni> {
+  const modeller = join(calismaKlasoru, 'modeller');
+  await sahteModelDosyalari(modeller);
+  return new ModelIzni(calismaKlasoru, modeller);
 }
 
 function desenVerisi(renk: [number, number, number], tohum: number, b: number): Buffer {

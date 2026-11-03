@@ -52,6 +52,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 |---|---|---|
 | 2026-11-03 | FAZ 0 belgeleri | Matris 130/130 ve dört belge yazıldı |
 | 2026-11-03 | Parti 1 (1.1–1.5) | Uygulandı. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 23 dosya, 125 test geçti (önce 105); `npm.cmd run derle` temiz. Gerçek arşivde ve uygulama penceresinde denenmedi |
+| 2026-11-03 | FAZ 1 #2–#3 (motor + belge) | Model indirme onayı motorda: onay yoksa ve model diskte eksikse yükleyici çağrılmaz, kütüphanenin ağı kapalı (`model-izni.ts`). Lisans tablosu `docs/LISANSLAR.md`. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 24 dosya, 132 test geçti (önce 125). Gerçek önbellek ağsız açıldı (0 ağ çağrısı). Karşılama ekranına onay adımı eklendi (kullanıcı taslağı onayladı) |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -59,3 +60,10 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #2–#3 ayrıntıları ve sınırları**
+- Modeller zaten indirildiyse hiçbir şey değişmez: onay sorulmaz, onay dosyası yazılmaz, model yalnız diskten açılır.
+- Karşılama: model inmemişse klasör seçilince ayıklama kendiliğinden başlamaz; kürenin altında boyut, kaynak ve lisans gösteren kutu açılır ("İndir ve ayıkla" / "Şimdi değil"). Mevcut stiller (`.altin`, `.ikincil`) kullanıldı. Geliştirme önizlemesinde `?ilk` adresiyle denenir. CLI `--indirmeye-izin-ver` ister.
+- Tarayıcı önizlemesinde kutunun açıldığı ve onayın kaydedildiği görüldü; ekran geçişi gizli panelde animasyon durduğu için izlenemedi (eski akış da aynı). Gerçek Electron penceresinde DENENMEDİ.
+- Gerçek boyut ~610 MB (CLIP) + ~440 MB (çeviri). Ayıklama ekranındaki "~350 MB" metinleri düzeltildi.
+- Lisans riskleri: ffmpeg.exe ve ffprobe.exe GPLv3 (ffprobe 2018 Zeranoe derlemesi, kaynağı belirsiz); opus-mt ağırlıkları CC-BY 4.0 kabul edildi (atıf gerekir); model sürümü sabitlenmedi.

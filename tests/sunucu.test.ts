@@ -8,7 +8,7 @@ import { KayitDeposu } from '../src/motor/kayit';
 import type { ArayuzMedya, ArayuzOlayi, IsciIstegi, IsciMesaji, Istek, Sayim } from '../src/ortak/mesajlar';
 import type { Grup, SahneModeli } from '../src/motor/tipler';
 import type { AktarmaSonucu } from '../src/motor/disari-aktar';
-import { geciciKlasor, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
+import { geciciKlasor, inmisModelIzni, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
 
 // Sahte model: resmin ortalama rengi vektör olur; ana konusu "blue" olan tarifler maviye, diğer her tarif yeşile denk gelir.
 const sahteModel: SahneModeli = {
@@ -31,7 +31,13 @@ async function hazirla(modelYukle: () => Promise<SahneModeli> = async () => saht
   await ornekVideo(join(girdi, 'video.mp4'), 'red');
   const calisma = join(kok, 'calisma');
   const mesajlar: IsciMesaji[] = [];
-  const sunucu = sunucuOlustur({ calismaKlasoru: calisma, modelYukle, cevir: async () => 'blue', gonder: (m) => mesajlar.push(m) });
+  const sunucu = sunucuOlustur({
+    calismaKlasoru: calisma,
+    modelYukle,
+    cevir: async () => 'blue',
+    modelIzni: await inmisModelIzni(calisma),
+    gonder: (m) => mesajlar.push(m),
+  });
   let sira = 0;
   async function iste<T>(i: Istek): Promise<T> {
     const id = ++sira;

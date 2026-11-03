@@ -19,14 +19,16 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 64 |
-| ⬜ Yok | 56 |
+| 🟡 Kısmen | 66 |
+| ⬜ Yok | 54 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
 "Uygulanmış" sayısı düşük ve dürüsttür: dört maddenin ikisi yasak/sınır kuralıdır (şifre yok, telemetri yok).
 
 **Parti 1'den sonra (3 Kasım 2026):** 029, 115, 116 "Yok"tan "Kısmen"e çıktı; 041, 048, 050, 058, 075 aynı durumda kaldı ama açıkları daraldı. Hiçbiri "Uygulanmış" sayılmadı, çünkü kalıcı arşiv ve içe aktarma henüz yok.
+
+**FAZ 1 #2–#3’ten sonra (3 Kasım 2026):** 086 ve 087 "Yok"tan "Kısmen"e çıktı (lisans tablosu `docs/LISANSLAR.md`); 055, 064, 073, 081 "Kısmen" kaldı ama açıkları daraldı: model artık onaysız inmiyor. Karşılama ekranına onay adımı eklendi; paket seçimi, bağlantı geçmişi ve lisans çözümleri eksik olduğu için hiçbiri "Uygulanmış" sayılmadı.
 
 ## Matris
 
@@ -103,7 +105,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 052 | Dosya sürüm geçmişi | ⬜ | — | Tamamı | P2 | 011 | Eski sürüme dönülür |
 | 053 | Köken/provenance | 🟡 | `IslenmisMedya.yol`, `SonArsiv` | Çoklu kaynak yolu, eklenme tarihi, cihaz | P1 | 058 | Kaynak taşınsa da ilk yol kayıtta |
 | 054 | Gizlilik odaklı dışa aktarma | ⬜ | (Kopya birebirdir; EXIF olduğu gibi kalır) | GPS kaldırma profilleri | P1 | 014 | Çıktıda GPS gerçekten yok (okuyarak doğrula) |
-| 055 | Tam çevrimdışı temel işlev | 🟡 | Model indirildikten sonra çevrimdışı çalışır | İlk açılışta model (~350 MB) izin sorulmadan iner | P0 (izin) | 073, 081 | İnternetsiz açılışta anlaşılır mesaj |
+| 055 | Tam çevrimdışı temel işlev | 🟡 | Model indirildikten sonra ağsız çalışır: diskte tamsa `env.allowRemoteModels=false` (`sahne-model.ts`); izinsiz indirme yok (`model-izni.ts`, FAZ 1 #2) | Karşılama onay adımı eklendi (`Karsilama.tsx`); internetsiz ilk açılışta ayrı bir mesaj YAPILMADI (indirme hatası mevcut "Ayıklama başlatılamadı" kutusunda görünür) | P0 (izin) | 073, 081 | `tests/model-izni.test.ts`: modeller inmişse yükleyici ağsız çağrılır ✅; gerçek önbellekte 0 ağ çağrısıyla açıldı ✅ |
 | 056 | Klavye kısayolları | 🟡 | `BuyukGorunum.tsx` ←/→/Esc; `Sonuc.tsx` Esc | Seçim, puan, geri al kısayolu yok | P2 | 035 | Kısayollar Win/Mac'e uygun |
 | 057 | Kayıtlı aramalar | ⬜ | — | Tamamı | P1 | 010 | Kayıtlı arama yeni dosyayı içerir |
 | 058 | Güvenli yerel katalog (SQLite) | 🟡 | `kayit.ts` JSON, atomik yazma, bozuk kayıt kenara alınır (Parti 1) | SQLite, şema, migration, online backup YAPILMADI | P0 | — | Bozuk katalog veri kaybettirmez ✅; migration testi |
@@ -112,7 +114,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 061 | Yerel hata günlüğü | 🟡 | `okunamadi` olayı (yalnız bellekte) | Kalıcı günlük, hata kodu, yol redaksiyonu | P1 | — | Günlükte tam kişisel yol yok |
 | 062 | Kaldırmada arşiv koruma | ⬜ | Kurulum paketi yok | Kaldırıcı politikası | P3 | 059 | Kaldırma arşivi silmez |
 | 063 | Modüler AI | 🟡 | `SahneModeli` arayüzü (`tipler.ts`); model hatası `model:hata` olayı | Modüller ayrı açılıp kapanmıyor | P1 | 092 | Model çökünce galeri çalışır |
-| 064 | Maliyetsiz + lisans uygunluğu | 🟡 | Ücretli servis yok | Lisans denetimi yapılmadı (ffmpeg-static ikililerinin GPL yapısı, opus-mt CC-BY ataması doğrulanmalı) | P0 (yayın öncesi) | 086 | Lisans tablosu eksiksiz |
+| 064 | Maliyetsiz + lisans uygunluğu | 🟡 | Ücretli servis yok; lisans tablosu `docs/LISANSLAR.md` (FAZ 1 #3) | Açık riskler: ffmpeg.exe ve ffprobe.exe GPLv3 (ffprobe kaynağı belirsiz), opus-mt ağırlık lisansı çelişkili (CC-BY 4.0 kabul edildi, atıf gerekir), `dxil.dll` lisansı doğrulanmadı | P0 (yayın öncesi) | 086 | Lisans tablosu var; "doğrulanmadı" kalemleri açık |
 | 065 | Çok dil (TR + EN) | 🟡 | Arayüz yalnız Türkçe; `ingilizceyeCevir` | Dil sistemi (i18n) yok | P2 | — | Dil değişince tüm metinler değişir |
 | 066 | İlk kullanım sihirbazı | ⬜ | `Karsilama.tsx` doğrudan klasör ister | Arşiv konumu, AI paket onayı | P1 | 006, 073 | Sihirbaz kısa; atlanabilir |
 | 067 | Erişilebilirlik | 🟡 | `MotionConfig reducedMotion="user"`, `prefers-reduced-motion`, bazı `aria-label` | Yazı ölçekleme, tam klavye, ekran okuyucu denetimi | P2 | — | Klavyeyle uçtan uca akış |
@@ -126,7 +128,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 070 | SQLite ve WAL sınırları | ⬜ | (SQLite yok) | Ağ paylaşımında DB açmayı engelle | P0 (SQLite ile) | 058 | Ağ yolundaki DB reddedilir |
 | 071 | Mantıksal arşiv dizini | ⬜ | `~/.ayikla/{kayit.json,onizleme,modeller}` çalışma klasörü | Arşiv kökünde katalog/medya/önizleme/yedek ayrımı | P0 | 006 | Arşiv kökü yapısı belgelenmiş |
 | 072 | Tek-yazıcı arşiv | ⬜ | — | Kilit dosyası, bayat kilit kurtarma | P0 | 071 | İki pencere aynı arşive yazamaz |
-| 073 | İsteğe bağlı AI paketleri | 🟡 | `sahne-model.ts` CLIP + opus-mt ilk kullanımda iner | Seçim, boyut/lisans gösterimi, onay | P1 | 092 | Paket seçilmeden indirme yok |
+| 073 | İsteğe bağlı AI paketleri | 🟡 | `model-izni.ts`: CLIP ve opus-mt paket tanımı (boyut, kaynak, kod/ağırlık lisansı), `model-izni.json` onayı; `sunucu.ts` onaysız yükleyiciyi çağırmaz (`modelDurumu`/`modelIzniVer` istekleri) | Karşılama ekranında onay adımı var (boyut, kaynak, lisans; "İndir ve ayıkla" / "Şimdi değil"). Paket başına seçim yok (tek onay ikisini kapsar); onayı geri alma ekranı yok | P1 | 092 | `tests/model-izni.test.ts`: onaysız sahte indirici çağrılmaz ✅ |
 | 074 | Medya format motoru | 🟡 | `ffmpeg.ts`, `ham.ts`, `onizleme.ts` (sharp, heic-convert) | Biçim listesi testi, codec lisansı | P1 | 005, 086 | Her biçim için okuma testi |
 | 075 | En az ayrıcalıkla erişim | 🟡 | `ana.ts` IPC izin listesi, `izinliDosyalar`, `contextIsolation`, `sandbox`; `sunucu.ts`/`cli.ts` `hedefSorunu` kaynak içine yazmayı reddeder (Parti 1) | İzinli klasör listesi, Mac sandbox YAPILMADI | P1 | 115 | `tests/sunucu.test.ts`: kaynak içine aktarma reddedilir ✅ |
 | 076 | Büyük arşiv testleri | ⬜ | Gerçek deneme: 1.738 dosya (not dosyası) | 10k–500k ölçüm | P3 | 045 | Ölçüm raporu |
@@ -134,7 +136,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 078 | Telemetri varsayılan kapalı | ✅ | Kodda telemetri yok | — | P0 | — | Ağ izleme: telemetri bağlantısı yok |
 | 079 | API sırları OS kasasında | ⬜ | (BYOK yok) | Electron `safeStorage` / Credential Manager | P2 | 012 | Anahtar düz metin dosyada yok |
 | 080 | Doğrulanabilir yedek | ⬜ | — | Tamamı | P0 | 015 | Bozuk yedek "tamam" görünmez |
-| 081 | Ağ bağlantısı görünürlüğü | 🟡 | Tek ağ çıkışı: HuggingFace model indirme (`@huggingface/transformers`) | Bağlantı geçmişi, onay | P1 | 073 | Bağlantı listesinde yalnız model indirme |
+| 081 | Ağ bağlantısı görünürlüğü | 🟡 | Tek ağ çıkışı HuggingFace model indirme; artık yalnız onayla açılıyor (`env.allowRemoteModels`, `model-izni.ts`) | Bağlantı geçmişi YAPILMADI | P1 | 073 | Gerçek kütüphane testi: izin kapalıyken `env.fetch` çağrılmaz ✅ |
 | 082 | Aşamalı MVP | 🟡 | Ayıklama MVP'si çalışıyor | Arşiv çekirdeği önce gelmeli (yol haritası) | P0 | — | — |
 | 083 | Düşük donanım hedefi | 🟡 | İşlemcide ~86 ms/resim (not dosyası) | 8 GB RAM ölçümü yok | P3 | 090 | 8 GB makinede ölçüm |
 
@@ -144,8 +146,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 |---|---|---|---|---|---|---|---|
 | 084 | Çoklu donanım AI katmanı | 🟡 | `sahne-model.ts` DirectML + işlemci yedeği, `cihazTutarliMi` | macOS Core ML yok (Mac sonra) | P1 | — | Ekran kartı tutarsızsa işlemci (testi var) |
 | 085 | Küçük uzman model paketleri | 🟡 | CLIP ve çeviri ayrı modeller | Paket sistemi yok | P1 | 073 | Kullanılmayan paket RAM'de değil |
-| 086 | Ticari dağıtım lisans denetimi | ⬜ | — | Bağımlılık + ağırlık lisans tablosu | P0 (yayın öncesi) | 064 | Lisans tablosu eksiksiz |
-| 087 | Kod ve ağırlık ayrı lisans | ⬜ | — | Model kaydında lisans alanı | P1 | 092 | Her modelin kod/ağırlık lisansı kayıtlı |
+| 086 | Ticari dağıtım lisans denetimi | 🟡 | `docs/LISANSLAR.md`: doğrudan + dolaylı bağımlılıklar, ffmpeg/ffprobe ikilileri, DirectML, libvips, libheif; kaynak bağlantısı ve tarih (2026-11-03) | Paketle birlikte `THIRD_PARTY_NOTICES`, GPL kaynak teklifi, ffprobe değişimi YAPILMADI | P0 (yayın öncesi) | 064 | Lisans tablosu var (açık kalemler belgede işaretli) |
+| 087 | Kod ve ağırlık ayrı lisans | 🟡 | `model-izni.ts` `ModelPaketi.kodLisansi`/`agirlikLisansi`/`atif`; `docs/LISANSLAR.md` bölüm 4 | Model sürümü (revision) sabitlenmedi; opus-mt ağırlık lisansı kaynaklar arasında çelişkili | P1 | 092 | Her modelin kod/ağırlık lisansı kayıtlı ✅ |
 | 088 | İki katmanlı OCR | ⬜ | — | Tamamı | P1 | 020 | Düşük güvende ikinci motor |
 | 089 | Yerel semantik arama | 🟡 | CLIP vektörleri zaten `kayit.json`'da | Metinden arama arayüzü, indeks | P1 | 010 | "kumsalda köpek" yerel sonuç verir |
 | 090 | Donanım benchmark | ⬜ | — | Tamamı | P3 | 076 | Ölçülmemiş hız ilan edilmez |

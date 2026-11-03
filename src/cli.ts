@@ -5,24 +5,38 @@ import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './motor/gruplar';
 import { sahneModeliYukle, ingilizceyeCevir } from './motor/sahne-model';
 import { disariAktar, hedefSorunu } from './motor/disari-aktar';
 import { KayitDeposu } from './motor/kayit';
+import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzni } from './motor/model-izni';
 
 const ELEME_ADI = { kopya: 'Elenecek › Kopya', bulanik: 'Elenecek › Bulanık', karanlik: 'Elenecek › Karanlık' } as const;
 
 async function main() {
   const [klasor, ...secenekler] = process.argv.slice(2);
   if (!klasor) {
-    console.log('Kullanım: npm run ayikla -- "<klasör>" [--grup "Araba"] [--aktar "<hedef klasör>"]');
+    console.log('Kullanım: npm run ayikla -- "<klasör>" [--grup "Araba"] [--aktar "<hedef klasör>"] [--indirmeye-izin-ver]');
     process.exit(1);
   }
   const calisma = join(homedir(), '.ayikla');
   const modeller = join(calisma, 'modeller');
+  const izin = new ModelIzni(calisma, modeller);
+  if (secenekler.includes('--indirmeye-izin-ver')) await izin.ver();
+  const durum = await izin.durum();
+  if (durum.indirmeGerekli) {
+    // Onaysız indirme yok: ne ineceğini göster, onayı komutla iste
+    console.log('Yapay zekâ modelleri bu bilgisayarda yok. İnternetten bir kez inmeleri gerekiyor:');
+    for (const p of durum.eksik) {
+      console.log(`  • ${p.ad} — ~${p.boyutMB} MB — ${p.gorev}`);
+      console.log(`    Kaynak: ${p.kaynak} (HuggingFace) · Lisans: kod ${p.kodLisansi}, ağırlık ${p.agirlikLisansi}`);
+    }
+    console.log('Onaylıyorsan aynı komutu --indirmeye-izin-ver ile yeniden çalıştır.');
+    process.exit(1);
+  }
 
   const kayit = new KayitDeposu(join(calisma, 'kayit.json'));
   await kayit.yukle();
   const grupIndex = secenekler.indexOf('--grup');
   if (grupIndex >= 0) {
     const ad = secenekler[grupIndex + 1];
-    const ing = await ingilizceyeCevir(ad, modeller);
+    const ing = await ingilizceyeCevir(ad, modeller, await izin.uzaktanIzin(CEVIRI_PAKETI));
     console.log(`Yeni grup: ${ad} (yapay zekâ için: "${ing}")`);
     const yeni = kullaniciGrubu(ad, ing);
     kayit.veri.kullaniciGruplari = [...kayit.veri.kullaniciGruplari.filter((g) => g.id !== yeni.id), yeni];
@@ -30,8 +44,9 @@ async function main() {
   }
   const gruplar = [...HAZIR_GRUPLAR, ...kayit.veri.kullaniciGruplari];
 
-  console.log('Yapay zekâ yükleniyor (ilk seferde ~350 MB iner)…');
-  const model = await sahneModeliYukle(modeller);
+  const uzak = await izin.uzaktanIzin(CLIP_PAKETI);
+  console.log(uzak ? `Yapay zekâ indiriliyor (~${CLIP_PAKETI.boyutMB} MB, bir kez)…` : 'Yapay zekâ yükleniyor…');
+  const model = await sahneModeliYukle(modeller, uzak);
   console.log(`Hazır — çalıştığı yer: ${model.cihaz === 'dml' ? 'ekran kartı' : 'işlemci'}`);
 
   const baslangic = Date.now();

@@ -5,7 +5,7 @@ import { egri, siraliGecikme, sure, yay } from '../hareket';
 import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../api';
 import { bulunduMetni, hataMetni, sayi, sonParca, tarihMetni } from '../mantik/bicim';
-import type { Sayim } from '../../ortak/mesajlar';
+import type { ModelDurumuCevabi, Sayim } from '../../ortak/mesajlar';
 import type { SonArsiv } from '../../motor/tipler';
 
 interface Props {
@@ -33,6 +33,9 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
   const [arsivler, setArsivler] = useState<SonArsiv[]>([]);
 
   const [basliyor, setBasliyor] = useState(false);
+  // Modeller inmemişse ayıklamadan önce indirme onayı istenir (boyut, kaynak, lisans gösterilir)
+  const [onay, setOnay] = useState<ModelDurumuCevabi | null>(null);
+  const [onaylaniyor, setOnaylaniyor] = useState(false);
   const zamanlayici = useRef<number | undefined>(undefined);
   useEffect(() => () => clearTimeout(zamanlayici.current), []);
 
@@ -45,6 +48,7 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
     if (!g.length) return;
     clearTimeout(zamanlayici.current);
     setBasliyor(false);
+    setOnay(null);
     setGirdiler(g);
     setSayim(null);
     setHata(null);
@@ -52,7 +56,7 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
     try {
       const s = await api.say(g);
       setSayim(s);
-      if (kendiliginden && s.foto + s.video > 0) {
+      if (kendiliginden && s.foto + s.video > 0 && (await indirmeSorulmadi())) {
         setBasliyor(true);
         zamanlayici.current = window.setTimeout(() => onBaslat(g, s), OTOMATIK_BASLAMA_MS);
       }
@@ -60,6 +64,33 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
       setHata(hataMetni(h));
     } finally {
       setSayiliyor(false);
+    }
+  }
+
+  /** Model diskteyse true; inmemişse onay kutusunu açar ve false döner. Durum okunamazsa motor yine onaysız indirmez. */
+  async function indirmeSorulmadi(): Promise<boolean> {
+    const d = await api.modelDurumu().catch(() => null);
+    if (d?.indirmeGerekli) {
+      setOnay(d);
+      return false;
+    }
+    return true;
+  }
+
+  async function baslat() {
+    if (!girdiler || !sayim) return;
+    if (await indirmeSorulmadi()) onBaslat(girdiler, sayim);
+  }
+
+  async function indirVeBaslat() {
+    if (!girdiler || !sayim) return;
+    setOnaylaniyor(true);
+    try {
+      await api.modelIzniVer();
+      onBaslat(girdiler, sayim);
+    } catch (h) {
+      setHata(hataMetni(h));
+      setOnaylaniyor(false);
     }
   }
 
@@ -95,7 +126,9 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
   const hazir = !!(girdiler && sayim && sayim.foto + sayim.video > 0);
   const yonerge = ustunde
     ? 'Bırak'
-    : basliyor
+    : onay
+      ? 'Önce yapay zekâ inmeli'
+      : basliyor
       ? 'Ayıklama başlıyor…'
       : hazir
         ? 'Başlamak için ayıkla’ya bas'
@@ -145,10 +178,8 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
           <button
             className={`k-baslat${hazir && !basliyor ? ' hazir' : ''}`}
             aria-label="Ayıkla"
-            disabled={!hazir || basliyor}
-            onClick={() => {
-              if (girdiler && sayim) onBaslat(girdiler, sayim);
-            }}
+            disabled={!hazir || basliyor || onaylaniyor}
+            onClick={() => void baslat()}
           >
             ayıkla
           </button>
@@ -167,6 +198,43 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
                 </p>
               )}
             </motion.div>
+          )}
+        </AnimatePresence>
+        <AnimatePresence>
+          {onay && (
+            <motion.section
+              className="model-onay"
+              aria-label="Yapay zekâ indirme onayı"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 6 }}
+              transition={{ duration: sure.yavas, ease: egri.yumusak }}
+            >
+              <p className="mo-baslik">Ayıklamak için yapay zekâ bir kez internetten iner</p>
+              <p className="soluk">Sonra internetsiz çalışır. Fotoğrafların hiçbir yere gönderilmez.</p>
+              <ul>
+                {onay.paketler.map((p) => (
+                  <li key={p.id}>
+                    <span className="mo-ad">
+                      {p.ad} · {p.gorev.toLocaleLowerCase('tr')}
+                    </span>
+                    <span className="mo-boyut">~{sayi(p.boyutMB)} MB</span>
+                    <span className="mo-ayrinti">
+                      Kaynak: HuggingFace ({p.id}) · Lisans: kod {p.kodLisansi}, ağırlık {p.agirlikLisansi}
+                      {p.id.includes('opus') && ' · yalnız grup eklersen iner'}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              <div className="mo-dugmeler">
+                <button className="ikincil" disabled={onaylaniyor} onClick={() => setOnay(null)}>
+                  Şimdi değil
+                </button>
+                <button className="altin" disabled={onaylaniyor} onClick={() => void indirVeBaslat()}>
+                  {onaylaniyor ? 'Başlıyor…' : 'İndir ve ayıkla'}
+                </button>
+              </div>
+            </motion.section>
           )}
         </AnimatePresence>
         {not && <p className="not">{not}</p>}

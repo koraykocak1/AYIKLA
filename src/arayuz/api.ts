@@ -1,5 +1,5 @@
 import type { AyiklaApi } from '../ana/onyukle';
-import type { ArayuzMedya, ArayuzOlayi, Sayim } from '../ortak/mesajlar';
+import type { ArayuzMedya, ArayuzOlayi, ModelDurumuCevabi, Sayim } from '../ortak/mesajlar';
 import type { Grup, SonArsiv } from '../motor/tipler';
 import type { AktarmaSonucu } from '../motor/disari-aktar';
 
@@ -20,6 +20,8 @@ export const api = {
   grupEkle: (ad: string) => k().istek({ tur: 'grupEkle', ad }) as Promise<{ grup: Grup; sonuc: ArayuzMedya[] }>,
   grupTasi: (anahtar: string, grupId: string) => k().istek({ tur: 'grupTasi', anahtar, grupId }) as Promise<ArayuzMedya>,
   geriAl: (anahtar: string) => k().istek({ tur: 'geriAl', anahtar }) as Promise<ArayuzMedya>,
+  modelDurumu: () => k().istek({ tur: 'modelDurumu' }) as Promise<ModelDurumuCevabi>,
+  modelIzniVer: () => k().istek({ tur: 'modelIzniVer' }) as Promise<ModelDurumuCevabi>,
   sonArsivler: () => k().istek({ tur: 'sonArsivler' }) as Promise<SonArsiv[]>,
   aktarSec: () => k().aktarSec() as Promise<AktarmaSonucu | null>,
   klasorSec: () => k().klasorSec(),

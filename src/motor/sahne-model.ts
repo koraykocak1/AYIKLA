@@ -33,8 +33,17 @@ function sinamaResimleri(): RawImage[] {
   return [new RawImage(egim, b, b, 3), new RawImage(dama, b, b, 3)];
 }
 
-export async function sahneModeliYukle(modelKlasoru: string): Promise<SahneModeli> {
+/**
+ * Kütüphanenin ağa çıkıp çıkamayacağını belirler. Onay yoksa `false`: dosyalar yalnız diskteki önbellekten okunur,
+ * eksik dosya varsa indirme denenmez, hata verilir (bkz. model-izni.ts).
+ */
+function onbellekAyarla(modelKlasoru: string, uzaktanIzin: boolean) {
   env.cacheDir = modelKlasoru;
+  env.allowRemoteModels = uzaktanIzin;
+}
+
+export async function sahneModeliYukle(modelKlasoru: string, uzaktanIzin: boolean): Promise<SahneModeli> {
+  onbellekAyarla(modelKlasoru, uzaktanIzin);
   const islemci = await AutoProcessor.from_pretrained(CLIP);
   const ayirici = await AutoTokenizer.from_pretrained(CLIP);
   type GorselModel = Awaited<ReturnType<typeof CLIPVisionModelWithProjection.from_pretrained>>;
@@ -84,8 +93,8 @@ export async function sahneModeliYukle(modelKlasoru: string): Promise<SahneModel
 }
 
 /** Kullanıcının yazdığı Türkçe grup adını CLIP için İngilizceye çevirir. */
-export async function ingilizceyeCevir(metin: string, modelKlasoru: string): Promise<string> {
-  env.cacheDir = modelKlasoru;
+export async function ingilizceyeCevir(metin: string, modelKlasoru: string, uzaktanIzin: boolean): Promise<string> {
+  onbellekAyarla(modelKlasoru, uzaktanIzin);
   const cevirici = await pipeline('translation', CEVIRI);
   const sonuc = (await cevirici(metin)) as Array<{ translation_text: string }>;
   return sonuc[0]?.translation_text?.replace(/[.!]+$/, '').trim() || metin;

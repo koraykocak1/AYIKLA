@@ -2,6 +2,7 @@ import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { sunucuOlustur } from './motor/sunucu';
 import { sahneModeliYukle, ingilizceyeCevir } from './motor/sahne-model';
+import { ModelIzni } from './motor/model-izni';
 import type { IsciIstegi } from './ortak/mesajlar';
 
 // AYIKLA_CALISMA: denemelerde gerçek önbelleğe dokunmamak için başka bir çalışma klasörü
@@ -10,8 +11,9 @@ const modeller = join(calisma, 'modeller');
 
 const sunucu = sunucuOlustur({
   calismaKlasoru: calisma,
-  modelYukle: () => sahneModeliYukle(modeller),
-  cevir: (metin) => ingilizceyeCevir(metin, modeller),
+  modelYukle: (uzaktanIzin) => sahneModeliYukle(modeller, uzaktanIzin),
+  cevir: (metin, uzaktanIzin) => ingilizceyeCevir(metin, modeller, uzaktanIzin),
+  modelIzni: new ModelIzni(calisma, modeller),
   gonder: (m) => process.parentPort.postMessage(m),
 });
 

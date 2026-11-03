@@ -7,7 +7,7 @@ import { normalize } from '../src/motor/sahne-puan';
 import { dosyaOzeti } from '../src/motor/disari-aktar';
 import type { IsciIstegi, IsciMesaji, Istek, ArayuzMedya } from '../src/ortak/mesajlar';
 import type { SahneModeli } from '../src/motor/tipler';
-import { geciciKlasor, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
+import { geciciKlasor, inmisModelIzni, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
 
 const sahteModel: SahneModeli = {
   cihaz: 'sahte',
@@ -52,6 +52,7 @@ describe('kaynak dosyalar korunur (değiştirilemez kural 1)', () => {
       calismaKlasoru: join(kok, 'calisma'),
       modelYukle: async () => sahteModel,
       cevir: async () => 'blue',
+      modelIzni: await inmisModelIzni(join(kok, 'calisma')),
       gonder: (m) => mesajlar.push(m),
     });
     let sira = 0;

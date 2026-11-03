@@ -1,5 +1,5 @@
 import type { AyiklaApi } from '../ana/onyukle';
-import type { ArayuzMedya, ArayuzOlayi, Istek } from '../ortak/mesajlar';
+import type { ArayuzMedya, ArayuzOlayi, Istek, ModelDurumuCevabi } from '../ortak/mesajlar';
 import type { Grup, SonArsiv } from '../motor/tipler';
 
 /**
@@ -14,6 +14,20 @@ const gruplar: Grup[] = [
 ];
 
 const sonArsivler: SonArsiv[] = [{ girdiler: ['C:\\Örnek\\Telefon'], tarih: new Date().toISOString(), foto: 1240, video: 86 }];
+
+// Adres "?ilk" ile açılırsa modeller inmemiş sayılır: onay adımı denenir
+let sahteIzin = false;
+function sahteModelDurumu(): ModelDurumuCevabi {
+  if (!location.search.includes('ilk') || sahteIzin) return { indirmeGerekli: false, paketler: [], toplamMB: 0 };
+  return {
+    indirmeGerekli: true,
+    toplamMB: 1050,
+    paketler: [
+      { id: 'Xenova/clip-vit-base-patch32', ad: 'CLIP ViT-B/32 (OpenAI)', gorev: 'Fotoğrafları sahneye göre tanır', boyutMB: 610, kaynak: 'https://huggingface.co/Xenova/clip-vit-base-patch32', kodLisansi: 'MIT', agirlikLisansi: 'MIT' },
+      { id: 'Xenova/opus-mt-tr-en', ad: 'OPUS-MT Türkçe → İngilizce (Helsinki-NLP)', gorev: 'Kendi eklediğin grup adlarını çevirir', boyutMB: 440, kaynak: 'https://huggingface.co/Xenova/opus-mt-tr-en', kodLisansi: 'MIT', agirlikLisansi: 'CC-BY 4.0 (atıf gerekir)' },
+    ],
+  };
+}
 
 // Sahte ayıklama: motorun olaylarını uydurma dosyalarla, gerçeğe yakın bir hızda yayınlar
 const dinleyiciler = new Set<(o: ArayuzOlayi) => void>();
@@ -86,6 +100,11 @@ export const sahteApi: AyiklaApi = {
         return gruplar;
       case 'sonArsivler':
         return sonArsivler;
+      case 'modelDurumu':
+        return sahteModelDurumu();
+      case 'modelIzniVer':
+        sahteIzin = true;
+        return sahteModelDurumu();
       case 'say':
         return { foto: 1240, video: 86, ham: 0 };
       case 'baslat':

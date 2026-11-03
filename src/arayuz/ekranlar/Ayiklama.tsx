@@ -28,7 +28,7 @@ interface Sayaclar {
 }
 
 interface ModelDurumu {
-  durum: 'yukleniyor' | 'hazir' | 'hata';
+  durum: 'izinGerekli' | 'yukleniyor' | 'hazir' | 'hata';
   cihaz?: string;
   hata?: string;
 }
@@ -143,7 +143,7 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
   const oran = sayac.toplam ? Math.min(1, sayac.taranan / sayac.toplam) : 0;
   const durumMetni =
     model.durum === 'yukleniyor'
-      ? 'Yapay zekâ hazırlanıyor… (ilk açılışta ~350 MB iner)'
+      ? 'Yapay zekâ hazırlanıyor…'
       : calisiyor
         ? `Yapay zekâ ${model.cihaz === 'dml' ? 'ekran kartında' : 'işlemcide'}`
         : '';
@@ -222,7 +222,7 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
       {model.durum === 'hata' && (
         <div className="model-uyari">
           <p className="birakma-baslik">Ayıklama başlatılamadı</p>
-          <p className="soluk">İlk açılışta yapay zekâ modeli internetten bir kez iner (~350 MB). Bağlantını kontrol edip tekrar dene.</p>
+          <p className="soluk">İlk açılışta yapay zekâ modeli internetten bir kez iner (~610 MB). Bağlantını kontrol edip tekrar dene.</p>
           {model.hata && <p className="hata">{model.hata}</p>}
           <button
             className="altin"

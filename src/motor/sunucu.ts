@@ -6,13 +6,17 @@ import { tara, hamEsleriniAyir } from './tarayici';
 import { KayitDeposu } from './kayit';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './gruplar';
 import { disariAktar, hedefSorunu, type AktarmaSonucu } from './disari-aktar';
-import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type IsciIstegi, type IsciMesaji, type Sayim } from '../ortak/mesajlar';
+import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzniGerekliHatasi, type ModelIzni } from './model-izni';
+import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type IsciIstegi, type IsciMesaji, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
 import type { Grup, IslenmisMedya, SahneModeli } from './tipler';
 
 export interface SunucuAyarlari {
   calismaKlasoru: string;
-  modelYukle: () => Promise<SahneModeli>;
-  cevir: (metin: string) => Promise<string>;
+  /** uzaktanIzin false ise model yalnız diskten açılmalı (ağa çıkılmaz). */
+  modelYukle: (uzaktanIzin: boolean) => Promise<SahneModeli>;
+  cevir: (metin: string, uzaktanIzin: boolean) => Promise<string>;
+  /** İndirme onayı: onay yoksa ve model diskte eksikse hiçbir yükleyici çağrılmaz. */
+  modelIzni: ModelIzni;
   gonder: (m: IsciMesaji) => void;
 }
 
@@ -33,18 +37,24 @@ export function sunucuOlustur(a: SunucuAyarlari) {
 
   function model(): Promise<SahneModeli> {
     if (!modelSozu) {
-      olay({ tur: 'model', durum: 'yukleniyor' });
-      modelSozu = a.modelYukle().then(
-        (m) => {
-          olay({ tur: 'model', durum: 'hazir', cihaz: m.cihaz });
-          return m;
-        },
-        (h: unknown) => {
-          modelSozu = null;
-          olay({ tur: 'model', durum: 'hata', hata: hataMetni(h) });
-          throw h;
-        },
-      );
+      modelSozu = a.modelIzni
+        .uzaktanIzin(CLIP_PAKETI)
+        .then((uzak) => {
+          olay({ tur: 'model', durum: 'yukleniyor' });
+          return a.modelYukle(uzak);
+        })
+        .then(
+          (m) => {
+            olay({ tur: 'model', durum: 'hazir', cihaz: m.cihaz });
+            return m;
+          },
+          (h: unknown) => {
+            modelSozu = null;
+            if (h instanceof ModelIzniGerekliHatasi) olay({ tur: 'model', durum: 'izinGerekli' });
+            else olay({ tur: 'model', durum: 'hata', hata: hataMetni(h) });
+            throw h;
+          },
+        );
     }
     return modelSozu;
   }
@@ -145,10 +155,17 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     });
   }
 
+  async function modelDurumu(): Promise<ModelDurumuCevabi> {
+    const d = await a.modelIzni.durum();
+    const paketler = d.eksik.map(({ dosyalar: _d, ...p }) => p);
+    return { indirmeGerekli: d.indirmeGerekli, paketler, toplamMB: paketler.reduce((t, p) => t + p.boyutMB, 0) };
+  }
+
   async function calistir(i: IsciIstegi): Promise<unknown> {
     switch (i.tur) {
       case 'say': {
-        void model().catch(() => {}); // kullanıcı "Ayıkla"ya basmadan model ısınsın
+        // Kullanıcı "Ayıkla"ya basmadan model ısınsın; ama yalnız indirme onayı gerekmiyorsa
+        if (await a.modelIzni.kullanilabilirMi(CLIP_PAKETI)) void model().catch(() => {});
         const { islenecek: d, esler } = hamEsleriniAyir(await tara(i.girdiler, { haric: [a.calismaKlasoru] }));
         const sayim: Sayim = {
           foto: d.filter((x) => x.tur === 'foto').length,
@@ -167,7 +184,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       case 'grupEkle': {
         const ad = i.ad.trim();
         if (!ad) throw new Error('Grup adı boş olamaz');
-        const g = kullaniciGrubu(ad, await a.cevir(ad));
+        const g = kullaniciGrubu(ad, await a.cevir(ad, await a.modelIzni.uzaktanIzin(CEVIRI_PAKETI)));
         const k = await kayitAc();
         k.veri.kullaniciGruplari = [...k.veri.kullaniciGruplari.filter((x) => x.id !== g.id), g];
         await k.kaydet();
@@ -194,6 +211,11 @@ export function sunucuOlustur(a: SunucuAyarlari) {
         return (await kayitAc()).veri.sonArsivler ?? [];
       case 'aktar':
         return aktar(i.hedef);
+      case 'modelDurumu':
+        return modelDurumu();
+      case 'modelIzniVer':
+        await a.modelIzni.ver();
+        return modelDurumu();
     }
   }
 
