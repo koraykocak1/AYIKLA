@@ -74,22 +74,13 @@ export class Katalog {
 
   /** Veritabanını açar, şemayı kurar. Bozuksa (ve `kurtar` true ise) kenara alıp boş bir tane açar. */
   private async ac(kurtar: boolean): Promise<Vt> {
-    if (agYoluMu(this.dosya)) {
-      throw new Error('Katalog ağ klasöründe açılamaz; çalışma klasörü bu bilgisayarın diskinde olmalı.');
-    }
-    await mkdir(dirname(this.dosya), { recursive: true });
-    let vt = new Database(this.dosya);
     try {
-      semaKur(vt);
-      return vt;
+      return await veritabaniAc(this.dosya);
     } catch (h) {
-      vt.close();
       if (!kurtar || !bozukMu(h)) throw h;
     }
     await this.bozukVeritabaniniKenaraAl();
-    vt = new Database(this.dosya);
-    semaKur(vt);
-    return vt;
+    return veritabaniAc(this.dosya);
   }
 
   /** Veritabanını yan dosyalarıyla (-wal, -shm) birlikte kenara alır; hiçbiri silinmez. */
@@ -250,6 +241,25 @@ export class Katalog {
     for (const [anahtar, , metin] of medya) this.yazili.set(anahtar, metin);
     this.yaziliGruplar = gruplar;
     this.yaziliArsivler = arsivler;
+  }
+}
+
+/**
+ * Katalog şemasıyla bir SQLite veritabanı açar (yoksa oluşturur, şemayı kurar ya da günceller).
+ * Ağ yolunda açılmaz. Hem çalışma kataloğu hem arşiv kökündeki katalog bunu kullanır.
+ */
+export async function veritabaniAc(dosya: string): Promise<Vt> {
+  if (agYoluMu(dosya)) {
+    throw new Error('Katalog ağ klasöründe açılamaz; bu bilgisayarın diskinde olmalı.');
+  }
+  await mkdir(dirname(dosya), { recursive: true });
+  const vt = new Database(dosya);
+  try {
+    semaKur(vt);
+    return vt;
+  } catch (h) {
+    vt.close();
+    throw h;
   }
 }
 

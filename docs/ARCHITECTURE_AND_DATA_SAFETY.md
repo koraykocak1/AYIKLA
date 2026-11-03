@@ -74,7 +74,7 @@ Bu ilk şema bilerek dardır: bugünkü `IslenmisMedya` nesnesini olduğu gibi s
 6. Hata ya da disk dolu: geçici dosyayı sil, raporla. Başarı/hata/atlanan sayıları ayrı.
 7. Kaynak hiçbir adımda yazılmaz.
 
-## 5. Hedef: arşiv dizini (YAPILMADI)
+## 5. Arşiv dizini (FAZ 1 #5: motorda var, arayüze bağlanmadı)
 
 ```
 <ArşivKökü>/
@@ -82,12 +82,11 @@ Bu ilk şema bilerek dardır: bugünkü `IslenmisMedya` nesnesini olduğu gibi s
   katalog/ayikla.db        # SQLite (WAL, yalnız yerel disk)
   medya/<sha256[0:2]>/<sha256>.<uzantı>   # içerik adresli tek fiziksel kopya
   onizleme/                # yeniden üretilebilir
-  kutu/                    # geri dönüşüm kutusu (30 gün)
   yedek/                   # doğrulanmış katalog yedekleri
   kilit                    # tek-yazıcı kilidi (cihaz, süreç, zaman)
 ```
 
-Parti 1 bunun yalnız ilk parçasını getirir: dışa aktarma hedefinin köküne `.ayikla-arsiv` işareti yazılır, tarayıcı bu işareti taşıyan alt klasörleri atlar (madde 115). İşaret klasörle birlikte taşındığı için arşiv başka yere taşınsa da dışlama sürer.
+FAZ 1 #5 bu yapıyı `src/motor/arsiv.ts` ile kurar (`arsivOlustur`, `Arsiv.ac`); `kutu/` ayrı klasör olmadı, geri dönüşüm kutusu katalogdaki bir durumdur (bkz. FAZ 1 #7). Parti 1 bunun yalnız ilk parçasını getirmişti: dışa aktarma hedefinin köküne `.ayikla-arsiv` işareti yazılır, tarayıcı bu işareti taşıyan alt klasörleri atlar (madde 115). İşaret klasörle birlikte taşındığı için arşiv başka yere taşınsa da dışlama sürer.
 
 ## 6. Hedef SQLite şeması (YAPILMADI, taslak)
 
@@ -123,7 +122,7 @@ Kurallar: her toplu değişiklik tek transaction; yedek `VACUUM INTO` ya da onli
 
 ## 7. Tek yazıcı ve gizlilik sınırları
 
-- **Tek yazıcı (YAPILMADI):** arşiv kökünde `kilit` dosyası, yalnız yoksa oluşturulur; içinde cihaz adı, süreç kimliği, zaman. Süreç yaşamıyorsa kullanıcıya sorularak bayat kilit kaldırılır.
+- **Tek yazıcı (FAZ 1 #5, `arsiv.ts` `kilitAl`):** arşiv kökünde `kilit` dosyası, yalnız yoksa oluşturulur; içinde cihaz adı, süreç kimliği, zaman ve jeton. Dakikada bir tazelenir. Süreç yaşamıyorsa ya da kilit 5 dakikadır tazelenmemişse bayat sayılır ve yalnız kullanıcı onayıyla kaldırılır. Başka bilgisayarın taze kilidi reddedilir.
 - **Şifre/PIN yok.** "Gizli" yalnız görünüm filtresidir; dosyalar Dosya Gezgini'nden açılabilir ve bu açıkça söylenir.
 - **Ağ:** yalnız model indirme. Hedef: ilk indirmeden önce boyut ve lisansla birlikte onay (055, 073, 081).
 - **API anahtarı (ileride):** Electron `safeStorage` / Windows Credential Manager; düz dosyada ve günlükte yok.

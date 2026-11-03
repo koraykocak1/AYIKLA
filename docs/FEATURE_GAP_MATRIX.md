@@ -19,8 +19,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 67 |
-| ⬜ Yok | 53 |
+| 🟡 Kısmen | 71 |
+| ⬜ Yok | 49 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
@@ -31,6 +31,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 **FAZ 1 #2–#3’ten sonra (3 Kasım 2026):** 086 ve 087 "Yok"tan "Kısmen"e çıktı (lisans tablosu `docs/LISANSLAR.md`); 055, 064, 073, 081 "Kısmen" kaldı ama açıkları daraldı: model artık onaysız inmiyor. Karşılama ekranına onay adımı eklendi; paket seçimi, bağlantı geçmişi ve lisans çözümleri eksik olduğu için hiçbiri "Uygulanmış" sayılmadı.
 
 **FAZ 1 #4’ten sonra (3 Kasım 2026):** katalog artık SQLite (`katalog.db`, `better-sqlite3`); `kayit.json` bir kez aktarılır ve yedek olarak kalır. 070 "Yok"tan "Kısmen"e çıktı (UNC ağ yolu reddedilir); 058 ve 107 "Kısmen" kaldı ama açıkları daraldı: online yedek, ayrıntılı şema ve arşiv manifesti henüz yok. 041’in kanıtı güncellendi.
+
+**FAZ 1 #5’ten sonra (3 Kasım 2026):** arşiv kökü motorda var (`arsiv.ts`): kimlik, dizin yapısı, tek-yazıcı kilidi, disk harfi değişince yeniden bulma. 006, 071, 072, 121 "Yok"tan "Kısmen"e çıktı. Arayüze bağlanmadığı için hiçbiri "Uygulanmış" sayılmadı.
 
 ## Matris
 
@@ -43,7 +45,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 003 | Buluta otomatik fotoğraf yok | ✅ | Kodda bulut API çağrısı yok (`fetch` yalnız `ana.ts`'te yerel dosya için) | Bulut gelirse izin ekranı şart | P0 | 081 | Ağ izleme: tarama/aktarma sırasında dış bağlantı yok |
 | 004 | Esnek tarama + klasör izleme | 🟡 | `motor/tarayici.ts` `tara()` | Seçilen klasör taranır; izleme (watcher) ve sistem klasörü dışlama yok | P0 (dışlama) / P1 (izleme) | 050, 115 | Sistem/arşiv klasörü taranmaz; izlenen klasördeki yeni dosya algılanır |
 | 005 | Çoklu medya biçimi | 🟡 | `tarayici.ts` FOTO/VIDEO, `ham.ts` (.nef), `onizleme.ts` (HEIC) | TIFF, GIF, CR2/CR3/ARW/DNG, MKV, PDF yok; desteklenmeyenler raporlanmıyor | P1 | 074, 049 | Her biçim için örnek dosya; desteklenmeyen sayısı görünür |
-| 006 | Kullanıcı seçtiği arşiv konumu | ⬜ | Arşiv kavramı yok; hedef her aktarmada sorulur (`ana.ts` `aktar-sec`) | Kalıcı arşiv kökü, taşıma, çevrimdışı disk | P0 | 071, 121 | Arşiv kökü değişir, yollar yeniden çözülür |
+| 006 | Kullanıcı seçtiği arşiv konumu | 🟡 | `arsiv.ts` (FAZ 1 #5): `arsivOlustur` boş klasörü arşiv kökü yapar (kimlik `.ayikla-arsiv`), `Arsiv.ac` kilidi alıp kataloğu açar; dolu klasör, kaynağın içi ve ağ yolu reddedilir | Arayüzde arşiv seçimi ve bilinen arşivler listesi, arşivi taşıma, çevrimdışı disk durumu YAPILMADI; dışa aktarma hâlâ her seferinde hedef sorar | P0 | 071, 121 | Arşiv kökü değişir, yollar yeniden çözülür ✅ motor (`tests/arsiv.test.ts`, `arsivBul`); arayüz YAPILMADI |
 | 007 | Aynı / benzer + en iyi kare | 🟡 | `parmakizi.ts` dHash, `isci.ts` `kopyalariIsaretle` | Bayt-aynı ve görsel-benzer ayrılmıyor; karşılaştırma ekranı yok. Otomatik silme yok | P1 | 029, 036 | İki tür ayrı sayılır; öneri kullanıcıca değişebilir |
 | 008 | İsteğe bağlı yerel yüz gruplama | ⬜ | — | Tamamı | P1 | 095, 096, 073 | Varsayılan kapalı; izinsiz yüz modeli yüklenmez |
 | 009 | Çoklu kategori + sanal albüm | 🟡 | `gruplar.ts`, `isci.ts` `grupBelirle` | Bir dosya tek grupta; albüm yok; grup silme/düzenleme yok | P0 (albüm) / P1 | 058 | Bir öğe 2 albümde, diskte tek kopya |
@@ -128,8 +130,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 068 | Çapraz platform teknoloji | ✅ | Electron 45 + React 19 + TS (`package.json`) | Karar: Electron'da kalınır; Tauri geçişi maliyetli, kazancı düşük | — | — | — |
 | 069 | Katmanlı modüler mimari | 🟡 | arayüz ↔ `ana.ts` IPC ↔ `isci.mjs` utilityProcess ↔ `motor/*` | Katalog/medya/AI ayrı modül değil | P1 | 058 | Motor çökünce arayüz açık kalır |
 | 070 | SQLite ve WAL sınırları | 🟡 | `katalog.ts` `agYoluMu`: UNC (`\\sunucu\…`, `\\?\UNC\…`) yolda katalog açılmaz (FAZ 1 #4) | Eşlenmiş ağ sürücüsü (`Z:`) ve bulut eşitleme klasörü anlaşılmıyor | P0 (SQLite ile) | 058 | Ağ yolundaki DB reddedilir ✅ (UNC); eşlenmiş sürücü YAPILMADI |
-| 071 | Mantıksal arşiv dizini | ⬜ | `~/.ayikla/{kayit.json,onizleme,modeller}` çalışma klasörü | Arşiv kökünde katalog/medya/önizleme/yedek ayrımı | P0 | 006 | Arşiv kökü yapısı belgelenmiş |
-| 072 | Tek-yazıcı arşiv | ⬜ | — | Kilit dosyası, bayat kilit kurtarma | P0 | 071 | İki pencere aynı arşive yazamaz |
+| 071 | Mantıksal arşiv dizini | 🟡 | `arsiv.ts` (FAZ 1 #5): `<kök>/{.ayikla-arsiv, katalog/ayikla.db, medya/, onizleme/, yedek/, kilit}`; mimari belgesi bölüm 5 | Ayıklama akışının önizlemeleri ve kataloğu hâlâ `~/.ayikla` çalışma klasöründe; arşive bağlanmadı | P0 | 006 | Arşiv kökü yapısı belgelenmiş ✅; testle kuruluyor ✅ |
+| 072 | Tek-yazıcı arşiv | 🟡 | `arsiv.ts` `kilitAl` (FAZ 1 #5): `kilit` dosyası yalnız yoksa oluşur (cihaz, süreç, zaman, jeton), dakikada bir tazelenir; ölü süreç ya da 5 dakikadır tazelenmemiş kilit "bayat" sayılır ve yalnız onayla (`bayatKilidiKaldir`) kaldırılır; başka cihazın taze kilidi reddedilir | Arayüzde "kilidi kaldır" sorusu YAPILMADI | P0 | 071 | İki süreç aynı arşive yazamaz ✅ (`tests/arsiv.test.ts`, ayrı Node süreciyle) |
 | 073 | İsteğe bağlı AI paketleri | 🟡 | `model-izni.ts`: CLIP ve opus-mt paket tanımı (boyut, kaynak, kod/ağırlık lisansı), `model-izni.json` onayı; `sunucu.ts` onaysız yükleyiciyi çağırmaz (`modelDurumu`/`modelIzniVer` istekleri) | Karşılama ekranında onay adımı var (boyut, kaynak, lisans; "İndir ve ayıkla" / "Şimdi değil"). Paket başına seçim yok (tek onay ikisini kapsar); onayı geri alma ekranı yok | P1 | 092 | `tests/model-izni.test.ts`: onaysız sahte indirici çağrılmaz ✅ |
 | 074 | Medya format motoru | 🟡 | `ffmpeg.ts`, `ham.ts`, `onizleme.ts` (sharp, heic-convert) | Biçim listesi testi, codec lisansı | P1 | 005, 086 | Her biçim için okuma testi |
 | 075 | En az ayrıcalıkla erişim | 🟡 | `ana.ts` IPC izin listesi, `izinliDosyalar`, `contextIsolation`, `sandbox`; `sunucu.ts`/`cli.ts` `hedefSorunu` kaynak içine yazmayı reddeder (Parti 1) | İzinli klasör listesi, Mac sandbox YAPILMADI | P1 | 115 | `tests/sunucu.test.ts`: kaynak içine aktarma reddedilir ✅ |
@@ -193,7 +195,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 118 | Gizleme tüm yüzeylerde | ⬜ | — | Tamamı (şifresiz) | P2 | 018 | Gizli öğe aramada da yok |
 | 119 | Renk profilleri, HDR, yön | 🟡 | `onizleme.ts` `sharp.rotate()` EXIF yönü | ICC/P3/HDR yönetimi | P3 | — | Döndürülmüş fotoğraf doğru yönde |
 | 120 | Dosya adları ve Unicode | 🟡 | `guvenliAd()` yasak karakterler; çakışmada "(n)" | Ayrılmış adlar (CON, NUL), uzun yol, NFC/NFD | P1 | — | `CON` grubu, 260+ karakter yol, Türkçe ad doğru |
-| 121 | Disk harfi değişimi | ⬜ | — | Arşiv kimliğiyle yeniden keşif | P1 | 006, 071 | D: → E: değişince arşiv bulunur |
+| 121 | Disk harfi değişimi | 🟡 | `arsiv.ts` `arsivBul` (FAZ 1 #5): kimlikle önce son yer, sonra aynı yol her diskte, sonra disklerin ilk 2 düzeyi aranır | Bilinen arşivlerin kaydı ve açılışta kendiliğinden yeniden keşif arayüze bağlanmadı | P1 | 006, 071 | D: → E: değişince arşiv bulunur ✅ (`tests/arsiv.test.ts`, klasörlerle taklit; gerçek USB diskle DENENMEDİ) |
 | 122 | Bilinmeyen tarih kaynağı | 🟡 | `tarih.ts` `TarihKaynagi` + `tahmini` | Tüm tarih türlerini ayrı saklama; saat dilimi | P1 | 042 | Tahmini tarih "tahmini" görünür |
 | 123 | Toplu işlemleri geri alma | 🟡 | `geriAl` (tek öğe, eleme) | İşlem günlüğü, toplu geri alma | P1 | 058 | 5.000 öğelik değişiklik tek adımda geri alınır |
 | 124 | Katalog kaybında kurtarma | ⬜ | — | Arşivden yeniden keşif sihirbazı | P1 | 071 | Kayıp katalog dürüst raporlanır |

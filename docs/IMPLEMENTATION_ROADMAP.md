@@ -54,6 +54,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | Parti 1 (1.1–1.5) | Uygulandı. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 23 dosya, 125 test geçti (önce 105); `npm.cmd run derle` temiz. Gerçek arşivde ve uygulama penceresinde denenmedi |
 | 2026-11-03 | FAZ 1 #2–#3 (motor + belge) | Model indirme onayı motorda: onay yoksa ve model diskte eksikse yükleyici çağrılmaz, kütüphanenin ağı kapalı (`model-izni.ts`). Lisans tablosu `docs/LISANSLAR.md`. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 24 dosya, 132 test geçti (önce 125). Gerçek önbellek ağsız açıldı (0 ağ çağrısı). Karşılama ekranına onay adımı eklendi (kullanıcı taslağı onayladı) |
 | 2026-11-03 | FAZ 1 #4 (katalog) | `better-sqlite3` 13.0.3 seçildi (kullanıcı onayı; MIT, hazır ikili, Electron 45 ve Node 26 altında derlemesiz çalıştı). `src/motor/katalog.ts` `kayit.ts`’in yerine geçti, dışa açık davranış aynı. `kayit.json` bir kez aktarılır, silinmez. 058/107 Kısmen kaldı, 070 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 24 dosya, 139 test geçti (önce 132); `npm.cmd run derle` temiz. Gerçek `kayit.json`’un kopyası (1.744 kayıt) Electron altında aktarıldı, sayılar tuttu. Uygulama penceresinde DENENMEDİ |
+| 2026-11-03 | FAZ 1 #5 (arşiv kökü) | `src/motor/arsiv.ts`: `arsivOlustur`, `arsivKimligiOku`, `arsivBul`, `kilitAl`/`kilitDurumu`, `Arsiv.ac`/`kapat`; `katalog.ts`'e `veritabaniAc` eklendi (davranış aynı). 006, 071, 072, 121 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 25 dosya, 148 test geçti (önce 139). İki süreç testi ayrı bir Node süreciyle yapıldı. Gerçek USB diskte ve uygulama penceresinde DENENMEDİ; arayüze bağlanmadı |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -61,6 +62,14 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #5 ayrıntıları ve sınırları**
+- Arşiv yalnız boş (ya da olmayan) klasörde kurulur; içinde dosya olan klasör reddedilir, hiçbir şey yazılmaz. Parti 1'in dışa aktarma işareti (kimliksiz `.ayikla-arsiv`) arşiv sayılmaz.
+- Kimlik dosyası: `{uygulama, tur: "arsiv", surum: 1, kimlik: <UUID>, ad, olusturma}`. Daha yeni sürümün arşivi açılmaz.
+- Kilit: `kilit` dosyası `wx` ile (yalnız yoksa) yazılır, dakikada bir tazelenir. Ölü süreç, 5 dakikadır tazelenmemiş kilit ya da yarım yazılmış kilit "bayat" sayılır; kullanıcıya sorulmadan kaldırılmaz (`bayatKilidiKaldir`). Başka bilgisayarın taze kilidi doğrulanamadığı için reddedilir. Bırakırken yalnız kendi jetonunu taşıyan kilit silinir.
+- Disk harfi: `arsivBul` önce son yere, sonra aynı yola her diskte, sonra disklerin ilk 2 klasör düzeyine bakar; `Windows`, `Program Files` vb. atlanır. Aynı kimlikte birden çok klasör varsa hepsi döner (seçim kullanıcıda).
+- Arayüz bağlantısı (arşiv seç, bilinen arşivler, "kilidi kaldır" sorusu) YAPILMADI; taslak onayı bekliyor. Ayıklama akışı hâlâ `~/.ayikla` çalışma klasörünü kullanıyor.
+- Gerçek USB disk ve iki ayrı uygulama penceresiyle DENENMEDİ (iki süreç testi Node ile).
 
 **FAZ 1 #4 ayrıntıları ve sınırları**
 - Katalog yeri: `~/.ayikla/katalog.db` (çalışırken yanında `-wal`, `-shm`). Eski `kayit.json` olduğu yerde kalır; programın yeni sürümü onu bir daha okumaz.
