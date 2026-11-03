@@ -19,8 +19,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 75 |
-| ⬜ Yok | 45 |
+| 🟡 Kısmen | 77 |
+| ⬜ Yok | 43 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
@@ -38,6 +38,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 
 **FAZ 1 #7’den sonra (3 Kasım 2026):** geri dönüşüm kutusu motorda var (`arsiv-kutu.ts`). 013 ve 117 "Yok"tan "Kısmen"e çıktı.
 
+**FAZ 1 #8’den sonra (3 Kasım 2026):** sanal albüm, hiyerarşik etiket ve klasik arama motorda var (`arsiv-album.ts`, şema 3). 010 ve 026 "Yok"tan "Kısmen"e çıktı; 009 ve 117 "Kısmen" kaldı ama açıkları daraldı.
+
 ## Matris
 
 ### A. Ürün hedefi, içe aktarma, sınıflandırma (001–010)
@@ -52,8 +54,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 006 | Kullanıcı seçtiği arşiv konumu | 🟡 | `arsiv.ts` (FAZ 1 #5): `arsivOlustur` boş klasörü arşiv kökü yapar (kimlik `.ayikla-arsiv`), `Arsiv.ac` kilidi alıp kataloğu açar; dolu klasör, kaynağın içi ve ağ yolu reddedilir | Arayüzde arşiv seçimi ve bilinen arşivler listesi, arşivi taşıma, çevrimdışı disk durumu YAPILMADI; dışa aktarma hâlâ her seferinde hedef sorar | P0 | 071, 121 | Arşiv kökü değişir, yollar yeniden çözülür ✅ motor (`tests/arsiv.test.ts`, `arsivBul`); arayüz YAPILMADI |
 | 007 | Aynı / benzer + en iyi kare | 🟡 | `parmakizi.ts` dHash, `isci.ts` `kopyalariIsaretle` | Bayt-aynı ve görsel-benzer ayrılmıyor; karşılaştırma ekranı yok. Otomatik silme yok | P1 | 029, 036 | İki tür ayrı sayılır; öneri kullanıcıca değişebilir |
 | 008 | İsteğe bağlı yerel yüz gruplama | ⬜ | — | Tamamı | P1 | 095, 096, 073 | Varsayılan kapalı; izinsiz yüz modeli yüklenmez |
-| 009 | Çoklu kategori + sanal albüm | 🟡 | `gruplar.ts`, `isci.ts` `grupBelirle` | Bir dosya tek grupta; albüm yok; grup silme/düzenleme yok | P0 (albüm) / P1 | 058 | Bir öğe 2 albümde, diskte tek kopya |
-| 010 | Birleşik arama | ⬜ | — | Ad/tarih/tür araması ve AI araması yok | P0 (klasik) / P1 (AI) | 058, 089 | "2024 deniz" sorgusu doğru sonuç verir |
+| 009 | Çoklu kategori + sanal albüm | 🟡 | `gruplar.ts`, `isci.ts` `grupBelirle`; arşivde sanal albüm `arsiv-album.ts` (FAZ 1 #8): `albumOlustur/albumeEkle/albumdenKaldir/albumSil`, şema 3 `album`, `album_oge` | Ayıklama ekranında bir dosya hâlâ tek grupta; grup silme/düzenleme yok; arayüzde albüm ekranı YAPILMADI | P0 (albüm) / P1 | 058 | Bir öğe 2 albümde, diskte tek kopya ✅ (`tests/arsiv-album.test.ts`) |
+| 010 | Birleşik arama | 🟡 | `arsiv-album.ts` `ara` (FAZ 1 #8): serbest metin (4 haneli sayı = yıl, diğer sözcükler ad/etiket/albümde), tür, tarih aralığı, albüm, etiket alt ağacı; Türkçe büyük/küçük harf | Yapay zekâ ile anlamsal arama (FAZ 2) ve arayüzde arama kutusu YAPILMADI; büyük arşivde hız ölçülmedi | P0 (klasik) / P1 (AI) | 058, 089 | "2024 deniz" sorgusu doğru sonuç verir ✅ klasik (etiket/ad/albümle; görüntüden anlama YAPILMADI) |
 
 ### B. Düzenleme, güvenlik, yedek, akıllı analiz (011–025)
 
@@ -79,7 +81,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 
 | ID | Konu | Durum | Kod referansı | Eksik davranış | Öncelik | Bağımlılık | Test koşulu |
 |---|---|---|---|---|---|---|---|
-| 026 | Otomatik + manuel etiket | ⬜ | (Gruplar etiket değil) | Hiyerarşik ve toplu etiket | P1 | 058 | "Araçlar > Otomobil" filtresi çalışır |
+| 026 | Otomatik + manuel etiket | 🟡 | `arsiv-album.ts` (FAZ 1 #8): elle ve toplu etiket, hiyerarşi `Araçlar > Otomobil` (`etiket.ust_id`), üst etiketle süzme alt etiketleri kapsar; `oge_etiket.kaynak = 'kullanici'` | Otomatik (yapay zekâ) etiket ve arayüz YAPILMADI; etiket silme/yeniden adlandırma yok | P1 | 058 | "Araçlar > Otomobil" filtresi çalışır ✅ (`tests/arsiv-album.test.ts`) |
 | 027 | Tarih/konum düzeltme | 🟡 | `tarih.ts` (6 kaynak, `tahmini` bayrağı) | Kullanıcı düzeltmesi ve konum yok | P1 | 042 | Düzeltme katalogda; kaynak dosya değişmez |
 | 028 | Win/Mac ortak harici SSD + eşitleme | ⛔ | — | Mac sonra (yol haritası) | P2 | 072, 121 | — |
 | 029 | Kopya bütünlüğü SHA-256 | 🟡 | `disari-aktar.ts` `tekDosya`, `dosyaOzeti` (Parti 1) | Dışa aktarmada yapıldı: SHA-256 doğrulama, 1 yeniden deneme, doğrulanmış sayı. İçe aktarma/arşiv için YAPILMADI (arşiv yok) | P0 | 116 | `tests/disari-aktar.test.ts`: bozuk kopya başarılı sayılmaz ✅ |
@@ -116,7 +118,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 055 | Tam çevrimdışı temel işlev | 🟡 | Model indirildikten sonra ağsız çalışır: diskte tamsa `env.allowRemoteModels=false` (`sahne-model.ts`); izinsiz indirme yok (`model-izni.ts`, FAZ 1 #2) | Karşılama onay adımı eklendi (`Karsilama.tsx`); internetsiz ilk açılışta ayrı bir mesaj YAPILMADI (indirme hatası mevcut "Ayıklama başlatılamadı" kutusunda görünür) | P0 (izin) | 073, 081 | `tests/model-izni.test.ts`: modeller inmişse yükleyici ağsız çağrılır ✅; gerçek önbellekte 0 ağ çağrısıyla açıldı ✅ |
 | 056 | Klavye kısayolları | 🟡 | `BuyukGorunum.tsx` ←/→/Esc; `Sonuc.tsx` Esc | Seçim, puan, geri al kısayolu yok | P2 | 035 | Kısayollar Win/Mac'e uygun |
 | 057 | Kayıtlı aramalar | ⬜ | — | Tamamı | P1 | 010 | Kayıtlı arama yeni dosyayı içerir |
-| 058 | Güvenli yerel katalog (SQLite) | 🟡 | `katalog.ts` (FAZ 1 #4): `better-sqlite3`, WAL + `synchronous=FULL`, tek transaction, adım adım şema (sürüm 2'de `blob`/`oge`/`kaynak_yolu`, FAZ 1 #6); `kayit.json` → DB geçişi; bozuk DB ve bozuk JSON kenara alınır | Online backup + `integrity_check` (FAZ 1 #9), albüm/etiket (#8), meta katmanları (`meta_ai`/`meta_kullanici`) YAPILMADI | P0 | — | Bozuk katalog veri kaybettirmez ✅; migration testi ✅ (`tests/katalog.test.ts`) |
+| 058 | Güvenli yerel katalog (SQLite) | 🟡 | `katalog.ts` (FAZ 1 #4): `better-sqlite3`, WAL + `synchronous=FULL`, tek transaction, adım adım şema (sürüm 2'de `blob`/`oge`/`kaynak_yolu`, FAZ 1 #6); `kayit.json` → DB geçişi; bozuk DB ve bozuk JSON kenara alınır | Online backup + `integrity_check` (FAZ 1 #9), meta katmanları (`meta_ai`/`meta_kullanici`) YAPILMADI; sürüm 3'te `album`/`album_oge`/`etiket`/`oge_etiket` (FAZ 1 #8) | P0 | — | Bozuk katalog veri kaybettirmez ✅; migration testi ✅ (`tests/katalog.test.ts`) |
 | 059 | Güvenli güncelleme | ⬜ | `npm run kur` yalnız kısayol | Paketleme, migration öncesi yedek | P3 | 058, 100 | Güncelleme sonrası katalog açılır |
 | 060 | Açık/taşınabilir arşiv | 🟡 | `kayit.json` düz JSON; dışa aktarım normal klasör | Belgelenmiş JSON/CSV dışa aktarma yok | P1 | 058 | Dışa aktarılan JSON başka araçla okunur |
 | 061 | Yerel hata günlüğü | 🟡 | `okunamadi` olayı (yalnız bellekte) | Kalıcı günlük, hata kodu, yol redaksiyonu | P1 | — | Günlükte tam kişisel yol yok |
@@ -195,7 +197,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 114 | Bulut yer tutucuları | ⬜ | — | Windows "yalnız çevrimiçi" özniteliği tespiti; izinsiz indirme yok | P1 | 112 | Yer tutucu "kopyalandı" sayılmaz |
 | 115 | Kendi arşivini taramayı engelle | 🟡 | `disari-aktar.ts` `isaretKoy` + `hedefSorunu`; `tarayici.ts` işaretli klasörü atlar (Parti 1) | Arşiv kökü gelince önizleme/yedek klasörleri de dışlanmalı | P0 | 050, 075 | İşaretli hedef taranmaz ✅; kaynak içine aktarma reddedilir ✅ |
 | 116 | Kopyalama sırasında kaynak değişimi | 🟡 | `disari-aktar.ts`: geçici dosya → önce/sonra stat → SHA-256 → atomik ad (Parti 1) | Değişen sürümü ayrıca kaydetme YAPILMADI | P0 | 029 | `tests/disari-aktar.test.ts`: değişen kaynak kabul edilmez ✅ |
-| 117 | Albümden kaldır ≠ sil | 🟡 | `arsiv-kutu.ts` (FAZ 1 #7): "sil" yalnız kutuya taşır; "kalıcı sil" yalnız kutudaki öğeye uygulanır ve blobu `ref_sayisi` 0'a inmeden silmez | Albümden kaldır katmanı FAZ 1 #8'de; arayüzde üç ayrı düğme YAPILMADI | P0 | 013, 032 | Paylaşılan blob korunur ✅ (`tests/arsiv-kutu.test.ts`); albümden kaldırma #8 |
+| 117 | Albümden kaldır ≠ sil | 🟡 | `arsiv-kutu.ts` (FAZ 1 #7): "sil" yalnız kutuya taşır; "kalıcı sil" yalnız kutudaki öğeye uygulanır ve blobu `ref_sayisi` 0'a inmeden silmez ; `arsiv-album.ts` `albumdenKaldir`/`albumSil` (FAZ 1 #8) yalnız bağı siler | Arayüzde üç ayrı düğme (albümden kaldır / sil / kalıcı sil) YAPILMADI | P0 | 013, 032 | Paylaşılan blob korunur ✅ (`tests/arsiv-kutu.test.ts`); albümden kaldırma arşivden silmez ✅ (`tests/arsiv-album.test.ts`) |
 | 118 | Gizleme tüm yüzeylerde | ⬜ | — | Tamamı (şifresiz) | P2 | 018 | Gizli öğe aramada da yok |
 | 119 | Renk profilleri, HDR, yön | 🟡 | `onizleme.ts` `sharp.rotate()` EXIF yönü | ICC/P3/HDR yönetimi | P3 | — | Döndürülmüş fotoğraf doğru yönde |
 | 120 | Dosya adları ve Unicode | 🟡 | `guvenliAd()` yasak karakterler; çakışmada "(n)" | Ayrılmış adlar (CON, NUL), uzun yol, NFC/NFD | P1 | — | `CON` grubu, 260+ karakter yol, Türkçe ad doğru |

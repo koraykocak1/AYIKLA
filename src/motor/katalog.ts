@@ -17,7 +17,7 @@ export const SON_ARSIV_SINIRI = 8;
 export const KATALOG_ADI = 'katalog.db';
 export const ESKI_KAYIT_ADI = 'kayit.json';
 /** Veritabanı şemasının sürümü (`PRAGMA user_version`). Şema değişince artar, geçişi `semaKur` yapar. */
-export const SEMA_SURUMU = 2;
+export const SEMA_SURUMU = 3;
 
 export function anahtarUret(d: MedyaDosyasi): string {
   return createHash('sha1').update(`${d.yol}|${d.boyut}|${Math.round(d.degisme)}`).digest('hex');
@@ -276,6 +276,45 @@ function semaKur(vt: Vt): void {
   // Her adım kendi transaction'ında: yarıda kesilirse veritabanı bir önceki sürümde kalır.
   if (surum < 1) vt.transaction(() => semaAdimi1(vt))();
   if (surum < 2) vt.transaction(() => semaAdimi2(vt))();
+  if (surum < 3) vt.transaction(() => semaAdimi3(vt))();
+}
+
+/**
+ * Sürüm 3 (FAZ 1 #8): sanal albüm ve hiyerarşik etiket. Albüm ve etiket yalnız bağdır; öğe tek kopyadır.
+ * `ad_kucuk` Türkçe küçük harfle karşılaştırma içindir ("Deniz" ile "deniz" aynı albüm).
+ */
+function semaAdimi3(vt: Vt): void {
+  vt.exec(`
+    CREATE TABLE IF NOT EXISTS album (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ad TEXT NOT NULL,
+      ad_kucuk TEXT NOT NULL UNIQUE,
+      olusturma TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS album_oge (
+      album_id INTEGER NOT NULL REFERENCES album (id) ON DELETE CASCADE,
+      oge_id INTEGER NOT NULL REFERENCES oge (id) ON DELETE CASCADE,
+      eklenme TEXT NOT NULL,
+      PRIMARY KEY (album_id, oge_id)
+    );
+    CREATE INDEX IF NOT EXISTS album_oge_oge ON album_oge (oge_id);
+    CREATE TABLE IF NOT EXISTS etiket (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      ad TEXT NOT NULL,
+      ad_kucuk TEXT NOT NULL,
+      ust_id INTEGER REFERENCES etiket (id) ON DELETE CASCADE
+    );
+    CREATE UNIQUE INDEX IF NOT EXISTS etiket_ad ON etiket (COALESCE(ust_id, 0), ad_kucuk);
+    CREATE TABLE IF NOT EXISTS oge_etiket (
+      oge_id INTEGER NOT NULL REFERENCES oge (id) ON DELETE CASCADE,
+      etiket_id INTEGER NOT NULL REFERENCES etiket (id) ON DELETE CASCADE,
+      kaynak TEXT NOT NULL DEFAULT 'kullanici',
+      eklenme TEXT NOT NULL,
+      PRIMARY KEY (oge_id, etiket_id)
+    );
+    CREATE INDEX IF NOT EXISTS oge_etiket_etiket ON oge_etiket (etiket_id);
+  `);
+  vt.pragma('user_version = 3');
 }
 
 /** Sürüm 2 (FAZ 1 #6): arşivin içerik adresli deposu. Çalışma kataloğunda bu tablolar boş kalır. */

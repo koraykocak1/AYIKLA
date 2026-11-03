@@ -40,9 +40,6 @@ export function kaliciSilinmeTarihi(o: Pick<OgeSatiri, 'silinme'>, gun = KUTU_GU
   return o.silinme ? new Date(Date.parse(o.silinme) + gun * GUN_MS) : null;
 }
 
-/** İki öğe birleşirken (geri almada) öğeye bağlı başka kayıtları taşıyan kancalar; FAZ 1 #8 albüm/etiket ekler. */
-export const birlesmeKancalari: ((a: Arsiv, eskiId: number, yeniId: number) => void)[] = [];
-
 /**
  * Kutudaki öğeleri geri alır. Aynı içerik bu arada yeniden içe alınmışsa (canlı bir öğe varsa) iki öğe olmaz:
  * kutudaki öğenin kaynak yolları canlı öğeye taşınır ve kutudaki kayıt kapanır. Geri alınan (ya da birleşilen)
@@ -54,8 +51,15 @@ export function kutudanGeriAl(a: Arsiv, ogeIdler: number[]): number[] {
   const geriAl = a.vt.prepare('UPDATE oge SET silinme = NULL WHERE id = ?');
   const yollariTasi = a.vt.prepare(`
     INSERT INTO kaynak_yolu (oge_id, yol, boyut, mtime, cihaz, ilk_gorulme, son_gorulme)
-    SELECT ?, yol, boyut, mtime, cihaz, ilk_gorulme, son_gorulme FROM kaynak_yolu WHERE oge_id = ? AND true
+    SELECT ?, yol, boyut, mtime, cihaz, ilk_gorulme, son_gorulme FROM kaynak_yolu WHERE oge_id = ?
     ON CONFLICT(oge_id, yol) DO UPDATE SET ilk_gorulme = MIN(ilk_gorulme, excluded.ilk_gorulme)`);
+  // Albüm ve etiket bağları da canlı öğeye geçer (FAZ 1 #8).
+  const albumleriTasi = a.vt.prepare(
+    'INSERT OR IGNORE INTO album_oge (album_id, oge_id, eklenme) SELECT album_id, ?, eklenme FROM album_oge WHERE oge_id = ?',
+  );
+  const etiketleriTasi = a.vt.prepare(
+    'INSERT OR IGNORE INTO oge_etiket (oge_id, etiket_id, kaynak, eklenme) SELECT ?, etiket_id, kaynak, eklenme FROM oge_etiket WHERE oge_id = ?',
+  );
   const ogeSil = a.vt.prepare('DELETE FROM oge WHERE id = ?');
   const refAzalt = a.vt.prepare('UPDATE blob SET ref_sayisi = ref_sayisi - 1 WHERE sha256 = ?');
 
@@ -71,7 +75,8 @@ export function kutudanGeriAl(a: Arsiv, ogeIdler: number[]): number[] {
         continue;
       }
       yollariTasi.run(hedef, id);
-      for (const k of birlesmeKancalari) k(a, id, hedef);
+      albumleriTasi.run(hedef, id);
+      etiketleriTasi.run(hedef, id);
       ogeSil.run(id);
       refAzalt.run(o.blob_sha256);
       sonuc.push(hedef);

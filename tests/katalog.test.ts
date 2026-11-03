@@ -216,7 +216,7 @@ describe('katalog', () => {
       const vt2 = new Database(dosya, { readonly: true });
       expect(vt2.pragma('user_version', { simple: true })).toBe(SEMA_SURUMU);
       const tablolar = (vt2.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((r) => r.name);
-      expect(tablolar).toEqual(expect.arrayContaining(['medya', 'blob', 'oge', 'kaynak_yolu']));
+      expect(tablolar).toEqual(expect.arrayContaining(['medya', 'blob', 'oge', 'kaynak_yolu', 'album', 'album_oge', 'etiket', 'oge_etiket']));
       vt2.close();
     });
   });

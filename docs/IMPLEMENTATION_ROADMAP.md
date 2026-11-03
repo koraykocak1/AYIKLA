@@ -57,6 +57,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 1 #5 (arşiv kökü) | `src/motor/arsiv.ts`: `arsivOlustur`, `arsivKimligiOku`, `arsivBul`, `kilitAl`/`kilitDurumu`, `Arsiv.ac`/`kapat`; `katalog.ts`'e `veritabaniAc` eklendi (davranış aynı). 006, 071, 072, 121 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 25 dosya, 148 test geçti (önce 139). İki süreç testi ayrı bir Node süreciyle yapıldı. Gerçek USB diskte ve uygulama penceresinde DENENMEDİ; arayüze bağlanmadı |
 | 2026-11-03 | FAZ 1 #6 (içe aktarma) | `src/motor/arsiv-depo.ts` `iceAl`: SHA-256 içerik adresli blob, `ref_sayisi`, öğe ve çoklu kaynak yolu; şema `user_version` 2 (`blob`, `oge`, `kaynak_yolu`) ve 1 → 2 geçiş testi; `disari-aktar.ts` `geciciyeKopyala` dışa açıldı. 032, 047 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 26 dosya, 155 test geçti (önce 148). Gerçek arşivde ve arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #7 (kutu) | `src/motor/arsiv-kutu.ts`: kutuya taşı / geri al / kalıcı sil / 30 günde boşalt; paylaşılan blob `ref_sayisi` > 0 iken silinmez; geri alınan öğe aynı içerikteki canlı öğeyle birleşir. Şema değişmedi (`oge.silinme` #6'da vardı). 013, 117 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 27 dosya, 160 test geçti (önce 155). Arayüzde DENENMEDİ |
+| 2026-11-03 | FAZ 1 #8 (albüm, etiket, arama) | `src/motor/arsiv-album.ts`: sanal albüm, hiyerarşik elle etiket, klasik arama (`ara`); şema `user_version` 3 (`album`, `album_oge`, `etiket`, `oge_etiket`); `arsiv-kutu.ts` geri almada albüm/etiket bağlarını da taşır. 010, 026 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 28 dosya, 165 test geçti (önce 160). Arayüzde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -64,6 +65,13 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #8 ayrıntıları ve sınırları**
+- Albüm ve etiket yalnız bağdır; öğe diskte tek kopya kalır. Albümden kaldırmak ve albümü silmek öğeyi silmez, kutuya taşımaz. Kalıcı silinen öğenin bağları veritabanında kendiliğinden (`ON DELETE CASCADE`) kalkar.
+- Ad karşılaştırması NFC + Türkçe küçük harfle yapılır ("İzmir" = "izmir"). Aramada ayrıca "ı" ile "i" aynı sayılır (ISTANBUL ↔ İstanbul).
+- Arama: 4 haneli sayı (1800–2199) yıl sayılır; diğer her sözcük öğenin adında, etiket yolunda (üst etiketler dahil) ya da albüm adında geçmeli. Sözcük süzmesi bellekte yapılır; büyük arşivde (100 bin+) hız ölçülmedi.
+- Yıl, kaydedilen tarihin UTC hâlinden okunur; yılbaşı gecesi çekilen kare yerel saate göre bir önceki yıla düşebilir.
+- Otomatik (yapay zekâ) etiket, etiket silme/yeniden adlandırma ve arayüzde albüm/etiket/arama ekranı YAPILMADI.
 
 **FAZ 1 #7 ayrıntıları ve sınırları**
 - Kutu ayrı bir klasör değil, katalogdaki durumdur (`oge.silinme`, ISO tarih). Kutudaki öğenin dosyası `medya/` içinde yerinde kalır; geri almak yalnız bu alanı siler.
