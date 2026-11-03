@@ -1,6 +1,8 @@
-import { mkdir, mkdtemp, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, stat, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
+import { Arsiv, arsivOlustur } from '../src/motor/arsiv';
+import { dosyaOzeti } from '../src/motor/disari-aktar';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import sharp from 'sharp';
@@ -11,6 +13,37 @@ const calistir = promisify(execFile);
 
 export function geciciKlasor(): Promise<string> {
   return mkdtemp(join(tmpdir(), 'ayikla-test-'));
+}
+
+/** Geçici klasörde yeni bir arşiv kurup açar; `kaynak` klasörü arşivin dışındadır. */
+export async function acikArsiv(): Promise<{ a: Arsiv; kok: string; kaynak: string; t: string }> {
+  const t = await geciciKlasor();
+  const kok = join(t, 'Arsiv');
+  const kaynak = join(t, 'Kaynak');
+  await mkdir(kaynak, { recursive: true });
+  await arsivOlustur(kok);
+  return { a: await Arsiv.ac(kok), kok, kaynak, t };
+}
+
+/** Klasördeki her dosyanın yolu → (SHA-256, boyut, mtime). Kaynağın değişmediğini kanıtlamak için. */
+export async function klasorGoruntusu(klasor: string): Promise<Record<string, string>> {
+  const sonuc: Record<string, string> = {};
+  for (const g of await readdir(klasor, { withFileTypes: true, recursive: true })) {
+    if (!g.isFile()) continue;
+    const yol = join(g.parentPath, g.name);
+    const s = await stat(yol);
+    sonuc[relative(klasor, yol)] = `${await dosyaOzeti(yol)}|${s.size}|${s.mtimeMs}`;
+  }
+  return sonuc;
+}
+
+/** Arşivin `medya/` klasöründeki dosyalar, köke göre `/` ile. */
+export async function medyaDosyalari(kok: string): Promise<string[]> {
+  const sonuc: string[] = [];
+  for (const g of await readdir(join(kok, 'medya'), { withFileTypes: true, recursive: true })) {
+    if (g.isFile()) sonuc.push(relative(kok, join(g.parentPath, g.name)).split(sep).join('/'));
+  }
+  return sonuc.sort();
 }
 
 /** Model dosyalarının yerine boş dosyalar: "modeller zaten inmiş" durumunu taklit eder. */

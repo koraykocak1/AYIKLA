@@ -75,8 +75,8 @@ export async function dosyaOzeti(yol: string): Promise<string> {
   return ozet.digest('hex');
 }
 
-/** Kaynağı yalnız okuyarak geçici dosyaya yazar; yazarken kaynağın özetini çıkarır. */
-async function geciciyeKopyala(kaynak: string, gecici: string): Promise<string> {
+/** Kaynağı yalnız okuyarak geçici dosyaya yazar (`wx`: var olanın üzerine yazmaz); yazarken kaynağın özetini çıkarır. */
+export async function geciciyeKopyala(kaynak: string, gecici: string): Promise<string> {
   const ozet = createHash('sha256');
   await pipeline(
     createReadStream(kaynak),

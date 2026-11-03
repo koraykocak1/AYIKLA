@@ -55,6 +55,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 1 #2–#3 (motor + belge) | Model indirme onayı motorda: onay yoksa ve model diskte eksikse yükleyici çağrılmaz, kütüphanenin ağı kapalı (`model-izni.ts`). Lisans tablosu `docs/LISANSLAR.md`. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 24 dosya, 132 test geçti (önce 125). Gerçek önbellek ağsız açıldı (0 ağ çağrısı). Karşılama ekranına onay adımı eklendi (kullanıcı taslağı onayladı) |
 | 2026-11-03 | FAZ 1 #4 (katalog) | `better-sqlite3` 13.0.3 seçildi (kullanıcı onayı; MIT, hazır ikili, Electron 45 ve Node 26 altında derlemesiz çalıştı). `src/motor/katalog.ts` `kayit.ts`’in yerine geçti, dışa açık davranış aynı. `kayit.json` bir kez aktarılır, silinmez. 058/107 Kısmen kaldı, 070 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 24 dosya, 139 test geçti (önce 132); `npm.cmd run derle` temiz. Gerçek `kayit.json`’un kopyası (1.744 kayıt) Electron altında aktarıldı, sayılar tuttu. Uygulama penceresinde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #5 (arşiv kökü) | `src/motor/arsiv.ts`: `arsivOlustur`, `arsivKimligiOku`, `arsivBul`, `kilitAl`/`kilitDurumu`, `Arsiv.ac`/`kapat`; `katalog.ts`'e `veritabaniAc` eklendi (davranış aynı). 006, 071, 072, 121 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 25 dosya, 148 test geçti (önce 139). İki süreç testi ayrı bir Node süreciyle yapıldı. Gerçek USB diskte ve uygulama penceresinde DENENMEDİ; arayüze bağlanmadı |
+| 2026-11-03 | FAZ 1 #6 (içe aktarma) | `src/motor/arsiv-depo.ts` `iceAl`: SHA-256 içerik adresli blob, `ref_sayisi`, öğe ve çoklu kaynak yolu; şema `user_version` 2 (`blob`, `oge`, `kaynak_yolu`) ve 1 → 2 geçiş testi; `disari-aktar.ts` `geciciyeKopyala` dışa açıldı. 032, 047 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 26 dosya, 155 test geçti (önce 148). Gerçek arşivde ve arayüzde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -62,6 +63,15 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #6 ayrıntıları ve sınırları**
+- Aynı içerik bir kez kopyalanır: önce kaynağın SHA-256'sı alınır; blob yoksa geçici dosyaya kopyalanır, kaynak değişmedi mi ve kopyanın özeti tutuyor mu bakılır, sonra içerik adına taşınır. Kaynak yalnız okunur (testte kaynak klasörün özet/boyut/mtime görüntüsü önce ve sonra aynı).
+- Aynı içerik ikinci bir yoldan gelirse yeni öğe oluşmaz; yol `kaynak_yolu`'na eklenir. Aynı yol yeniden gelirse yalnız `son_gorulme` güncellenir.
+- `ref_sayisi`: blobu kullanan öğe sayısı. İçerik yalnız kutudaki bir öğede varsa yeniden içe alınınca yeni öğe açılır ve blob paylaşılır (#7 bunu korur).
+- Çökmeden kalmış kayıtsız dosya aynı içerikteyse kullanılır, farklıysa silinmez, `.bozuk-<zaman>` olarak kenara alınır. Kayıtlı blob yerinde ve boyutu tutuyorsa yeniden okunmaz; sessiz bozulmayı #10 yakalar.
+- Arşivin kendi içinden ve desteklenmeyen türde dosya alınmaz. Disk dolarsa durur.
+- Yalnız ilk aşama (kopya + özet). Tarih okuma, önizleme, yapay zekâ ve arayüzdeki "arşive al" düğmesi YAPILMADI. Ayıklama akışı (`~/.ayikla`) değişmedi.
+- Çalışma kataloğu (`~/.ayikla/katalog.db`) da şema 2'ye geçer; yeni tablolar orada boş kalır.
 
 **FAZ 1 #5 ayrıntıları ve sınırları**
 - Arşiv yalnız boş (ya da olmayan) klasörde kurulur; içinde dosya olan klasör reddedilir, hiçbir şey yazılmaz. Parti 1'in dışa aktarma işareti (kimliksiz `.ayikla-arsiv`) arşiv sayılmaz.

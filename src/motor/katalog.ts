@@ -17,7 +17,7 @@ export const SON_ARSIV_SINIRI = 8;
 export const KATALOG_ADI = 'katalog.db';
 export const ESKI_KAYIT_ADI = 'kayit.json';
 /** Veritabanı şemasının sürümü (`PRAGMA user_version`). Şema değişince artar, geçişi `semaKur` yapar. */
-export const SEMA_SURUMU = 1;
+export const SEMA_SURUMU = 2;
 
 export function anahtarUret(d: MedyaDosyasi): string {
   return createHash('sha1').update(`${d.yol}|${d.boyut}|${Math.round(d.degisme)}`).digest('hex');
@@ -273,8 +273,51 @@ function semaKur(vt: Vt): void {
     throw new Error(`Katalog AYIKLA'nın daha yeni bir sürümüyle yazılmış (şema ${surum}); bu sürüm onu değiştirmez.`);
   }
   if (surum === SEMA_SURUMU) return;
-  vt.transaction(() => {
-    // Sürüm 0 → 1: ilk şema. Medya kaydı JSON olarak tutulur; ayrıntılı şema (blob, öğe, albüm) FAZ 1 #6'da gelir.
+  // Her adım kendi transaction'ında: yarıda kesilirse veritabanı bir önceki sürümde kalır.
+  if (surum < 1) vt.transaction(() => semaAdimi1(vt))();
+  if (surum < 2) vt.transaction(() => semaAdimi2(vt))();
+}
+
+/** Sürüm 2 (FAZ 1 #6): arşivin içerik adresli deposu. Çalışma kataloğunda bu tablolar boş kalır. */
+function semaAdimi2(vt: Vt): void {
+  vt.exec(`
+    CREATE TABLE IF NOT EXISTS blob (
+      sha256 TEXT PRIMARY KEY,
+      boyut INTEGER NOT NULL,
+      yol_goreli TEXT NOT NULL,
+      ref_sayisi INTEGER NOT NULL DEFAULT 0,
+      eklenme TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS oge (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      blob_sha256 TEXT NOT NULL REFERENCES blob (sha256),
+      ad_orijinal TEXT NOT NULL,
+      tur TEXT NOT NULL,
+      tarih TEXT,
+      eklenme TEXT NOT NULL,
+      silinme TEXT,
+      asama TEXT NOT NULL DEFAULT 'kopyalandi'
+    );
+    CREATE INDEX IF NOT EXISTS oge_blob ON oge (blob_sha256);
+    CREATE INDEX IF NOT EXISTS oge_silinme ON oge (silinme);
+    CREATE TABLE IF NOT EXISTS kaynak_yolu (
+      oge_id INTEGER NOT NULL REFERENCES oge (id) ON DELETE CASCADE,
+      yol TEXT NOT NULL,
+      boyut INTEGER NOT NULL,
+      mtime REAL NOT NULL,
+      cihaz TEXT NOT NULL,
+      ilk_gorulme TEXT NOT NULL,
+      son_gorulme TEXT NOT NULL,
+      PRIMARY KEY (oge_id, yol)
+    );
+    CREATE INDEX IF NOT EXISTS kaynak_yolu_yol ON kaynak_yolu (yol);
+  `);
+  vt.pragma('user_version = 2');
+}
+
+/** Sürüm 1: ilk şema. Medya kaydı JSON olarak tutulur. */
+function semaAdimi1(vt: Vt): void {
+  {
     vt.exec(`
       CREATE TABLE IF NOT EXISTS meta (anahtar TEXT PRIMARY KEY, deger TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS medya (
@@ -287,8 +330,8 @@ function semaKur(vt: Vt): void {
       CREATE TABLE IF NOT EXISTS kullanici_grubu (id TEXT PRIMARY KEY, sira INTEGER NOT NULL, veri TEXT NOT NULL);
       CREATE TABLE IF NOT EXISTS son_arsiv (anahtar TEXT PRIMARY KEY, sira INTEGER NOT NULL, veri TEXT NOT NULL);
     `);
-    vt.pragma(`user_version = ${SEMA_SURUMU}`);
-  })();
+    vt.pragma('user_version = 1');
+  }
 }
 
 /** Çalışma klasöründeki kataloğu açar (eski `kayit.json` aynı klasörde aranır). */

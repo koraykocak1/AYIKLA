@@ -19,8 +19,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 71 |
-| ⬜ Yok | 49 |
+| 🟡 Kısmen | 73 |
+| ⬜ Yok | 47 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
@@ -33,6 +33,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 **FAZ 1 #4’ten sonra (3 Kasım 2026):** katalog artık SQLite (`katalog.db`, `better-sqlite3`); `kayit.json` bir kez aktarılır ve yedek olarak kalır. 070 "Yok"tan "Kısmen"e çıktı (UNC ağ yolu reddedilir); 058 ve 107 "Kısmen" kaldı ama açıkları daraldı: online yedek, ayrıntılı şema ve arşiv manifesti henüz yok. 041’in kanıtı güncellendi.
 
 **FAZ 1 #5’ten sonra (3 Kasım 2026):** arşiv kökü motorda var (`arsiv.ts`): kimlik, dizin yapısı, tek-yazıcı kilidi, disk harfi değişince yeniden bulma. 006, 071, 072, 121 "Yok"tan "Kısmen"e çıktı. Arayüze bağlanmadığı için hiçbiri "Uygulanmış" sayılmadı.
+
+**FAZ 1 #6’dan sonra (3 Kasım 2026):** içerik adresli içe aktarma motorda var (`arsiv-depo.ts`, şema 2). 032 ve 047 "Yok"tan "Kısmen"e çıktı; 053, 058, 107 "Kısmen" kaldı ama açıkları daraldı.
 
 ## Matris
 
@@ -81,7 +83,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 029 | Kopya bütünlüğü SHA-256 | 🟡 | `disari-aktar.ts` `tekDosya`, `dosyaOzeti` (Parti 1) | Dışa aktarmada yapıldı: SHA-256 doğrulama, 1 yeniden deneme, doğrulanmış sayı. İçe aktarma/arşiv için YAPILMADI (arşiv yok) | P0 | 116 | `tests/disari-aktar.test.ts`: bozuk kopya başarılı sayılmaz ✅ |
 | 030 | Kural tabanlı klasör dışa aktarımı | 🟡 | `hedefKlasor()` Grup/Yıl/Ay | Başka şablon, özel kural yok | P1 | 014 | "Yıl/Ay/Gün" şablonu doğru klasörü üretir |
 | 031 | Önizleme ve önbellek yönetimi | 🟡 | `onizleme.ts` 384 px, `~/.ayikla/onizleme` | Temizleme, eskimiş cache, alan raporu yok | P1 | — | Cache silinince yeniden üretilir; medya etkilenmez |
-| 032 | Birebir dosyada tekilleştirme | ⬜ | (dHash görsel benzerliktir, bayt eşliği değil) | İçerik hash'iyle tek fiziksel kopya | P1 | 029, 117 | Aynı bayt 2 kaynak → 1 kopya, 2 kaynak yolu |
+| 032 | Birebir dosyada tekilleştirme | 🟡 | `arsiv-depo.ts` `iceAl` (FAZ 1 #6): SHA-256 içerik adresi `medya/<sha[0:2]>/<sha>.<uzantı>`; aynı içerik bir kez kopyalanır, kaynak yolları öğenin altına eklenir (`blob`, `oge`, `kaynak_yolu`, şema 2) | Arayüzde "arşive al" akışı YAPILMADI; ayıklama ekranının kopya işareti hâlâ dHash (görsel benzerlik) | P1 | 029, 117 | Aynı bayt 2 kaynak → 1 kopya, 2 kaynak yolu ✅ (`tests/arsiv-depo.test.ts`) |
 | 033 | Telefon/kamera/SD aktarımı | 🟡 | SD/kamera klasörü normal klasör gibi taranabilir | MTP/PTP, yeni dosya tespiti yok (telefon ertelendi) | P2 | 029 | SD karttan alma kaynakta iz bırakmaz |
 | 034 | QR eşleşmeli Wi-Fi aktarım | ⛔ | — | Telefon desteği ertelendi | P2 | 033 | — |
 | 035 | Yıldız, favori, renk etiketi | ⬜ | — | Tamamı | P1 | 058 | 1.000 öğeye toplu puan tek işlemde |
@@ -101,18 +103,18 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | ID | Konu | Durum | Kod referansı | Eksik davranış | Öncelik | Bağımlılık | Test koşulu |
 |---|---|---|---|---|---|---|---|
 | 046 | Donanıma duyarlı modlar | 🟡 | `sahne-model.ts` ekran kartı/işlemci seçimi | Tasarruf/Dengeli/Performans yok | P2 | 094 | Pil modunda iş hızı düşer |
-| 047 | Aşamalı içe aktarma | ⬜ | (Tek geçişte her şey) | Kopya+hash → metadata → AI aşamaları | P1 | 029, 058 | Kopya bitince galeri açılır, AI sonra |
+| 047 | Aşamalı içe aktarma | 🟡 | `arsiv-depo.ts` `iceAl` (FAZ 1 #6) yalnız ilk aşamayı yapar: doğrulanmış kopya + SHA-256, öğe `asama = 'kopyalandi'` ile kaydedilir | Tarih/önizleme ve yapay zekâ aşamaları arşiv öğelerine bağlanmadı; iş kuyruğu yok (040, 094) | P1 | 029, 058 | Kopya bitince öğe katalogda ✅; "galeri açılır, AI sonra" YAPILMADI |
 | 048 | Kopya öncesi disk alanı | 🟡 | `disari-aktar.ts` ENOSPC'de durur, geçici dosyayı siler (Parti 1) | Önceden alan hesabı ve uyarı YAPILMADI | P0 | 029 | Dolu diskte yarım dosya kalmaz; önceden uyarı |
 | 049 | Bozuk/desteklenmeyen dosya | 🟡 | `isci.ts` `okunamadi` olayı; tek hata taramayı durdurmaz | Desteklenmeyen uzantılar sayılmıyor; rapor ekranı yok | P1 | 005 | Bozuk JPG raporda; tarama sürer |
 | 050 | Hariç tutma kuralları | 🟡 | `tarayici.ts` `klasoreGirilir`: noktayla başlayanlar, sistem klasörleri, AppData, çalışma klasörü, `.ayikla-arsiv` işaretliler, bağlantılar (Parti 1) | Kullanıcı yönetimli kural (uzantı/klasör/boyut) YAPILMADI | P1 | 115 | `tests/tarayici.test.ts` ✅ |
 | 051 | Live Photo eşleri | ⬜ | — | HEIC+MOV ilişkisi | P2 | 109 | İki parça birlikte aktarılır |
 | 052 | Dosya sürüm geçmişi | ⬜ | — | Tamamı | P2 | 011 | Eski sürüme dönülür |
-| 053 | Köken/provenance | 🟡 | `IslenmisMedya.yol`, `SonArsiv` | Çoklu kaynak yolu, eklenme tarihi, cihaz | P1 | 058 | Kaynak taşınsa da ilk yol kayıtta |
+| 053 | Köken/provenance | 🟡 | `IslenmisMedya.yol`, `SonArsiv`; arşivde `kaynak_yolu` (FAZ 1 #6): her öğe için çoklu yol, boyut, mtime, cihaz adı, ilk/son görülme; `oge.eklenme`, `oge.ad_orijinal` (NFC) | Arayüzde köken gösterimi yok; EXIF'teki cihaz/kamera bilgisi kökene yazılmıyor | P1 | 058 | Kaynak taşınsa da ilk yol kayıtta ✅ (yollar silinmez, yalnız eklenir) |
 | 054 | Gizlilik odaklı dışa aktarma | ⬜ | (Kopya birebirdir; EXIF olduğu gibi kalır) | GPS kaldırma profilleri | P1 | 014 | Çıktıda GPS gerçekten yok (okuyarak doğrula) |
 | 055 | Tam çevrimdışı temel işlev | 🟡 | Model indirildikten sonra ağsız çalışır: diskte tamsa `env.allowRemoteModels=false` (`sahne-model.ts`); izinsiz indirme yok (`model-izni.ts`, FAZ 1 #2) | Karşılama onay adımı eklendi (`Karsilama.tsx`); internetsiz ilk açılışta ayrı bir mesaj YAPILMADI (indirme hatası mevcut "Ayıklama başlatılamadı" kutusunda görünür) | P0 (izin) | 073, 081 | `tests/model-izni.test.ts`: modeller inmişse yükleyici ağsız çağrılır ✅; gerçek önbellekte 0 ağ çağrısıyla açıldı ✅ |
 | 056 | Klavye kısayolları | 🟡 | `BuyukGorunum.tsx` ←/→/Esc; `Sonuc.tsx` Esc | Seçim, puan, geri al kısayolu yok | P2 | 035 | Kısayollar Win/Mac'e uygun |
 | 057 | Kayıtlı aramalar | ⬜ | — | Tamamı | P1 | 010 | Kayıtlı arama yeni dosyayı içerir |
-| 058 | Güvenli yerel katalog (SQLite) | 🟡 | `katalog.ts` (FAZ 1 #4): `better-sqlite3`, WAL + `synchronous=FULL`, tek transaction, şema sürümü 1; `kayit.json` → DB geçişi; bozuk DB ve bozuk JSON kenara alınır | Online backup + `integrity_check` (FAZ 1 #9), ayrıntılı şema (blob/öğe/katman/albüm, #6 ve #8) YAPILMADI | P0 | — | Bozuk katalog veri kaybettirmez ✅; migration testi ✅ (`tests/katalog.test.ts`) |
+| 058 | Güvenli yerel katalog (SQLite) | 🟡 | `katalog.ts` (FAZ 1 #4): `better-sqlite3`, WAL + `synchronous=FULL`, tek transaction, adım adım şema (sürüm 2'de `blob`/`oge`/`kaynak_yolu`, FAZ 1 #6); `kayit.json` → DB geçişi; bozuk DB ve bozuk JSON kenara alınır | Online backup + `integrity_check` (FAZ 1 #9), albüm/etiket (#8), meta katmanları (`meta_ai`/`meta_kullanici`) YAPILMADI | P0 | — | Bozuk katalog veri kaybettirmez ✅; migration testi ✅ (`tests/katalog.test.ts`) |
 | 059 | Güvenli güncelleme | ⬜ | `npm run kur` yalnız kısayol | Paketleme, migration öncesi yedek | P3 | 058, 100 | Güncelleme sonrası katalog açılır |
 | 060 | Açık/taşınabilir arşiv | 🟡 | `kayit.json` düz JSON; dışa aktarım normal klasör | Belgelenmiş JSON/CSV dışa aktarma yok | P1 | 058 | Dışa aktarılan JSON başka araçla okunur |
 | 061 | Yerel hata günlüğü | 🟡 | `okunamadi` olayı (yalnız bellekte) | Kalıcı günlük, hata kodu, yol redaksiyonu | P1 | — | Günlükte tam kişisel yol yok |
@@ -176,7 +178,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 104 | Güvenli eklenti mimarisi | ⬜ | (`SahneModeli` arayüzü bir adaptör sınırı) | Sınırlar ve kurallar belgesi | P3 | 063 | — |
 | 105 | Fotoğraftan/bölgeden arama | ⬜ | (Vektörler hazır) | Tamamı | P1 | 089 | Sonuçlar "benzer" etiketli |
 | 106 | Güvenli model kaynağı + hash | ⬜ | HuggingFace'ten sürüm kilidi olmadan iner | Sürüm kilidi, SHA-256 | P1 | 092 | Değiştirilmiş model çalıştırılmaz |
-| 107 | Geleceğe dönük arşiv uyumu | 🟡 | `katalog.ts`: `PRAGMA user_version` şema sürümü, adım adım `semaKur`; eski `kayit.json` aktarılır; daha yeni sürümün kataloğu değiştirilmez (FAZ 1 #4) | Arşiv manifest sürümü (`.ayikla-arsiv`, #5); sürüm 1 → 2 geçişi henüz yazılmadı | P0 | 058 | Eski kayıt yeni sürümde açılır ✅ (`tests/katalog.test.ts`) |
+| 107 | Geleceğe dönük arşiv uyumu | 🟡 | `katalog.ts`: `PRAGMA user_version` şema sürümü, adım adım `semaKur`; eski `kayit.json` aktarılır; daha yeni sürümün kataloğu değiştirilmez (FAZ 1 #4) | Arşiv kimliğinde sürüm var (`.ayikla-arsiv` `surum`, #5); şema 1 → 2 geçişi yazıldı ve test edildi (#6); yeni sürüme geçmeden önce otomatik yedek YAPILMADI | P0 | 058 | Eski kayıt yeni sürümde açılır ✅ (`tests/katalog.test.ts`) |
 | 108 | Artımlı tarama/reanaliz | 🟡 | `anahtarUret` yol+boyut+mtime önbelleği | İçerik hash'i yok; yeniden adlandırma = yeni dosya | P1 | 029 | Yeniden adlandırılan dosya yeniden analiz edilmez |
 | 109 | RAW + JPEG + XMP | 🟡 | `tarayici.ts` `hamEsleriniAyir` (yalnız NEF), `isci.ts` görsel kopya eşi | CR2/ARW/DNG ve XMP yok | P2 | 005 | XMP eşi dışa aktarmada kaybolmaz |
 | 110 | Toplu yeniden adlandırma | ⬜ | (Ad çakışmasında "(2)") | Şablon, önizleme, geri alma | P2 | 123 | Kaynak adları değişmez |

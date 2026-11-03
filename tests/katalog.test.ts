@@ -195,5 +195,29 @@ describe('katalog', () => {
       expect(vt.pragma('user_version', { simple: true })).toBe(SEMA_SURUMU);
       vt.close();
     });
+
+    it('sürüm 1 kataloğu sonraki sürümlere geçer; eski kayıtlar korunur', async () => {
+      const klasor = await geciciKlasor();
+      const dosya = join(klasor, KATALOG_ADI);
+      const vt = new Database(dosya);
+      vt.exec(`
+        CREATE TABLE meta (anahtar TEXT PRIMARY KEY, deger TEXT NOT NULL);
+        CREATE TABLE medya (sira INTEGER PRIMARY KEY AUTOINCREMENT, anahtar TEXT NOT NULL UNIQUE, yol TEXT NOT NULL, veri TEXT NOT NULL);
+        CREATE TABLE kullanici_grubu (id TEXT PRIMARY KEY, sira INTEGER NOT NULL, veri TEXT NOT NULL);
+        CREATE TABLE son_arsiv (anahtar TEXT PRIMARY KEY, sira INTEGER NOT NULL, veri TEXT NOT NULL);
+        INSERT INTO meta VALUES ('json_gecisi', '{"durum":"yok"}');
+      `);
+      vt.prepare('INSERT INTO medya (anahtar, yol, veri) VALUES (?, ?, ?)').run('a', 'C:/a.jpg', JSON.stringify(ornek('a', { elleGrup: 'deniz' })));
+      vt.pragma('user_version = 1');
+      vt.close();
+
+      const d = await katalogAc(klasor);
+      expect(d.al('a')?.elleGrup).toBe('deniz');
+      const vt2 = new Database(dosya, { readonly: true });
+      expect(vt2.pragma('user_version', { simple: true })).toBe(SEMA_SURUMU);
+      const tablolar = (vt2.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all() as { name: string }[]).map((r) => r.name);
+      expect(tablolar).toEqual(expect.arrayContaining(['medya', 'blob', 'oge', 'kaynak_yolu']));
+      vt2.close();
+    });
   });
 });
