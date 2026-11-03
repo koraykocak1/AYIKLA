@@ -31,6 +31,16 @@ export function tarihMetni(iso: string): string {
   return new Date(iso).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 }
 
+/** Kart ve büyük görünüm için: { tarih: '21 EKİM 2024', saat: '20:18' } (yerel saatle). */
+export function tarihSaat(iso: string): { tarih: string; saat: string } {
+  const t = new Date(iso);
+  const iki = (n: number) => String(n).padStart(2, '0');
+  return {
+    tarih: `${t.getDate()} ${ayAdi(t.getMonth() + 1).toLocaleUpperCase('tr')} ${t.getFullYear()}`,
+    saat: `${iki(t.getHours())}:${iki(t.getMinutes())}`,
+  };
+}
+
 const ELEME_ADLARI: Record<ElemeNedeni, string> = { kopya: 'Kopya', bulanik: 'Bulanık', karanlik: 'Karanlık' };
 export function elemeAdi(e: ElemeNedeni): string {
   return ELEME_ADLARI[e];

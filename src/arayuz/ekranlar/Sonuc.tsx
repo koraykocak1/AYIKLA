@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type Dispatch, type SetStateAction } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
+import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
+import { AnimatePresence, motion, useSpring } from 'motion/react';
 import { api } from '../api';
 import { BuyukGorunum } from '../bilesenler/BuyukGorunum';
+import { KartSahnesi, type Gorunum } from '../bilesenler/KartSahnesi';
 import { ELENECEK_ID, duzlestir, grupAdiBul, grupMenusu, menuAnahtari, yilAyGrupla } from '../mantik/gruplama';
-import { ayAdi, elemeAdi, hataMetni, onizlemeAdresi, sayi } from '../mantik/bicim';
-import { egri, siraliGecikme, sure, yay } from '../hareket';
+import { elemeAdi, hataMetni, sayi } from '../mantik/bicim';
+import { egri, sure, yay } from '../hareket';
 import { DIGER_ID } from '../../motor/gruplar';
 import type { ArayuzMedya } from '../../ortak/mesajlar';
 import type { Grup } from '../../motor/tipler';
@@ -17,37 +18,33 @@ interface Props {
   onYeni: () => void;
 }
 
+interface Bilgi {
+  metin: string;
+  geriAl?: () => void;
+}
+
+const UCUS_MS = 560; // taşınan kartın soldaki gruba uçma süresi
+
 export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
   const menu = useMemo(() => grupMenusu(gruplar, medya), [gruplar, medya]);
   const [secili, setSecili] = useState<string>(() => menu[0]?.id ?? DIGER_ID);
   const bolumler = useMemo(() => yilAyGrupla(medya.filter((m) => menuAnahtari(m) === secili)), [medya, secili]);
   const liste = useMemo(() => duzlestir(bolumler), [bolumler]);
-  const sira = useMemo(() => new Map(liste.map((m, i) => [m.anahtar, i])), [liste]);
+  const [gorunum, setGorunum] = useState<Gorunum>('izgara');
   const [buyuk, setBuyuk] = useState<number | null>(null);
   const [acilis, setAcilis] = useState<DOMRect | null>(null);
-  const [cikanlar, setCikanlar] = useState<Set<string>>(new Set());
-  // Kademeli çizim: ilk kartlar hemen, kalanı tarayıcı boşaldıkça (binlerce kartta geçiş takılmasın)
-  const [sinir, setSinir] = useState(120);
-  useEffect(() => {
-    setSinir(120);
-    let iptal = 0;
-    const devam = () => {
-      setSinir((s) => {
-        if (s < liste.length) iptal = requestIdleCallback(devam, { timeout: 200 });
-        return s + 240;
-      });
-    };
-    iptal = requestIdleCallback(devam, { timeout: 200 });
-    return () => cancelIdleCallback(iptal);
-  }, [secili, liste.length]);
+  const [ucanlar, setUcanlar] = useState<Map<string, { x: number; y: number }>>(new Map());
   const [sagTik, setSagTik] = useState<{ x: number; y: number; m: ArayuzMedya } | null>(null);
   const [yeniGrup, setYeniGrup] = useState<string | null>(null);
-  const [bilgi, setBilgi] = useState<string | null>(null);
+  const [bilgi, setBilgi] = useState<Bilgi | null>(null);
   const [aktarim, setAktarim] = useState<{ bitti: number; toplam: number } | null>(null);
+  const grupDugmeleri = useRef(new Map<string, HTMLButtonElement>());
 
   const grupAdi = (id: string) => grupAdiBul(gruplar, id);
   const medyaGrupAdi = (m: ArayuzMedya) => (m.eleme ? `Elenecek › ${elemeAdi(m.eleme)}` : grupAdi(m.grupId));
   const seciliAd = menu.find((g) => g.id === secili)?.ad ?? grupAdi(secili);
+  const yillar = bolumler.map((b) => b.yil);
+  const yilAraligi = yillar.length ? (yillar.length > 1 ? `${Math.min(...yillar)}–${Math.max(...yillar)}` : String(yillar[0])) : '';
 
   useEffect(() => api.olaylariDinle((o) => o.tur === 'aktarim' && setAktarim({ bitti: o.bitti, toplam: o.toplam })), []);
   useEffect(() => {
@@ -57,52 +54,72 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
   }, []);
   useEffect(() => {
     if (!bilgi) return;
-    const t = window.setTimeout(() => setBilgi(null), 5000);
+    const t = window.setTimeout(() => setBilgi(null), 6000);
     return () => window.clearTimeout(t);
   }, [bilgi]);
 
-  /** Kart bu görünümden ayrılıyorsa önce küçülüp solarak çıkar, sonra listeden düşer. */
-  const guncelle = async (yeni: ArayuzMedya) => {
-    if (menuAnahtari(yeni) !== secili) {
-      setCikanlar((s) => new Set(s).add(yeni.anahtar));
-      await new Promise((r) => window.setTimeout(r, sure.normal * 1000));
+  // İmleci yavaşça izleyen soluk sarı ışık
+  const haleX = useSpring(-400, { stiffness: 40, damping: 18 });
+  const haleY = useSpring(-400, { stiffness: 40, damping: 18 });
+  useEffect(() => {
+    const izle = (e: PointerEvent) => {
+      haleX.set(e.clientX);
+      haleY.set(e.clientY);
+    };
+    window.addEventListener('pointermove', izle);
+    return () => window.removeEventListener('pointermove', izle);
+  }, []);
+
+  /** Kart görünümden ayrılıyorsa önce soldaki grubunun üstüne uçar, sonra listede güncellenir. */
+  async function guncelle(yeni: ArayuzMedya) {
+    const hedefId = menuAnahtari(yeni);
+    const dugme = grupDugmeleri.current.get(hedefId);
+    if (hedefId !== secili && dugme) {
+      const k = dugme.getBoundingClientRect();
+      setUcanlar((u) => new Map(u).set(yeni.anahtar, { x: k.left + 24, y: k.top + k.height / 2 }));
+      await new Promise((r) => window.setTimeout(r, UCUS_MS));
     }
     setMedya((l) => l.map((m) => (m.anahtar === yeni.anahtar ? yeni : m)));
-    setCikanlar((s) => {
-      const y = new Set(s);
+    setUcanlar((u) => {
+      const y = new Map(u);
       y.delete(yeni.anahtar);
       return y;
     });
-  };
+  }
 
-  async function tasi(m: ArayuzMedya, grupId: string) {
+  async function tasi(m: ArayuzMedya, grupId: string, geriAlinabilir = true) {
     try {
       await guncelle(await api.grupTasi(m.anahtar, grupId));
-      setBilgi(`“${grupAdi(grupId)}” grubuna taşındı`);
+      const eski = m.grupId;
+      setBilgi({
+        metin: `“${grupAdi(grupId)}” grubuna taşındı`,
+        // Elenecekten taşınan geri alınamaz (eleme nedeni yeniden kurulamaz)
+        geriAl: geriAlinabilir && !m.eleme ? () => void tasi({ ...m, grupId }, eski, false) : undefined,
+      });
     } catch (h) {
-      setBilgi(hataMetni(h));
+      setBilgi({ metin: hataMetni(h) });
     }
   }
 
   async function geriAl(m: ArayuzMedya) {
     try {
       await guncelle(await api.geriAl(m.anahtar));
-      setBilgi(`Geri alındı: “${grupAdi(m.grupId)}” grubunda`);
+      setBilgi({ metin: `Elenmeyecek: “${grupAdi(m.grupId)}” grubuna döndü` });
     } catch (h) {
-      setBilgi(hataMetni(h));
+      setBilgi({ metin: hataMetni(h) });
     }
   }
 
   async function grupEkle(ad: string) {
-    setBilgi('Yapay zekâ yeni grubu öğreniyor ve arşivi yeniden puanlıyor…');
+    setBilgi({ metin: 'Yapay zekâ yeni grubu öğreniyor ve arşivi yeniden puanlıyor…' });
     try {
       const r = await api.grupEkle(ad);
       setGruplar((g) => [...g.filter((x) => x.id !== r.grup.id), r.grup]);
       setMedya(r.sonuc);
       setSecili(r.grup.id);
-      setBilgi(`“${r.grup.ad}” grubu eklendi`);
+      setBilgi({ metin: `“${r.grup.ad}” grubu eklendi` });
     } catch (h) {
-      setBilgi('Grup eklenemedi: ' + hataMetni(h));
+      setBilgi({ metin: 'Grup eklenemedi: ' + hataMetni(h) });
     }
   }
 
@@ -113,50 +130,77 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
       setAktarim(null);
       if (!r) return;
       const disk = r.hatalar.some((h) => /ENOSPC|no space/i.test(h.hata));
-      setBilgi(
-        disk
+      setBilgi({
+        metin: disk
           ? `Disk doldu: ${sayi(r.kopyalanan)} dosya kopyalanabildi.`
           : `${sayi(r.kopyalanan)} dosya kopyalandı · ${sayi(r.atlanan)} zaten vardı${r.hatalar.length ? ` · ${sayi(r.hatalar.length)} hata` : ''}. Orijinaller yerinde duruyor.`,
-      );
+      });
     } catch (h) {
       setAktarim(null);
-      setBilgi('Kaydedilemedi: ' + hataMetni(h));
+      setBilgi({ metin: 'Kaydedilemedi: ' + hataMetni(h) });
     }
   }
 
+  const toplam = medya.length;
+  const kaydediliyor = aktarim && aktarim.bitti < aktarim.toplam;
+
   return (
     <div className="sonuc">
-      <aside className="yan">
-        <div className="yan-ust">
-          <span className="marka-kucuk">AYIKLA</span>
-          <button className="metin-dugme" onClick={onYeni}>
-            Yeni arşiv
-          </button>
-        </div>
+      <motion.div className="s-hale" aria-hidden="true" style={{ x: haleX, y: haleY }} />
+
+      {/* Kaydetme ilerlemesi: üstte ince sarı çizgi */}
+      <div className="a-ilerleme" aria-hidden="true" style={{ opacity: kaydediliyor ? 1 : 0 }}>
+        <motion.div
+          className="a-ilerleme-dolu"
+          animate={{ scaleX: aktarim ? aktarim.bitti / Math.max(1, aktarim.toplam) : 0 }}
+          transition={{ duration: sure.normal, ease: egri.yumusak }}
+        />
+      </div>
+
+      <aside className="s-yan">
+        <p className="k-marka">
+          <span className="k-isaret" aria-hidden="true" />
+          AYIKLA
+        </p>
         <nav>
           {menu.map((g) => (
             <div key={g.id} style={{ display: 'contents' }}>
-              {g.ozel === 'diger' && <div className="ayrac" />}
-              <button
-                className={`grup${g.id === secili ? ' secili' : ''}${g.ozel === 'elenecek' ? ' elenecek' : ''}`}
+              {g.ozel === 'diger' && <div className="s-ayrac" />}
+              <motion.button
+                layout="position"
+                ref={(el) => {
+                  if (el) grupDugmeleri.current.set(g.id, el);
+                  else grupDugmeleri.current.delete(g.id);
+                }}
+                className={`s-grup${g.id === secili ? ' secili' : ''}${g.ozel === 'elenecek' ? ' elenecek' : ''}`}
                 onClick={() => {
                   setSecili(g.id);
                   setBuyuk(null);
                 }}
               >
-                <span>{g.ad}</span>
-                <span className="adet">{sayi(g.adet)}</span>
-              </button>
+                {g.id === secili && <motion.span className="s-isaret" layoutId="s-isaret" transition={yay.canli} />}
+                <span className="s-ad">{g.ad}</span>
+                {/* Sayı değişince kısa bir an parlar */}
+                <motion.span
+                  key={g.adet}
+                  className="s-adet"
+                  initial={{ scale: 1.4, color: '#fde047' }}
+                  animate={{ scale: 1, color: g.id === secili ? '#facc15' : '#78716c' }}
+                  transition={{ duration: sure.yavas, ease: egri.yumusak }}
+                >
+                  {sayi(g.adet)}
+                </motion.span>
+              </motion.button>
             </div>
           ))}
         </nav>
         {yeniGrup === null ? (
-          <button className="grup-ekle" onClick={() => setYeniGrup('')}>
+          <button className="s-grup-ekle etiket" onClick={() => setYeniGrup('')}>
             + Grup ekle
           </button>
         ) : (
           <form
-            className="grup-ekle-form"
+            className="s-grup-form"
             onSubmit={(e) => {
               e.preventDefault();
               const ad = yeniGrup.trim();
@@ -173,10 +217,18 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
             />
           </form>
         )}
+        <div className="s-yan-alt">
+          <p className="etiket soluk">
+            Toplam <span className="s-toplam">{sayi(toplam)}</span>
+          </p>
+          <button className="metin-dugme etiket" onClick={onYeni}>
+            Yeni arşiv
+          </button>
+        </div>
       </aside>
 
-      <section className="icerik">
-        <header className="sonuc-ust">
+      <section className="s-icerik">
+        <header className="s-ust">
           <motion.div
             key={secili}
             initial={{ opacity: 0, y: 10, filter: 'blur(6px)' }}
@@ -184,118 +236,90 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
             transition={{ duration: sure.yavas, ease: egri.yumusak }}
           >
             <h1>{seciliAd}</h1>
-            <p className="soluk">
-              {sayi(liste.length)} dosya{secili === ELENECEK_ID ? ' · silinmez; “Geri al” ile gruba döner' : ''}
+            <p className="etiket soluk">
+              {sayi(liste.length)} dosya{yilAraligi && ` · ${yilAraligi}`}
+              {secili === ELENECEK_ID ? ' · silinmez; sağ tık › geri al' : ''}
             </p>
           </motion.div>
-          <button className="altin parlak" onClick={() => void aktar()}>
-            Klasörlere kaydet
-          </button>
+          <div className="s-araclar">
+            <div className="s-anahtar" role="tablist" aria-label="Görünüm">
+              {(['izgara', 'kure'] as const).map((g) => (
+                <button key={g} role="tab" aria-selected={gorunum === g} className={gorunum === g ? 'secili' : ''} onClick={() => setGorunum(g)}>
+                  {gorunum === g && <motion.span className="s-anahtar-isik" layoutId="s-anahtar" transition={yay.canli} />}
+                  <span>{g === 'izgara' ? 'Izgara' : 'Küre'}</span>
+                </button>
+              ))}
+            </div>
+            <button className="altin" disabled={!!kaydediliyor} onClick={() => void aktar()}>
+              {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : 'Klasörlere kaydet ›'}
+            </button>
+          </div>
         </header>
 
-        {aktarim && aktarim.bitti < aktarim.toplam && (
-          <div className="ilerleme" title={`${aktarim.bitti} / ${aktarim.toplam}`}>
-            <div style={{ width: `${(100 * aktarim.bitti) / Math.max(1, aktarim.toplam)}%` }} />
-          </div>
-        )}
-
-        {liste.length === 0 && <p className="bos">Bu grupta dosya yok</p>}
-
-        <div key={secili} className="izgara-kok">
-        {bolumler.map((y) => (
-          <section key={y.yil} className="yil">
-            <h2>{y.yil}</h2>
-            {y.aylar.map((a) => (
-              <div key={a.ay} className="ay">
-                <h3>
-                  {ayAdi(a.ay)}
-                  <span className="soluk">{sayi(a.medya.length)}</span>
-                </h3>
-                <div className="izgara">
-                  {a.medya.filter((m) => (sira.get(m.anahtar) ?? 0) < sinir).map((m) => (
-                    <div
-                      key={m.anahtar}
-                      className={`kare-kap${(sira.get(m.anahtar) ?? 0) < 40 ? ' girer' : ''}${cikanlar.has(m.anahtar) ? ' cikiyor' : ''}`}
-                      style={{ animationDelay: `${siraliGecikme(sira.get(m.anahtar) ?? 0, 0.025, 40)}s` }}
-                    >
-                      <button
-                        className="kare"
-                        title={medyaGrupAdi(m)}
-                        onClick={(e) => {
-                          setAcilis(e.currentTarget.getBoundingClientRect());
-                          setBuyuk(sira.get(m.anahtar) ?? 0);
-                        }}
-                        onContextMenu={(e) => {
-                          e.preventDefault();
-                          setSagTik({ x: e.clientX, y: e.clientY, m });
-                        }}
-                      >
-                        <img src={onizlemeAdresi(m.onizlemeler[0])} loading="lazy" alt="" style={{ background: m.renk }} />
-                        {m.tur === 'video' && <span className="rozet video">▶ Video</span>}
-                        {m.ham?.length ? (
-                          <span className="rozet ham" title="Bu karenin RAW (NEF) dosyası da var; klasörlere kaydederken yanına kopyalanır">
-                            RAW
-                          </span>
-                        ) : null}
-                        {m.eleme && <span className="rozet eleme">{elemeAdi(m.eleme)}</span>}
-                        {m.tahmini && (
-                          <span className="rozet tahmini" title="Çekim tarihi bulunamadı, dosya tarihi kullanıldı">
-                            ~
-                          </span>
-                        )}
-                      </button>
-                      {m.eleme && (
-                        <button className="geri-al" onClick={() => void geriAl(m)}>
-                          Geri al
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </section>
-        ))}
-        </div>
+        {/* Grup değişince eski kartlar düşüp söner, yenileri sırayla uçarak gelir */}
+        <AnimatePresence mode="popLayout">
+          <motion.div
+            key={secili}
+            className="s-sahne"
+            exit={{ opacity: 0, y: 40, filter: 'blur(6px)', transition: { duration: sure.normal, ease: egri.cikis } }}
+          >
+            {liste.length === 0 ? (
+              <p className="s-bos etiket soluk">Bu grupta dosya yok</p>
+            ) : (
+              <KartSahnesi
+                bolumler={bolumler}
+                liste={liste}
+                gorunum={gorunum}
+                ucanlar={ucanlar}
+                onAc={(i, kutu) => {
+                  setAcilis(kutu);
+                  setBuyuk(i);
+                }}
+                onSagTik={(e, m) => setSagTik({ x: e.clientX, y: e.clientY, m })}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
       </section>
 
       <AnimatePresence>
-      {sagTik && (
-        <motion.div
-          key={`${sagTik.x}-${sagTik.y}`}
-          className="sag-menu"
-          style={{ left: Math.min(sagTik.x, window.innerWidth - 240), top: Math.min(sagTik.y, window.innerHeight - 490), transformOrigin: 'top left' }}
-          initial={{ opacity: 0, scale: 0.92, y: -6 }}
-          animate={{ opacity: 1, scale: 1, y: 0, transition: yay.canli }}
-          exit={{ opacity: 0, scale: 0.97, transition: { duration: sure.hizli, ease: egri.cikis } }}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {sagTik.m.eleme && (
-            <button
-              onClick={() => {
-                void geriAl(sagTik.m);
-                setSagTik(null);
-              }}
-            >
-              Geri al (elenmesin)
-            </button>
-          )}
-          <p className="menu-baslik">Şu gruba taşı</p>
-          {[...gruplar, { id: DIGER_ID, ad: 'Diğer' }]
-            .filter((g) => g.id !== sagTik.m.grupId || sagTik.m.eleme)
-            .map((g) => (
+        {sagTik && (
+          <motion.div
+            key={`${sagTik.x}-${sagTik.y}`}
+            className="sag-menu"
+            style={{ left: Math.min(sagTik.x, window.innerWidth - 240), top: Math.min(sagTik.y, window.innerHeight - 420), transformOrigin: 'top left' }}
+            initial={{ opacity: 0, scale: 0.92, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0, transition: yay.canli }}
+            exit={{ opacity: 0, scale: 0.97, transition: { duration: sure.hizli, ease: egri.cikis } }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {sagTik.m.eleme && (
               <button
-                key={g.id}
+                className="vurgu"
                 onClick={() => {
-                  void tasi(sagTik.m, g.id);
+                  void geriAl(sagTik.m);
                   setSagTik(null);
                 }}
               >
-                {g.ad}
+                Geri al · elenmesin
               </button>
-            ))}
-        </motion.div>
-      )}
+            )}
+            <p className="menu-baslik">Şu gruba taşı</p>
+            {[...gruplar, { id: DIGER_ID, ad: 'Diğer' }]
+              .filter((g) => g.id !== sagTik.m.grupId || sagTik.m.eleme)
+              .map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => {
+                    void tasi(sagTik.m, g.id);
+                    setSagTik(null);
+                  }}
+                >
+                  {g.ad}
+                </button>
+              ))}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <AnimatePresence>
@@ -304,8 +328,25 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
 
       <AnimatePresence>
         {bilgi && (
-          <motion.div className="bilgi" initial={{ opacity: 0, y: 12, x: '-50%' }} animate={{ opacity: 1, y: 0, x: '-50%' }} exit={{ opacity: 0 }}>
-            {bilgi}
+          <motion.div
+            className="bilgi"
+            role="status"
+            initial={{ opacity: 0, y: 12, x: '-50%' }}
+            animate={{ opacity: 1, y: 0, x: '-50%' }}
+            exit={{ opacity: 0, y: 6, x: '-50%' }}
+          >
+            <span>{bilgi.metin}</span>
+            {bilgi.geriAl && (
+              <button
+                className="bilgi-geri etiket"
+                onClick={() => {
+                  bilgi.geriAl?.();
+                  setBilgi(null);
+                }}
+              >
+                Geri al
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
-import { dosyaAdresi, onizlemeAdresi, sonParca, tarihMetni } from '../mantik/bicim';
+import { dosyaAdresi, onizlemeAdresi, sonParca, tarihSaat } from '../mantik/bicim';
 import { egri, sure, yay } from '../hareket';
 import type { ArayuzMedya } from '../../ortak/mesajlar';
 
@@ -84,11 +84,11 @@ export function BuyukGorunum({ liste, sira, setSira, grupAdi, acilis }: Props) {
             {sonParca(m.yol)}
             {m.ham?.length ? <span className="soluk"> + RAW eşi</span> : null}
           </span>
-          <span className="soluk">
-            {tarihMetni(m.tarih)}
-            {m.tahmini ? ' (tahmini)' : ''} · {grupAdi(m)}
+          <span className="b-tarih etiket">
+            {tarihSaat(m.tarih).tarih} · <span className="b-saat">{tarihSaat(m.tarih).saat}</span>
+            {m.tahmini ? ' (tahmini)' : ''} <span className="soluk">· {grupAdi(m)}</span>
           </span>
-          <span className="soluk">
+          <span className="soluk etiket">
             {sira + 1} / {liste.length}
           </span>
         </footer>

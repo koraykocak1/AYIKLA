@@ -100,6 +100,21 @@ export const ayiklaYazisi = {
   surtunme: 0.8,
 } as const;
 
+/** Sonuç ekranındaki kartlar: ızgara ⇄ küre uçuşu, kaydırma ve küre gösterisi. */
+export const kartSahnesi = {
+  sertlik: 120, // kart yayı (sertlik); her kart ±%15 farklı
+  sonum: 0.78, // 1 = sekmeden durur, küçüldükçe hafif sekme
+  siraAraligi: 0.012, // kartlar arası kalkış gecikmesi (sn)
+  kaydirmaYumusakligi: 0.18, // tekerlekte kaydırmanın hedefe yaklaşma payı (her karede)
+  kureEnFazla: 300, // kürede gösterilen en çok kart (ızgarada hepsi durur)
+  kureYaricapi: 0.33, // sahnenin kısa kenarına oran
+  kureKartOlcegi: 0.3,
+  kureDonusu: 0.12, // kendiliğinden dönüş (radyan / sn)
+  kureSurtunme: 0.95, // sürükleyip bırakınca dönüş hızının her karede kalan payı
+  surukleme: 0.006, // sürüklenen piksel başına dönüş (radyan)
+  egim: 0.9, // fare en üstten en alta giderken toplam eğim (radyan)
+} as const;
+
 /** Sıralı giriş gecikmesi: ilk birkaç öğe sırayla gelir, gerisi beklemez (binlerce öğede gecikme birikmesin). */
 export function siraliGecikme(i: number, adim = 0.03, ust = 24): number {
   return Math.min(i, ust) * adim;
