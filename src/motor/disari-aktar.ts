@@ -28,9 +28,33 @@ export interface AktarmaKancalari {
   kopyadanSonra?: (kaynak: string, gecici: string) => Promise<void>;
 }
 
-/** Windows klasör adında yasak karakterleri temizler. "Deniz / Plaj" → "Deniz - Plaj". */
-export function guvenliAd(ad: string): string {
-  return ad.replace(/ \/ /g, ' - ').replace(/[<>:"/\\|?*]/g, '-').trim();
+/** Windows'un aygıtlara ayırdığı adlar: uzantılı hâlleri de (ör. `NUL.txt`) klasör/dosya adı olamaz. */
+const AYRILMIS_AD = /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³]|conin\$|conout\$)$/i;
+/** NTFS bir ad parçasında 255 UTF-16 birimine izin verir; yolun geri kalanına pay bırakılır. */
+export const AD_SINIRI = 120;
+
+/**
+ * Bir klasör ya da dosya adını Windows'ta güvenle kullanılır yapar:
+ * NFC'ye çevirir (Mac'ten gelen ayrışık Türkçe harfler), yasak ve kontrol karakterlerini `-` yapar,
+ * sondaki nokta/boşluğu atar, ayrılmış adların (`CON`, `NUL`, `COM1`…) sonuna `_` ekler, uzunluğu sınırlar.
+ * "Deniz / Plaj" → "Deniz - Plaj".
+ */
+export function guvenliAd(ad: string, sinir = AD_SINIRI): string {
+  let t = ad
+    .normalize('NFC')
+    .replace(/ \/ /g, ' - ')
+    // eslint-disable-next-line no-control-regex
+    .replace(/[<>:"/\\|?*\u0000-\u001f\u007f]/g, '-')
+    .trim();
+  if (t.length > sinir) {
+    t = t.slice(0, sinir);
+    if (/[\ud800-\udbff]$/.test(t)) t = t.slice(0, -1); // emoji gibi çift birimli karakteri bölme
+  }
+  t = t.replace(/[. ]+$/, '');
+  const nokta = t.indexOf('.');
+  const govde = nokta === -1 ? t : t.slice(0, nokta);
+  if (AYRILMIS_AD.test(govde.trimEnd())) t = `${govde.trimEnd()}_${nokta === -1 ? '' : t.slice(nokta)}`;
+  return t || 'Adsız';
 }
 
 export function hedefKlasor(kok: string, grupAdi: string, tarihIso: string): string {
@@ -110,8 +134,8 @@ type TekSonuc = 'kopyalandi' | 'vardi';
 async function tekDosya(o: AktarilacakOge, kok: string, kanca?: AktarmaKancalari): Promise<TekSonuc> {
   const klasor = hedefKlasor(kok, o.grupAdi, o.tarih);
   await mkdir(klasor, { recursive: true });
-  const uzanti = extname(o.yol);
-  const govde = basename(o.yol, uzanti);
+  const uzanti = extname(o.yol).normalize('NFC');
+  const govde = guvenliAd(basename(o.yol, extname(o.yol)), 200);
   const adAl = (n: number) => join(klasor, n === 1 ? `${govde}${uzanti}` : `${govde} (${n})${uzanti}`);
 
   let sonHata = '';

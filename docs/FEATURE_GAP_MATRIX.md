@@ -18,8 +18,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 
 | Durum | Adet |
 |---|---|
-| ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 80 |
+| ✅ Uygulanmış | 5 (003, 025, 068, 078, 120) |
+| 🟡 Kısmen | 79 |
 | ⬜ Yok | 40 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
@@ -43,6 +43,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 **FAZ 1 #9’dan sonra (3 Kasım 2026):** doğrulanmış tam yedek ve geri yükleme motorda var (`arsiv-yedek.ts`). 015 ve 080 "Yok"tan "Kısmen"e çıktı; 058'in açığı daraldı.
 
 **FAZ 1 #10’dan sonra (3 Kasım 2026):** arşiv sağlık denetimi motorda var (`arsiv-saglik.ts`). 130 "Yok"tan "Kısmen"e çıktı.
+
+**FAZ 1 #11’den sonra (3 Kasım 2026):** 120 "Kısmen"den "Uygulanmış"a çıktı: kabul şartlarının üçü de testle sağlandı ve kod mevcut dışa aktarma akışında çalışıyor (uygulama penceresinde denenmedi).
 
 ## Matris
 
@@ -204,7 +206,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 117 | Albümden kaldır ≠ sil | 🟡 | `arsiv-kutu.ts` (FAZ 1 #7): "sil" yalnız kutuya taşır; "kalıcı sil" yalnız kutudaki öğeye uygulanır ve blobu `ref_sayisi` 0'a inmeden silmez; `arsiv-album.ts` `albumdenKaldir`/`albumSil` (FAZ 1 #8) yalnız bağı siler | Arayüzde üç ayrı düğme (albümden kaldır / sil / kalıcı sil) YAPILMADI | P0 | 013, 032 | Paylaşılan blob korunur ✅ (`tests/arsiv-kutu.test.ts`); albümden kaldırma arşivden silmez ✅ (`tests/arsiv-album.test.ts`) |
 | 118 | Gizleme tüm yüzeylerde | ⬜ | — | Tamamı (şifresiz) | P2 | 018 | Gizli öğe aramada da yok |
 | 119 | Renk profilleri, HDR, yön | 🟡 | `onizleme.ts` `sharp.rotate()` EXIF yönü | ICC/P3/HDR yönetimi | P3 | — | Döndürülmüş fotoğraf doğru yönde |
-| 120 | Dosya adları ve Unicode | 🟡 | `guvenliAd()` yasak karakterler; çakışmada "(n)" | Ayrılmış adlar (CON, NUL), uzun yol, NFC/NFD | P1 | — | `CON` grubu, 260+ karakter yol, Türkçe ad doğru |
+| 120 | Dosya adları ve Unicode | ✅ | `disari-aktar.ts` `guvenliAd()` (FAZ 1 #11): yasak ve kontrol karakterleri, ayrılmış adlar (`CON`, `NUL`, `COM1`…, uzantılı da) `_` ile, sondaki nokta/boşluk, NFC, ad başına 120 (dosyada 200) karakter sınırı; dışa aktarılan dosya adı da süzülür; çakışmada "(n)"; arşiv öğe adı NFC (#6) | Uygulama penceresinde DENENMEDİ; Mac'e özgü ad kuralları (`:`) ayrıca ele alınmadı | P1 | — | `CON` grubu, 260+ karakter yol, Türkçe ad doğru ✅ (`tests/dosya-adlari.test.ts`) |
 | 121 | Disk harfi değişimi | 🟡 | `arsiv.ts` `arsivBul` (FAZ 1 #5): kimlikle önce son yer, sonra aynı yol her diskte, sonra disklerin ilk 2 düzeyi aranır | Bilinen arşivlerin kaydı ve açılışta kendiliğinden yeniden keşif arayüze bağlanmadı | P1 | 006, 071 | D: → E: değişince arşiv bulunur ✅ (`tests/arsiv.test.ts`, klasörlerle taklit; gerçek USB diskle DENENMEDİ) |
 | 122 | Bilinmeyen tarih kaynağı | 🟡 | `tarih.ts` `TarihKaynagi` + `tahmini` | Tüm tarih türlerini ayrı saklama; saat dilimi | P1 | 042 | Tahmini tarih "tahmini" görünür |
 | 123 | Toplu işlemleri geri alma | 🟡 | `geriAl` (tek öğe, eleme) | İşlem günlüğü, toplu geri alma | P1 | 058 | 5.000 öğelik değişiklik tek adımda geri alınır |

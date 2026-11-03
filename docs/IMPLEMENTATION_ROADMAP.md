@@ -60,6 +60,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 1 #8 (albüm, etiket, arama) | `src/motor/arsiv-album.ts`: sanal albüm, hiyerarşik elle etiket, klasik arama (`ara`); şema `user_version` 3 (`album`, `album_oge`, `etiket`, `oge_etiket`); `arsiv-kutu.ts` geri almada albüm/etiket bağlarını da taşır. 010, 026 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 28 dosya, 165 test geçti (önce 160). Arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #9 (yedek) | `src/motor/arsiv-yedek.ts`: `arsivYedekle`, `yedekDogrula`, `yedektenGeriYukle`. Şema değişmedi. 015, 080 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 29 dosya, 169 test geçti (önce 165). Gerçek ikinci diskte ve arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #10 (sağlık denetimi) | `src/motor/arsiv-saglik.ts`: `saglikDenetimi`, `sonSaglikRaporu`. Şema değişmedi (rapor `meta` tablosunda). 130 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 30 dosya, 172 test geçti (önce 169). Arayüzde ve büyük arşivde DENENMEDİ |
+| 2026-11-03 | FAZ 1 #11 (dosya adları) | `disari-aktar.ts` `guvenliAd`: ayrılmış adlar, kontrol karakterleri, sondaki nokta/boşluk, NFC, uzunluk sınırı; dışa aktarılan dosya adı da süzülüyor. 120 Kısmen → Uygulanmış. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 31 dosya, 177 test geçti (önce 172). 260+ karakterlik yola kopyalama Node'un uzun yol desteğiyle çalıştı. Uygulama penceresinde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -67,6 +68,12 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #11 ayrıntıları ve sınırları**
+- `guvenliAd` grup klasörü adına ve (200 karakter sınırıyla) dışa aktarılan dosyanın adına uygulanır. Ayrılmış ad örnekleri: `CON` → `CON_`, `aux.txt` → `aux_.txt`; `Console`, `COM10` değişmez. Boş kalan ad `Adsız` olur.
+- Mac'ten gelen ayrışık (NFD) Türkçe adlar hedefte birleşik (NFC) yazılır; kaynak adı değişmez.
+- Uzun yol: Node, Windows'ta mutlak yolları kendisi `\\?\` biçimine çevirdiği için 260+ karakterlik hedefte kopyalama ve SHA-256 doğrulaması çalıştı. Dosya Gezgini ve başka programlar bu kadar uzun yolları açamayabilir; kullanıcıya uyarı YAPILMADI.
+- Değişiklik dışa aktarmadaki klasör/dosya adlarını etkiler; daha önce `CON` gibi adlarla oluşan klasör zaten oluşamadığı için eski arşivlerle uyumsuzluk beklenmiyor.
 
 **FAZ 1 #10 ayrıntıları ve sınırları**
 - Denetim yalnız okur; hiçbir dosyayı onarmaz, taşımaz ya da silmez (testte `medya/` görüntüsü önce ve sonra aynı). Tek yazdığı, katalogdaki `meta.son_saglik_denetimi` satırıdır.
