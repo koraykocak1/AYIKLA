@@ -115,10 +115,11 @@ export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik 
     let son = performance.now();
     let istek = 0;
 
+    // Sahnenin ekrandaki yeri: karede bir kez ve yalnız taşıma varken okunur (her kartta okumak tarayıcıyı kilitler)
+    let kutu: DOMRect | undefined;
     const hedefBul = (anahtar: string): Hedef => {
       const k = ic.kartYeri.get(anahtar);
       const ucan = ic.ucanlar.get(anahtar);
-      const kutu = kap.current?.getBoundingClientRect();
       if (ucan && kutu) {
         return { x: ucan.x - kutu.left - ic.yer.kartEn / 2, y: ucan.y - kutu.top - ic.yer.kartBoy / 2, s: 0.12, o: 0, z: 1 };
       }
@@ -143,6 +144,7 @@ export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik 
       const dt = Math.min((simdiMs - son) / 1000, 0.05);
       son = simdiMs;
       const simdi = simdiMs / 1000;
+      kutu = ic.ucanlar.size ? kap.current?.getBoundingClientRect() : undefined;
 
       // Kaydırma: hedefe yumuşakça yaklaşır (ataletli his)
       const enAlt = Math.max(0, ic.yer.yukseklik + UST + 40 - ic.H);
@@ -268,6 +270,8 @@ export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik 
       className={`kart-sahnesi ${gorunum}`}
       onWheel={(e) => {
         if (ic.gorunum === 'izgara') ic.hedefKaydir += e.deltaY;
+        // Kürede tekerlek küreyi döndürür; bırakınca ataletle yavaşlar
+        else ic.donusHizi = Math.max(-0.12, Math.min(0.12, ic.donusHizi + e.deltaY * ayar.tekerlek));
       }}
       onPointerDown={(e) => {
         if (ic.gorunum !== 'kure' || e.button !== 0) return;

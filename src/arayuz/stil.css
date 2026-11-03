@@ -42,25 +42,6 @@ body::before {
 button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; }
 button:disabled { opacity: 0.5; cursor: default; }
 
-/* Film greni */
-.gren {
-  pointer-events: none;
-  position: fixed;
-  inset: -50%;
-  z-index: 100;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  animation: gren 0.9s steps(6) infinite;
-}
-@keyframes gren {
-  0% { transform: translate(0, 0); }
-  20% { transform: translate(-3%, 2%); }
-  40% { transform: translate(2%, -4%); }
-  60% { transform: translate(-4%, -1%); }
-  80% { transform: translate(3%, 3%); }
-  100% { transform: translate(0, 0); }
-}
-
 /* Kor kıvılcımlı arka plan: tüm ekranların altında tek katman */
 .kor-arka { position: fixed; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
 .ekran { position: absolute; inset: 0; z-index: 1; }
@@ -442,18 +423,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 /* ---------- Hareket katmanı ---------- */
 .ham-not { color: var(--soluk); font-size: 0.7em; }
 
-/* Altın buton: üzerinden ışık süzülür */
-.altin.parlak { position: relative; overflow: hidden; }
-.altin.parlak::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(105deg, transparent 35%, rgba(255, 255, 255, 0.55) 50%, transparent 65%);
-  transform: translateX(-120%);
-  transition: transform 0.7s var(--egri);
-  pointer-events: none;
-}
-.altin.parlak:hover::after { transform: translateX(120%); }
 .altin { transition-property: box-shadow, filter; transition-duration: 0.3s; }
 .altin:hover { box-shadow: 0 14px 44px -10px rgba(232, 201, 138, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.5); }
 
@@ -489,15 +458,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   color: var(--altin-parlak);
 }
 
-/* Sayaç kartları ve grup menüsü: ufak dokunsal tepkiler */
-.grup { transition-property: background-color, color, transform; transition-duration: 0.25s; }
-.grup:active { transform: scale(0.98); }
 
-/* Hareketi azalt: dönüşümler ve döngüler kapanır, yalnız kısa solmalar kalır */
+/* Hareketi azalt: CSS geçişleri anlık olur (tuval ve Motion animasyonları bunu kendileri yönetir) */
 @media (prefers-reduced-motion: reduce) {
-  .gren { animation: none; }
-  .kare-kap.girer { animation: kareSol 0.2s linear both; }
-  @keyframes kareSol { from { opacity: 0; } to { opacity: 1; } }
-  .kare:hover, .kare:active, .grup:active { transform: none; }
-  .altin.parlak::after { display: none; }
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }

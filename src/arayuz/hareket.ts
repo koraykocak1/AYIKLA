@@ -112,6 +112,7 @@ export const kartSahnesi = {
   kureDonusu: 0.12, // kendiliğinden dönüş (radyan / sn)
   kureSurtunme: 0.95, // sürükleyip bırakınca dönüş hızının her karede kalan payı
   surukleme: 0.006, // sürüklenen piksel başına dönüş (radyan)
+  tekerlek: 0.0004, // kürede fare tekerleğinin bir adımının verdiği dönüş hızı
   egim: 0.9, // fare en üstten en alta giderken toplam eğim (radyan)
 } as const;
 
