@@ -61,6 +61,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 1 #9 (yedek) | `src/motor/arsiv-yedek.ts`: `arsivYedekle`, `yedekDogrula`, `yedektenGeriYukle`. Şema değişmedi. 015, 080 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 29 dosya, 169 test geçti (önce 165). Gerçek ikinci diskte ve arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #10 (sağlık denetimi) | `src/motor/arsiv-saglik.ts`: `saglikDenetimi`, `sonSaglikRaporu`. Şema değişmedi (rapor `meta` tablosunda). 130 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 30 dosya, 172 test geçti (önce 169). Arayüzde ve büyük arşivde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #11 (dosya adları) | `disari-aktar.ts` `guvenliAd`: ayrılmış adlar, kontrol karakterleri, sondaki nokta/boşluk, NFC, uzunluk sınırı; dışa aktarılan dosya adı da süzülüyor. 120 Kısmen → Uygulanmış. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 31 dosya, 177 test geçti (önce 172). 260+ karakterlik yola kopyalama Node'un uzun yol desteğiyle çalıştı. Uygulama penceresinde DENENMEDİ |
+| 2026-11-03 | FAZ 1 #12 (kabul testi) | `tests/kabul.test.ts`: DoD 1–4, 9 senaryo, hepsi geçti; çalıştırılamayanlar aşağıdaki raporda. Yeni `src/motor/arsiv-kurtar.ts` (kayıp/bozuk katalogdan yeniden keşif, DoD 4 için); `iceAl`'a durdurma sinyali eklendi. 124 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 32 dosya, 186 test geçti (önce 177); `npm.cmd run derle` temiz. Uygulama penceresinde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -68,6 +69,43 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #12 kabul raporu (talimat bölüm 6, DoD 1–4; 3 Kasım 2026)**
+
+Testler sentetik dosyalarla geçici klasörlerde çalıştı; gerçek kişisel arşiv kullanılmadı. Hepsi motor düzeyindedir: arşiv işlevleri henüz arayüze bağlı değil.
+
+| DoD | Senaryo | Sonuç | Nasıl doğrulandı |
+|---|---|---|---|
+| 1 | Kaynak korunur: içe aktarma | geçti | `tests/kabul.test.ts` DoD 1: kaynak klasördeki her dosyanın yolu, SHA-256'sı, boyutu ve mtime'ı önce/sonra aynı |
+| 1 | … arşivde silme (kutu + kalıcı sil) | geçti | aynı test |
+| 1 | … etiket/albüm (kullanıcı metadatası) | geçti | aynı test |
+| 1 | … dışa aktarma | geçti | aynı test (arşivden) + `tests/kaynak-korunur.test.ts` (ayıklama akışından) |
+| 1 | … yedek alma | geçti | aynı test |
+| 1 | … düzenleme | çalıştırılamadı | Düzenleme özelliği yok (FAZ 3, madde 011) |
+| 1 | … EXIF tarih düzeltmesi | çalıştırılamadı | Arşivde tarih düzeltme özelliği yok (madde 042/122) |
+| 1 | … toplu adlandırma | çalıştırılamadı | Özellik yok (madde 110) |
+| 2 | 1.000 dosyada kopya doğrulaması, aynı içerik tek kopya | geçti | DoD 2: 1.000 dosya (100'ü tekrar) → 900 blob, 1.000 kaynak yolu; sağlık denetimi 900/900 sağlam |
+| 2 | Aynı içeriği tekrar alma | geçti | aynı test: ikinci alma 1.000 "kayıtlı", yeni satır yok |
+| 2 | Bozuk dosya raporu | geçti (kısmen) | Okunamayan (klasör) ve kaybolan dosya hatada raporlanır, diğerleri sürer. İçe almada görüntü çözülmez: içeriği bozuk JPEG baytlarıyla alınır (görüntü bozukluğu ayıklama akışında `okunamadi` olarak raporlanır) |
+| 2 | Disk dolması | geçti (benzetimle) | `ENOSPC` hatası kancayla verildi: durur, yarım kopya kalmaz, sonraki dosyaya geçmez. Gerçek dolu disk DENENMEDİ |
+| 2 | Kullanıcı iptali | geçti | `iceAl` durdurma sinyali: alınanlar kayıtlı, kalanlar dokunulmamış, yeniden başlatınca tamamlanır. Arayüzde iptal düğmesi YOK |
+| 2 | Ani kapanma | geçti | Ayrı Node süreci 300 dosyayı alırken 50. dosyadan sonra `SIGKILL` ile öldürüldü; açılışta bayat kilit onayla kaldırıldı, sağlık denetimi temiz, yeniden alma 300'e tamamladı. Elektrik kesintisi / işletim sistemi çökmesi DENENMEDİ |
+| 2 | Kopyalama sırasında kaynak değişimi | geçti | `tests/arsiv-depo.test.ts`: kopya sırasında değişen kaynak kaydedilmez, yarım kopya kalmaz |
+| 3 | Albümden kaldırma arşivden silmez | geçti | DoD 3 |
+| 3 | 30 gün varsayılan kutu; geri yükleme | geçti | DoD 3 (29. gün silinmez, geri alınır) |
+| 3 | Aynı fiziksel kopyayı paylaşan kayıt korunur | geçti | DoD 3 (31. gün eski öğe kalıcı silinir, blob ve yeni öğe kalır) |
+| 3 | Kaynak dosyaya dokunulmuyor | geçti | DoD 3 kaynak görüntüsü |
+| 4 | Katalog aç/kapat | geçti | DoD 4 |
+| 4 | Migration | geçti | `tests/katalog.test.ts`: şema 1 → 3, eski kayıtlar korunur |
+| 4 | Bütünlük testi | geçti | `quick_check` (sağlık denetimi), `integrity_check` (yedek) |
+| 4 | Online backup ve geri yükleme | geçti | DoD 4 + `tests/arsiv-yedek.test.ts` |
+| 4 | Bozuk/kayıp katalogdan yeniden keşif, kurtarılamayan bilginin dürüst raporu | geçti | DoD 4: bozuk katalog kenara alındı (silinmedi), 4 öğe kurtarıldı, tanımsız dosya raporlandı, "albümler, etiketler, köken, orijinal ad, kutu durumu, çekim tarihi geri gelmedi" raporda. Arayüzde sihirbaz YOK |
+
+DoD 5–10 bu görevin kapsamında değil (büyük arşiv, mahremiyet, çapraz platform, AI, metadata çıktısı, işlem takibi); FAZ 2–4'e kaldı.
+
+**FAZ 1 #12 ayrıntıları ve sınırları**
+- `arsiv-kurtar.ts` `katalogKurtar`: yalnız katalog kayıp ya da bozuksa çalışır, arşiv açıkken (kilitliyken) çalışmaz. Bozuk katalog ve yan dosyaları `.bozuk-<zaman>` olarak kenara alınır. Kurtarılan öğenin adı içerik adıdır (`<sha>.jpg`), tarihi dosya tarihidir; öğe `asama = 'kurtarildi'` ile işaretlenir.
+- `iceAl`'a durdurma sinyali (`AbortSignal`) eklendi; sonuçta `durduruldu` alanı var. Var olan çağrılar etkilenmedi.
 
 **FAZ 1 #11 ayrıntıları ve sınırları**
 - `guvenliAd` grup klasörü adına ve (200 karakter sınırıyla) dışa aktarılan dosyanın adına uygulanır. Ayrılmış ad örnekleri: `CON` → `CON_`, `aux.txt` → `aux_.txt`; `Console`, `COM10` değişmez. Boş kalan ad `Adsız` olur.

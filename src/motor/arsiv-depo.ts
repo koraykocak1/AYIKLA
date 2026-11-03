@@ -29,6 +29,8 @@ export interface IceAlinacak {
 export type IceAlmaDurumu = 'yeni' | 'tekil' | 'kayitli';
 
 export interface IceAlmaSonucu {
+  /** Kullanıcı durdurduysa true; o ana kadar alınanlar kayıtlıdır, kalanlara dokunulmamıştır. */
+  durduruldu: boolean;
   yeni: number;
   tekil: number;
   kayitli: number;
@@ -136,15 +138,17 @@ async function blobYerlestir(
 
 /**
  * Dosyaları arşive alır. Aynı içerik bir kez kopyalanır (SHA-256 ile birebir tekilleştirme); her kaynak yolu
- * köken olarak kaydedilir. Arşivin kendi içinden dosya alınmaz. Disk dolarsa durur.
+ * köken olarak kaydedilir. Arşivin kendi içinden dosya alınmaz. Disk dolarsa ya da `durdur` tetiklenirse
+ * sıradaki dosyaya geçmeden durur; her dosya kendi transaction'ında kaydedildiği için yarım kayıt kalmaz.
  */
 export async function iceAl(
   a: Arsiv,
   dosyalar: IceAlinacak[],
   ilerleme?: (bitti: number, toplam: number) => void,
   kanca?: AktarmaKancalari,
+  durdur?: AbortSignal,
 ): Promise<IceAlmaSonucu> {
-  const sonuc: IceAlmaSonucu = { yeni: 0, tekil: 0, kayitli: 0, ogeler: [], hatalar: [] };
+  const sonuc: IceAlmaSonucu = { durduruldu: false, yeni: 0, tekil: 0, kayitli: 0, ogeler: [], hatalar: [] };
   const cihaz = hostname();
   const blobEkle = a.vt.prepare(
     'INSERT INTO blob (sha256, boyut, yol_goreli, ref_sayisi, eklenme) VALUES (?, ?, ?, 0, ?) ON CONFLICT(sha256) DO NOTHING',
@@ -159,6 +163,10 @@ export async function iceAl(
       son_gorulme = excluded.son_gorulme`);
 
   for (let i = 0; i < dosyalar.length; i++) {
+    if (durdur?.aborted) {
+      sonuc.durduruldu = true;
+      break;
+    }
     const d = dosyalar[i];
     try {
       if (icindeMi(d.yol, a.kok)) throw new Error('Bu dosya zaten arşivin içinde');

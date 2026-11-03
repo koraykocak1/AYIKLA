@@ -19,8 +19,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 5 (003, 025, 068, 078, 120) |
-| 🟡 Kısmen | 79 |
-| ⬜ Yok | 40 |
+| 🟡 Kısmen | 80 |
+| ⬜ Yok | 39 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
@@ -45,6 +45,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 **FAZ 1 #10’dan sonra (3 Kasım 2026):** arşiv sağlık denetimi motorda var (`arsiv-saglik.ts`). 130 "Yok"tan "Kısmen"e çıktı.
 
 **FAZ 1 #11’den sonra (3 Kasım 2026):** 120 "Kısmen"den "Uygulanmış"a çıktı: kabul şartlarının üçü de testle sağlandı ve kod mevcut dışa aktarma akışında çalışıyor (uygulama penceresinde denenmedi).
+
+**FAZ 1 #12’den sonra (3 Kasım 2026):** uçtan uca kabul testi (DoD 1–4) yazıldı; sonuçlar yol haritasında "FAZ 1 #12 kabul raporu". Kayıp/bozuk katalogdan yeniden keşif için `arsiv-kurtar.ts` eklendi: 124 "Yok"tan "Kısmen"e çıktı; 041'in kanıtı güncellendi.
 
 ## Matris
 
@@ -102,7 +104,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 038 | Yönetilebilir bildirimler | ⬜ | — | Tamamı | P2 | 040 | Her tür ayrı kapatılır |
 | 039 | Akıllı albümler | ⬜ | — | Tamamı | P1 | 058, 057 | Kurala uyan yeni dosya kendiliğinden albümde |
 | 040 | Merkezi işlem yöneticisi | 🟡 | `sunucu.ts` tek iş + `aktarim` olayı | Kuyruk, duraklat/sürdür, yeniden dene yok | P1 | 094 | 3 işten biri hata verir, diğerleri sürer |
-| 041 | Kesintiden devam / crash recovery | 🟡 | `katalog.ts` SQLite transaction (FAZ 1 #4), bozuk JSON ve bozuk veritabanı kenara alınır; `disari-aktar.ts` geçici kopya (Parti 1) | İşlem günlüğü/checkpoint ve iş kuyruğunda kaldığı yerden devam YAPILMADI | P0 | 029, 058 | Bozuk katalog `kayit.json.bozuk-*` olarak kalır ✅; yarım kopya final adla kalmaz ✅ |
+| 041 | Kesintiden devam / crash recovery | 🟡 | `katalog.ts` SQLite transaction (FAZ 1 #4), bozuk JSON ve bozuk veritabanı kenara alınır; `disari-aktar.ts` geçici kopya (Parti 1) | İşlem günlüğü/checkpoint ve iş kuyruğunda kaldığı yerden devam YAPILMADI; arşive içe almada her dosya kendi transaction'ında (FAZ 1 #6), yarıda öldürülen içe alma yeniden çalıştırılınca kalanı tamamlar (FAZ 1 #12) | P0 | 029, 058 | Bozuk katalog `kayit.json.bozuk-*` olarak kalır ✅; yarım kopya final adla kalmaz ✅; ani kapanmadan sonra arşiv tutarlı ✅ (`tests/kabul.test.ts`, ayrı süreç öldürülerek) |
 | 042 | Üç katmanlı metadata | 🟡 | `IslenmisMedya`: `tarih/tarihKaynagi` (kaynak), `grupId` (AI), `elleGrup/geriAlindi` (kullanıcı) | Katmanlar tek nesnede; ham EXIF saklanmıyor | P0 (şema) | 058 | AI yeniden çalışınca `elleGrup` korunur (testi var) |
 | 043 | Düzeltmelerden yerel öğrenme | ⬜ | (`elleGrup` yalnız o dosya için) | Kural öğrenme ve silme | P2 | 042 | Silinen tercih sonraki öneriyi etkilemez |
 | 044 | Dış uygulamalarla çalışma | ⬜ | — | "Birlikte aç", dışarı sürükleme | P2 | 052 | Dış düzenleme yeni sürüm olarak gelir |
@@ -210,7 +212,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 121 | Disk harfi değişimi | 🟡 | `arsiv.ts` `arsivBul` (FAZ 1 #5): kimlikle önce son yer, sonra aynı yol her diskte, sonra disklerin ilk 2 düzeyi aranır | Bilinen arşivlerin kaydı ve açılışta kendiliğinden yeniden keşif arayüze bağlanmadı | P1 | 006, 071 | D: → E: değişince arşiv bulunur ✅ (`tests/arsiv.test.ts`, klasörlerle taklit; gerçek USB diskle DENENMEDİ) |
 | 122 | Bilinmeyen tarih kaynağı | 🟡 | `tarih.ts` `TarihKaynagi` + `tahmini` | Tüm tarih türlerini ayrı saklama; saat dilimi | P1 | 042 | Tahmini tarih "tahmini" görünür |
 | 123 | Toplu işlemleri geri alma | 🟡 | `geriAl` (tek öğe, eleme) | İşlem günlüğü, toplu geri alma | P1 | 058 | 5.000 öğelik değişiklik tek adımda geri alınır |
-| 124 | Katalog kaybında kurtarma | ⬜ | — | Arşivden yeniden keşif sihirbazı | P1 | 071 | Kayıp katalog dürüst raporlanır |
+| 124 | Katalog kaybında kurtarma | 🟡 | `arsiv-kurtar.ts` `katalogKurtar` (FAZ 1 #12): bozuk katalog kenara alınır (silinmez), `medya/` dosyaları adlarındaki SHA-256 ile doğrulanıp yeni kataloğa alınır; bozuk ve tanımsız dosyalar dokunulmadan raporlanır; geri gelmeyen bilgiler (albüm, etiket, köken, orijinal ad, kutu durumu, çekim tarihi) raporda açıkça yazılır | Arayüzde sihirbaz, önizleme ve EXIF'ten tarih okuma YAPILMADI; yedek varsa onu önerme YAPILMADI | P1 | 071 | Kayıp katalog dürüst raporlanır ✅ (`tests/kabul.test.ts`, DoD 4) |
 | 125 | İçe aktarma öncesi izin ekranı | 🟡 | `Karsilama.tsx` + `say` (foto/video/RAW sayısı) | Boyut, desteklenmeyen, hedef boş alan yok | P1 | 048 | Tahmin ve kesin sayı ayrı |
 | 126 | Yeni eklenenler kutusu | ⬜ | — | Tamamı | P1 | 058 | İşaretlenen öğe listeden çıkar |
 | 127 | Akıllı temizleme sihirbazı | 🟡 | "Elenecek" grupları (kopya/bulanık/karanlık); otomatik silme yok | Tasarruf tahmini, düşük çözünürlük, büyük dosya | P1 | 013 | Hiçbir dosya otomatik silinmez |
