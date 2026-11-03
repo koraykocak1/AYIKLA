@@ -59,6 +59,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 1 #7 (kutu) | `src/motor/arsiv-kutu.ts`: kutuya taşı / geri al / kalıcı sil / 30 günde boşalt; paylaşılan blob `ref_sayisi` > 0 iken silinmez; geri alınan öğe aynı içerikteki canlı öğeyle birleşir. Şema değişmedi (`oge.silinme` #6'da vardı). 013, 117 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 27 dosya, 160 test geçti (önce 155). Arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #8 (albüm, etiket, arama) | `src/motor/arsiv-album.ts`: sanal albüm, hiyerarşik elle etiket, klasik arama (`ara`); şema `user_version` 3 (`album`, `album_oge`, `etiket`, `oge_etiket`); `arsiv-kutu.ts` geri almada albüm/etiket bağlarını da taşır. 010, 026 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 28 dosya, 165 test geçti (önce 160). Arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #9 (yedek) | `src/motor/arsiv-yedek.ts`: `arsivYedekle`, `yedekDogrula`, `yedektenGeriYukle`. Şema değişmedi. 015, 080 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 29 dosya, 169 test geçti (önce 165). Gerçek ikinci diskte ve arayüzde DENENMEDİ |
+| 2026-11-03 | FAZ 1 #10 (sağlık denetimi) | `src/motor/arsiv-saglik.ts`: `saglikDenetimi`, `sonSaglikRaporu`. Şema değişmedi (rapor `meta` tablosunda). 130 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 30 dosya, 172 test geçti (önce 169). Arayüzde ve büyük arşivde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -66,6 +67,11 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #10 ayrıntıları ve sınırları**
+- Denetim yalnız okur; hiçbir dosyayı onarmaz, taşımaz ya da silmez (testte `medya/` görüntüsü önce ve sonra aynı). Tek yazdığı, katalogdaki `meta.son_saglik_denetimi` satırıdır.
+- Bulduğu sorunlar: değişmiş (boyut ya da SHA-256 tutmuyor), eksik (kaydı var, dosyası yok), kayıtsız (`medya/` içinde kaydı olmayan dosya; yarım kopyalar ve kenara alınmış `.bozuk-*` dosyalar da burada görünür), yanlış `ref_sayisi`, `PRAGMA quick_check` sonucu.
+- `bekleme` ile her dosyadan sonra ara verilir, `durdur` ile kesilir (rapor `bitti: false`). Kendiliğinden (periyodik) çalıştırma, arayüzde rapor ve yedekten onarma YAPILMADI.
 
 **FAZ 1 #9 ayrıntıları ve sınırları**
 - Yedek arşivin tam kopyasıdır: `katalog/ayikla.db` (SQLite çevrimiçi yedeği, arşiv açıkken alınır, `integrity_check` geçmeden yerine konmaz), `medya/` (her blob adındaki SHA-256 ile okurken ve yazdıktan sonra doğrulanır), `yedek.json` (katalog özeti, şema sürümü, blob sayısı; en son yazılır).

@@ -19,8 +19,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 79 |
-| ⬜ Yok | 41 |
+| 🟡 Kısmen | 80 |
+| ⬜ Yok | 40 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
@@ -41,6 +41,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 **FAZ 1 #8’den sonra (3 Kasım 2026):** sanal albüm, hiyerarşik etiket ve klasik arama motorda var (`arsiv-album.ts`, şema 3). 010 ve 026 "Yok"tan "Kısmen"e çıktı; 009 ve 117 "Kısmen" kaldı ama açıkları daraldı.
 
 **FAZ 1 #9’dan sonra (3 Kasım 2026):** doğrulanmış tam yedek ve geri yükleme motorda var (`arsiv-yedek.ts`). 015 ve 080 "Yok"tan "Kısmen"e çıktı; 058'in açığı daraldı.
+
+**FAZ 1 #10’dan sonra (3 Kasım 2026):** arşiv sağlık denetimi motorda var (`arsiv-saglik.ts`). 130 "Yok"tan "Kısmen"e çıktı.
 
 ## Matris
 
@@ -212,7 +214,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 127 | Akıllı temizleme sihirbazı | 🟡 | "Elenecek" grupları (kopya/bulanık/karanlık); otomatik silme yok | Tasarruf tahmini, düşük çözünürlük, büyük dosya | P1 | 013 | Hiçbir dosya otomatik silinmez |
 | 128 | Konumu Dosya Gezgini'nde aç | ⬜ | — | `shell.showItemInFolder` | P1 | — | Kayıp dosyada "bulunamadı" |
 | 129 | Sürükle-bırak ve pano | 🟡 | `Karsilama.tsx` `onDrop`; kısayola bırakma | Panodan yapıştırma yok | P2 | — | Sürüklemek kaynağı taşımaz |
-| 130 | Periyodik arşiv sağlık denetimi | ⬜ | — | Kayıtlı SHA-256 ile karşılaştırma | P1 | 029, 071 | Değiştirilmiş kopya bulunur |
+| 130 | Periyodik arşiv sağlık denetimi | 🟡 | `arsiv-saglik.ts` `saglikDenetimi` (FAZ 1 #10): her blobu kayıtlı SHA-256 ve boyutla karşılaştırır; eksik, değişmiş, kayıtsız dosya ve yanlış `ref_sayisi` raporlanır; `quick_check`; yalnız okur, raporu `meta` tablosuna yazar; düşük öncelik (`bekleme`) ve durdurma | "Periyodik" çalıştırma (zamanlayıcı) ve arayüzde rapor YAPILMADI; bozuk dosyayı yedekten onarma YAPILMADI | P1 | 029, 071 | Değiştirilmiş kopya bulunur ✅ (`tests/arsiv-saglik.test.ts`, aynı boyutta tek bayt değişikliği) |
 
 ## Sayım doğrulaması
 
