@@ -58,6 +58,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 1 #6 (içe aktarma) | `src/motor/arsiv-depo.ts` `iceAl`: SHA-256 içerik adresli blob, `ref_sayisi`, öğe ve çoklu kaynak yolu; şema `user_version` 2 (`blob`, `oge`, `kaynak_yolu`) ve 1 → 2 geçiş testi; `disari-aktar.ts` `geciciyeKopyala` dışa açıldı. 032, 047 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 26 dosya, 155 test geçti (önce 148). Gerçek arşivde ve arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #7 (kutu) | `src/motor/arsiv-kutu.ts`: kutuya taşı / geri al / kalıcı sil / 30 günde boşalt; paylaşılan blob `ref_sayisi` > 0 iken silinmez; geri alınan öğe aynı içerikteki canlı öğeyle birleşir. Şema değişmedi (`oge.silinme` #6'da vardı). 013, 117 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 27 dosya, 160 test geçti (önce 155). Arayüzde DENENMEDİ |
 | 2026-11-03 | FAZ 1 #8 (albüm, etiket, arama) | `src/motor/arsiv-album.ts`: sanal albüm, hiyerarşik elle etiket, klasik arama (`ara`); şema `user_version` 3 (`album`, `album_oge`, `etiket`, `oge_etiket`); `arsiv-kutu.ts` geri almada albüm/etiket bağlarını da taşır. 010, 026 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 28 dosya, 165 test geçti (önce 160). Arayüzde DENENMEDİ |
+| 2026-11-03 | FAZ 1 #9 (yedek) | `src/motor/arsiv-yedek.ts`: `arsivYedekle`, `yedekDogrula`, `yedektenGeriYukle`. Şema değişmedi. 015, 080 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 29 dosya, 169 test geçti (önce 165). Gerçek ikinci diskte ve arayüzde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -65,6 +66,13 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #9 ayrıntıları ve sınırları**
+- Yedek arşivin tam kopyasıdır: `katalog/ayikla.db` (SQLite çevrimiçi yedeği, arşiv açıkken alınır, `integrity_check` geçmeden yerine konmaz), `medya/` (her blob adındaki SHA-256 ile okurken ve yazdıktan sonra doğrulanır), `yedek.json` (katalog özeti, şema sürümü, blob sayısı; en son yazılır).
+- Yedek klasörünün işareti `tur: "yedek"` taşır: tarayıcı onu atlar, `arsivBul` onu arşiv sanmaz. Hedef boş olmalı ya da aynı arşivin eski yedeği olmalı; arşivin içi, arşivi içine alan klasör ve ağ yolu reddedilir.
+- Aynı klasöre yeniden yedek: yedekte aynı özetle duran blob atlanır (yine okunur, özet karşılaştırılır). Arşivden kalıcı silinen dosyalar eski yedekte kalır; yedek budama YAPILMADI.
+- Geri yükleme yalnız boş klasöre yapılır ve önce yedeğin tamamını doğrular; tek bir sorun varsa hiçbir şey yazılmaz. Geri yüklenen arşiv aynı kimliği taşır; eski arşiv de duruyorsa `arsivBul` ikisini birden döndürür.
+- Zamanlı yedek, arayüz ve çalışma kataloğunun (`~/.ayikla`) yedeği YAPILMADI. Gerçek USB/ikinci diskte DENENMEDİ.
 
 **FAZ 1 #8 ayrıntıları ve sınırları**
 - Albüm ve etiket yalnız bağdır; öğe diskte tek kopya kalır. Albümden kaldırmak ve albümü silmek öğeyi silmez, kutuya taşımaz. Kalıcı silinen öğenin bağları veritabanında kendiliğinden (`ON DELETE CASCADE`) kalkar.
