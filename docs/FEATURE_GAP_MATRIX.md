@@ -19,8 +19,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 73 |
-| ⬜ Yok | 47 |
+| 🟡 Kısmen | 75 |
+| ⬜ Yok | 45 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
@@ -35,6 +35,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 **FAZ 1 #5’ten sonra (3 Kasım 2026):** arşiv kökü motorda var (`arsiv.ts`): kimlik, dizin yapısı, tek-yazıcı kilidi, disk harfi değişince yeniden bulma. 006, 071, 072, 121 "Yok"tan "Kısmen"e çıktı. Arayüze bağlanmadığı için hiçbiri "Uygulanmış" sayılmadı.
 
 **FAZ 1 #6’dan sonra (3 Kasım 2026):** içerik adresli içe aktarma motorda var (`arsiv-depo.ts`, şema 2). 032 ve 047 "Yok"tan "Kısmen"e çıktı; 053, 058, 107 "Kısmen" kaldı ama açıkları daraldı.
+
+**FAZ 1 #7’den sonra (3 Kasım 2026):** geri dönüşüm kutusu motorda var (`arsiv-kutu.ts`). 013 ve 117 "Yok"tan "Kısmen"e çıktı.
 
 ## Matris
 
@@ -59,7 +61,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 |---|---|---|---|---|---|---|---|
 | 011 | Temel + ileri + AI düzenleme | ⬜ | — | Tamamı; tahribatsız düzenleme modeli yok | P2 | 052 | Düzenleme sonrası kaynak hash'i aynı |
 | 012 | Yerel AI + kendi sağlayıcı (BYOK) | 🟡 | Yerel CLIP + çeviri modeli | BYOK ve maliyet bildirimi yok | P2 | 079 | Anahtar yokken tüm temel işlevler çalışır |
-| 013 | Geri dönüşüm kutusu (30 gün) | ⬜ | — ("Elenecek" yalnız işarettir; dosya silinmez) | Kutu, süre, geri yükleme | P0 | 058, 117 | Silinen öğe 30 gün kutuda; geri yüklenir; kaynak duruyor |
+| 013 | Geri dönüşüm kutusu (30 gün) | 🟡 | `arsiv-kutu.ts` (FAZ 1 #7): `kutuyaTasi` (`oge.silinme`), `kutudakiler`, `kutudanGeriAl`, `kaliciSilinmeTarihi`, `kutuyuBosalt` (30 gün); kutudayken dosya yerinde kalır | Arayüzde kutu ekranı YAPILMADI; 30 günlük boşaltma kendiliğinden çalışmıyor (çağrılması gerekir); ayıklama ekranının "Elenecek" işareti kutuya bağlı değil | P0 | 058, 117 | Silinen öğe 30 gün kutuda; geri yüklenir; kaynak duruyor ✅ (`tests/arsiv-kutu.test.ts`) |
 | 014 | Gelişmiş dışa aktarma | 🟡 | `disari-aktar.ts` (Grup/Yıl/Ay) | Albüm seçimi, format dönüşümü, metadata politikası, ZIP yok | P1 | 030, 054 | Dışa aktarma arşivi değiştirmez |
 | 015 | Manuel + zamanlı yedek | ⬜ | — | Tamamı | P0 | 058, 080 | Yedek → başka klasöre geri yükleme → katalog aynı |
 | 016 | Durdurulabilir arka plan analizi | 🟡 | `ana.ts` utilityProcess, `sunucu.ts` `durdur`, `kayit.json` önbelleği | Durdur var; duraklat/sürdür, CPU sınırı, "analiz edilmemiş" listesi yok. Yeniden açınca önbellek sayesinde hızlı devam | P1 | 040, 094 | Durdur → yeniden başlat → işlenmiş dosya yeniden işlenmez |
@@ -193,7 +195,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 114 | Bulut yer tutucuları | ⬜ | — | Windows "yalnız çevrimiçi" özniteliği tespiti; izinsiz indirme yok | P1 | 112 | Yer tutucu "kopyalandı" sayılmaz |
 | 115 | Kendi arşivini taramayı engelle | 🟡 | `disari-aktar.ts` `isaretKoy` + `hedefSorunu`; `tarayici.ts` işaretli klasörü atlar (Parti 1) | Arşiv kökü gelince önizleme/yedek klasörleri de dışlanmalı | P0 | 050, 075 | İşaretli hedef taranmaz ✅; kaynak içine aktarma reddedilir ✅ |
 | 116 | Kopyalama sırasında kaynak değişimi | 🟡 | `disari-aktar.ts`: geçici dosya → önce/sonra stat → SHA-256 → atomik ad (Parti 1) | Değişen sürümü ayrıca kaydetme YAPILMADI | P0 | 029 | `tests/disari-aktar.test.ts`: değişen kaynak kabul edilmez ✅ |
-| 117 | Albümden kaldır ≠ sil | ⬜ | ("Elenecek" dosya silmez, yalnız aktarılmaz) | Albüm/kutu/kalıcı sil katmanları | P0 | 013, 032 | Albümden kaldırma arşivden silmez |
+| 117 | Albümden kaldır ≠ sil | 🟡 | `arsiv-kutu.ts` (FAZ 1 #7): "sil" yalnız kutuya taşır; "kalıcı sil" yalnız kutudaki öğeye uygulanır ve blobu `ref_sayisi` 0'a inmeden silmez | Albümden kaldır katmanı FAZ 1 #8'de; arayüzde üç ayrı düğme YAPILMADI | P0 | 013, 032 | Paylaşılan blob korunur ✅ (`tests/arsiv-kutu.test.ts`); albümden kaldırma #8 |
 | 118 | Gizleme tüm yüzeylerde | ⬜ | — | Tamamı (şifresiz) | P2 | 018 | Gizli öğe aramada da yok |
 | 119 | Renk profilleri, HDR, yön | 🟡 | `onizleme.ts` `sharp.rotate()` EXIF yönü | ICC/P3/HDR yönetimi | P3 | — | Döndürülmüş fotoğraf doğru yönde |
 | 120 | Dosya adları ve Unicode | 🟡 | `guvenliAd()` yasak karakterler; çakışmada "(n)" | Ayrılmış adlar (CON, NUL), uzun yol, NFC/NFD | P1 | — | `CON` grubu, 260+ karakter yol, Türkçe ad doğru |
