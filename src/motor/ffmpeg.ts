@@ -1,7 +1,6 @@
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import ffmpegYolu from 'ffmpeg-static';
-import ffprobe from 'ffprobe-static';
 
 const calistir = promisify(execFile);
 
@@ -12,21 +11,40 @@ export interface VideoBilgisi {
   olusturma: Date | null;
 }
 
-export async function videoBilgisi(yol: string): Promise<VideoBilgisi> {
-  const { stdout } = await calistir(ffprobe.path, [
-    '-v', 'error', '-print_format', 'json', '-show_format', '-show_streams', yol,
-  ]);
-  const j = JSON.parse(stdout);
-  const v = (j.streams ?? []).find((s: { codec_type?: string }) => s.codec_type === 'video') ?? {};
-  const etiket: string | undefined = j.format?.tags?.creation_time ?? v.tags?.creation_time;
+/**
+ * `ffmpeg -i` çıktısından süre, boyut ve oluşturma tarihini okur. (Eskiden ayrı bir `ffprobe.exe` kullanılıyordu;
+ * 2018 tarihli ve kaynağı belirsiz olduğu için kaldırıldı. Aynı bilgiler paketteki `ffmpeg.exe`'den okunur.)
+ * Girdi bir video değilse null döner.
+ */
+export function ffmpegBilgisiniCoz(metin: string): VideoBilgisi | null {
+  if (!/^Input #0,/m.test(metin)) return null;
+  const sure = /^\s+Duration: (\d+):(\d{2}):(\d{2}(?:\.\d+)?)/m.exec(metin);
+  const video = /^\s+Stream #\d+:\d+.*?: Video: (.*)$/m.exec(metin);
+  const boyut = video ? /(?:^|[ ,])(\d{2,5})x(\d{2,5})(?=[ ,[]|$)/.exec(video[1]) : null;
+  // İlk `creation_time` dosya düzeyindedir (akışlarınkinden önce yazılır).
+  const etiket = /^\s+creation_time\s*: (\S+)/m.exec(metin)?.[1];
   let olusturma: Date | null = etiket ? new Date(etiket) : null;
   if (olusturma && (Number.isNaN(olusturma.getTime()) || olusturma.getFullYear() < 1990)) olusturma = null;
   return {
-    sure: Number(j.format?.duration ?? 0),
-    genislik: Number(v.width ?? 0),
-    yukseklik: Number(v.height ?? 0),
+    sure: sure ? Number(sure[1]) * 3600 + Number(sure[2]) * 60 + Number(sure[3]) : 0,
+    genislik: boyut ? Number(boyut[1]) : 0,
+    yukseklik: boyut ? Number(boyut[2]) : 0,
     olusturma,
   };
+}
+
+export async function videoBilgisi(yol: string): Promise<VideoBilgisi> {
+  // Çıkış dosyası verilmediği için ffmpeg bilgileri yazıp 1 koduyla çıkar; bu beklenen durumdur.
+  let metin: string;
+  try {
+    const { stderr } = await calistir(ffmpegYolu as unknown as string, ['-hide_banner', '-nostdin', '-i', yol]);
+    metin = stderr;
+  } catch (h) {
+    metin = String((h as { stderr?: string }).stderr ?? '');
+  }
+  const b = ffmpegBilgisiniCoz(metin);
+  if (!b) throw new Error(`Video okunamadı: ${metin.trim().split(/\r?\n/).pop() ?? ''}`);
+  return b;
 }
 
 export async function kareCikar(yol: string, saniye: number, hedef: string): Promise<void> {

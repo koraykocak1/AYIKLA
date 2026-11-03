@@ -9,7 +9,7 @@ rmSync('dist', { recursive: true, force: true });
 
 const ortak = { bundle: true, platform: 'node', target: 'node22', logLevel: 'warning' };
 // Yerel (native) ve büyük paketler dışarıda kalır; node_modules'tan yüklenir.
-const DISARIDA = ['electron', 'sharp', 'better-sqlite3', '@huggingface/transformers', 'onnxruntime-node', 'ffmpeg-static', 'ffprobe-static', 'heic-convert', 'exifr'];
+const DISARIDA = ['electron', 'sharp', 'better-sqlite3', '@huggingface/transformers', 'onnxruntime-node', 'ffmpeg-static', 'heic-convert', 'exifr'];
 
 await build({ ...ortak, entryPoints: ['src/ana/ana.ts'], outfile: 'dist/ana.cjs', format: 'cjs', external: ['electron'] });
 await build({ ...ortak, entryPoints: ['src/ana/onyukle.ts'], outfile: 'dist/onyukle.cjs', format: 'cjs', external: ['electron'] });

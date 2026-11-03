@@ -132,7 +132,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 061 | Yerel hata günlüğü | 🟡 | `okunamadi` olayı (yalnız bellekte) | Kalıcı günlük, hata kodu, yol redaksiyonu | P1 | — | Günlükte tam kişisel yol yok |
 | 062 | Kaldırmada arşiv koruma | ⬜ | Kurulum paketi yok | Kaldırıcı politikası | P3 | 059 | Kaldırma arşivi silmez |
 | 063 | Modüler AI | 🟡 | `SahneModeli` arayüzü (`tipler.ts`); model hatası `model:hata` olayı | Modüller ayrı açılıp kapanmıyor | P1 | 092 | Model çökünce galeri çalışır |
-| 064 | Maliyetsiz + lisans uygunluğu | 🟡 | Ücretli servis yok; lisans tablosu `docs/LISANSLAR.md` (FAZ 1 #3) | Açık riskler: ffmpeg.exe ve ffprobe.exe GPLv3 (ffprobe kaynağı belirsiz), opus-mt ağırlık lisansı çelişkili (CC-BY 4.0 kabul edildi, atıf gerekir), `dxil.dll` lisansı doğrulanmadı | P0 (yayın öncesi) | 086 | Lisans tablosu var; "doğrulanmadı" kalemleri açık |
+| 064 | Maliyetsiz + lisans uygunluğu | 🟡 | Ücretli servis yok; lisans tablosu `docs/LISANSLAR.md` (FAZ 1 #3) | Açık riskler: ffmpeg.exe GPLv3 (kaynak teklifi); kaynağı belirsiz ffprobe.exe 2026-11-03'te kaldırıldı; opus-mt ağırlık lisansı çelişkili (CC-BY 4.0 kabul edildi, atıf gerekir), `dxil.dll` lisansı doğrulanmadı | P0 (yayın öncesi) | 086 | Lisans tablosu var; "doğrulanmadı" kalemleri açık |
 | 065 | Çok dil (TR + EN) | 🟡 | Arayüz yalnız Türkçe; `ingilizceyeCevir` | Dil sistemi (i18n) yok | P2 | — | Dil değişince tüm metinler değişir |
 | 066 | İlk kullanım sihirbazı | ⬜ | `Karsilama.tsx` doğrudan klasör ister | Arşiv konumu, AI paket onayı | P1 | 006, 073 | Sihirbaz kısa; atlanabilir |
 | 067 | Erişilebilirlik | 🟡 | `MotionConfig reducedMotion="user"`, `prefers-reduced-motion`, bazı `aria-label` | Yazı ölçekleme, tam klavye, ekran okuyucu denetimi | P2 | — | Klavyeyle uçtan uca akış |
@@ -164,7 +164,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 |---|---|---|---|---|---|---|---|
 | 084 | Çoklu donanım AI katmanı | 🟡 | `sahne-model.ts` DirectML + işlemci yedeği, `cihazTutarliMi` | macOS Core ML yok (Mac sonra) | P1 | — | Ekran kartı tutarsızsa işlemci (testi var) |
 | 085 | Küçük uzman model paketleri | 🟡 | CLIP ve çeviri ayrı modeller | Paket sistemi yok | P1 | 073 | Kullanılmayan paket RAM'de değil |
-| 086 | Ticari dağıtım lisans denetimi | 🟡 | `docs/LISANSLAR.md`: doğrudan + dolaylı bağımlılıklar, ffmpeg/ffprobe ikilileri, DirectML, libvips, libheif; kaynak bağlantısı ve tarih (2026-11-03) | Paketle birlikte `THIRD_PARTY_NOTICES`, GPL kaynak teklifi, ffprobe değişimi YAPILMADI | P0 (yayın öncesi) | 064 | Lisans tablosu var (açık kalemler belgede işaretli) |
+| 086 | Ticari dağıtım lisans denetimi | 🟡 | `docs/LISANSLAR.md`: doğrudan + dolaylı bağımlılıklar, ffmpeg/ffprobe ikilileri, DirectML, libvips, libheif; kaynak bağlantısı ve tarih (2026-11-03) | Paketle birlikte `THIRD_PARTY_NOTICES` ve GPL kaynak teklifi YAPILMADI; ffprobe kaldırıldı (2026-11-03, video bilgisi `ffmpeg.exe`'den) | P0 (yayın öncesi) | 064 | Lisans tablosu var (açık kalemler belgede işaretli) |
 | 087 | Kod ve ağırlık ayrı lisans | 🟡 | `model-izni.ts` `ModelPaketi.kodLisansi`/`agirlikLisansi`/`atif`; `docs/LISANSLAR.md` bölüm 4 | Model sürümü (revision) sabitlenmedi; opus-mt ağırlık lisansı kaynaklar arasında çelişkili | P1 | 092 | Her modelin kod/ağırlık lisansı kayıtlı ✅ |
 | 088 | İki katmanlı OCR | ⬜ | — | Tamamı | P1 | 020 | Düşük güvende ikinci motor |
 | 089 | Yerel semantik arama | 🟡 | CLIP vektörleri zaten `kayit.json`'da | Metinden arama arayüzü, indeks | P1 | 010 | "kumsalda köpek" yerel sonuç verir |

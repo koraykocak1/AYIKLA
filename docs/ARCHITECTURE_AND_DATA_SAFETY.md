@@ -55,7 +55,7 @@ Bu ilk şema bilerek dardır: bugünkü `IslenmisMedya` nesnesini olduğu gibi s
 
 | Konu | Durum |
 |---|---|
-| Kaynak dosya | Yalnız okunur (`stat`, `readFile`, `sharp`, `ffprobe`). Kodda kaynağa yazan ya da silen çağrı yok ✅ |
+| Kaynak dosya | Yalnız okunur (`stat`, `readFile`, `sharp`, `ffmpeg -i`). Kodda kaynağa yazan ya da silen çağrı yok ✅ |
 | Katalog yazımı | FAZ 1 #4: SQLite transaction (WAL, `synchronous=FULL`); yalnız değişen satırlar yazılır, hiçbir şey değişmediyse dosyaya dokunulmaz. Yarıda kesilirse eski hâl kalır ✅ |
 | Bozuk katalog | Parti 1 koruması sürüyor: geçiş sırasında bozuk ya da bilinmeyen sürümdeki `kayit.json` → `kayit.json.bozuk-<zaman>`. FAZ 1 #4: bozuk veritabanı `-wal`/`-shm` dosyalarıyla birlikte `katalog.db.bozuk-<zaman>` olarak kenara alınır ve eski `kayit.json`’dan yeniden kurulur. Daha yeni sürümün şeması (`user_version` > 1) değiştirilmez, açılış hata verir. Kilitli dosyada boş kayıtla devam edilmez ✅ |
 | Ağ yolu | FAZ 1 #4: katalog `\\sunucu\paylasim` (UNC) yolunda açılmaz ✅. Eşlenmiş ağ sürücüsü (`Z:`) anlaşılmıyor — YAPILMADI |

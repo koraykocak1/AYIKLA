@@ -22,7 +22,7 @@
 | `better-sqlite3` | 13.0.3 | MIT | Telif + lisans metni. Hazır yerel ikili (`prebuilds/win32-x64.node`) paketle gelir; derleme yok | [github.com/WiseLibs/better-sqlite3](https://github.com/WiseLibs/better-sqlite3) (`LICENSE`) | 2026-11-03 |
 | `exifr` | 7.1.3 | MIT | Telif + lisans metni | [github.com/MikeKovarik/exifr](https://github.com/MikeKovarik/exifr) | 2026-11-03 |
 | `ffmpeg-static` (paket) | 5.3.0 | GPL-3.0-or-later | Bkz. bölüm 3: ikili GPLv3 | [github.com/eugeneware/ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) | 2026-11-03 |
-| `ffprobe-static` (paket) | 3.1.0 | MIT (yalnız JS sarmalayıcı) | **İçindeki ikili GPLv3**, bkz. bölüm 3 | [github.com/joshwnj/ffprobe-static](https://github.com/joshwnj/ffprobe-static) | 2026-11-03 |
+| ~~`ffprobe-static` (paket)~~ | ~~3.1.0~~ | — | **Kaldırıldı (2026-11-03).** Video süresi, boyutu ve tarihi artık `ffmpeg.exe -i` çıktısından okunuyor (`src/motor/ffmpeg.ts`); program `ffprobe.exe` taşımıyor | — | 2026-11-03 |
 | `heic-convert` | 2.1.0 | ISC | Telif + lisans metni; çözücü LGPL, bkz. bölüm 2 | [github.com/catdad-experiments/heic-convert](https://github.com/catdad-experiments/heic-convert) | 2026-11-03 |
 | `motion` | 14.9.0 | MIT | Telif + lisans metni | [github.com/motiondivision/motion](https://github.com/motiondivision/motion) | 2026-11-03 |
 | `react`, `react-dom` | 19.3.1 | MIT | Telif + lisans metni | [github.com/facebook/react](https://github.com/facebook/react) | 2026-11-03 |
@@ -50,17 +50,17 @@ LGPL bileşenleri şu an programın içine gömülmüyor: `scripts/derle.mjs` do
 
 ## 3. ffmpeg ve ffprobe ikilileri: GPL mi?
 
-**Evet. İkisi de GPLv3 ile dağıtılıyor.**
+**Evet. İkisi de GPLv3 ile dağıtılıyordu; `ffprobe` 2026-11-03'te kaldırıldı, yalnız `ffmpeg.exe` kaldı.**
 
 | İkili | Sürüm | Derleyen | Derleme seçenekleri | Lisans | Kaynak kodu | Kontrol |
 |---|---|---|---|---|---|---|
 | `ffmpeg-static/ffmpeg.exe` (Windows x64) | 6.1.1 essentials | gyan.dev | `--enable-gpl --enable-version3`, libx264, libx265 ve başka kütüphanelerle | **GPL-3.0** (paketteki `ffmpeg.exe.README` ve `ffmpeg.exe.LICENSE` dosyalarında yazıyor) | Paket README'si FFmpeg commit'ini veriyor ([e38092ef93](https://github.com/FFmpeg/FFmpeg/commit/e38092ef93)). Ek kütüphanelerin tam kaynağının gyan.dev'den sağlandığı **doğrulanmadı** | 2026-11-03 |
-| `ffprobe-static/bin/win32/x64/ffprobe.exe` | 4.0.2 (2018) | Zeranoe (README: ffmpeg.zeranoe.com) | `--enable-gpl --enable-version3`, libx264, libx265 vb. | **GPL-3.0**: npm paketi MIT görünse de içindeki ikili GPL | Zeranoe derleme sitesine bugün ulaşılıp ulaşılamadığı **doğrulanmadı**. Kaynak teklifinin karşılanıp karşılanamayacağı **doğrulanmadı** | 2026-11-03 |
+| ~~`ffprobe-static/bin/win32/x64/ffprobe.exe`~~ | ~~4.0.2 (2018)~~ | ~~Zeranoe~~ | — | — | **Kaldırıldı (2026-11-03)**: paket `npm uninstall` ile çıkarıldı, `scripts/derle.mjs` listesinden silindi. Kaynağı belirsiz ikili artık dağıtılmıyor | 2026-11-03 |
 
 **Ne anlama geliyor:**
 - AYIKLA bu programları ayrı bir süreç olarak çalıştırıyor (`src/motor/ffmpeg.ts`). Kendi kodumuzun bu yüzden GPL olması gerekmiyor; ama bu bir yorumdur, hukuki görüş değildir.
 - İkilileri dağıtırsak GPLv3'ün gereklerini yerine getirmemiz şart: lisans metnini vermek, kaynak koduna ulaşma yolunu (ya da yazılı teklif) sunmak, kullanıcının ikiliyi değiştirebilmesine engel olmamak.
-- **Risk:** `ffprobe.exe` eski (2018) ve kaynağına ulaşma yolu belirsiz. Yayından önce ya güncel bir gyan.dev ffprobe derlemesine geçilmeli ya da süre/boyut bilgisi `ffmpeg.exe` ile okunmalı (açık iş, 086).
+- **Çözüldü (2026-11-03):** eski (2018) ve kaynağı belirsiz `ffprobe.exe` kaldırıldı; süre/boyut/tarih `ffmpeg.exe` ile okunuyor. Geriye tek GPL ikili kaldı: `ffmpeg.exe` (gyan.dev 6.1.1). Onun kaynak teklifi hâlâ açık iş (086).
 - x264 ve x265 GPL lisanslı, patent konusu olabilecek kodlayıcılar. AYIKLA video kodlamıyor, yalnız kare çıkarıyor (kod çözüyor); ama ikilinin içinde bu kodlayıcılar yine de var. Patent durumu **doğrulanmadı**.
 
 ## 4. Yapay zekâ modelleri: kod ve ağırlık ayrı
@@ -84,4 +84,4 @@ LGPL bileşenleri şu an programın içine gömülmüyor: `scripts/derle.mjs` do
 ## 5. Uygulamadaki karşılığı
 
 - Onay ekranında gösterilen boyut, kaynak ve lisans bilgileri `src/motor/model-izni.ts` dosyasındaki `CLIP_PAKETI` ve `CEVIRI_PAKETI` tanımlarından geliyor. Bu tablo değişirse orası da güncellenmeli.
-- Henüz YAPILMADI: Hakkında/lisans ekranı, paketlenen programın yanına `LICENSE`/`THIRD_PARTY_NOTICES` dosyası koymak, ffprobe'u değiştirmek, model sürümünü sabitlemek.
+- Henüz YAPILMADI: Hakkında/lisans ekranı, paketlenen programın yanına `LICENSE`/`THIRD_PARTY_NOTICES` dosyası koymak, model sürümünü sabitlemek. (ffprobe 2026-11-03'te kaldırıldı.)
