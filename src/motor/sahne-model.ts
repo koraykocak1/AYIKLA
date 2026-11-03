@@ -7,11 +7,34 @@ import {
   env,
   pipeline,
 } from '@huggingface/transformers';
+import { CEVIRI_PAKETI, CLIP_PAKETI, indirmeSablonu, modelDosyalariniDogrula, type ModelPaketi } from './model-izni';
 import { cihazTutarliMi, normalize } from './sahne-puan';
 import type { SahneModeli } from './tipler';
 
-const CLIP = 'Xenova/clip-vit-base-patch32';
-const CEVIRI = 'Xenova/opus-mt-tr-en';
+const CLIP = CLIP_PAKETI.id;
+const CEVIRI = CEVIRI_PAKETI.id;
+
+/**
+ * Model yüklemeleri sırayla yapılır: indirme adresi şablonu kütüphanede tek bir genel ayardır ve her pakette
+ * farklı sürüme bakar; iki yükleme aynı anda olursa biri ötekinin sürümünden inebilirdi.
+ */
+let kuyruk: Promise<unknown> = Promise.resolve();
+function sirayla<T>(is: () => Promise<T>): Promise<T> {
+  const p = kuyruk.then(is, is);
+  kuyruk = p.catch(() => undefined);
+  return p;
+}
+
+/** İndirme olduysa inen dosyaları sabit sürümün SHA-256'larıyla karşılaştırır; uyuşmayan kenara alınır. */
+async function indirilenleriDogrula(modelKlasoru: string, paket: ModelPaketi, uzaktanIzin: boolean): Promise<void> {
+  if (!uzaktanIzin) return; // dosyalar zaten diskteydi: her açılışta ~1 GB okunmasın
+  const uyusmayan = await modelDosyalariniDogrula(modelKlasoru, paket, true);
+  if (uyusmayan.length) {
+    throw new Error(
+      `${paket.ad}: inen dosyalar beklenen sürümle uyuşmadı (${uyusmayan.join(', ')}). Kenara alındı; yeniden denenince doğru sürüm iner.`,
+    );
+  }
+}
 
 /** Ekran kartını sınamak için birbirinden çok farklı iki küçük test resmi. */
 function sinamaResimleri(): RawImage[] {
@@ -37,13 +60,19 @@ function sinamaResimleri(): RawImage[] {
  * Kütüphanenin ağa çıkıp çıkamayacağını belirler. Onay yoksa `false`: dosyalar yalnız diskteki önbellekten okunur,
  * eksik dosya varsa indirme denenmez, hata verilir (bkz. model-izni.ts).
  */
-function onbellekAyarla(modelKlasoru: string, uzaktanIzin: boolean) {
+function onbellekAyarla(modelKlasoru: string, uzaktanIzin: boolean, paket: ModelPaketi) {
   env.cacheDir = modelKlasoru;
   env.allowRemoteModels = uzaktanIzin;
+  // Önbellekteki yer değişmez (`<klasör>/<model>/<dosya>`); yalnız indirme adresi sabit sürüme bakar.
+  env.remotePathTemplate = indirmeSablonu(paket);
 }
 
-export async function sahneModeliYukle(modelKlasoru: string, uzaktanIzin: boolean): Promise<SahneModeli> {
-  onbellekAyarla(modelKlasoru, uzaktanIzin);
+export function sahneModeliYukle(modelKlasoru: string, uzaktanIzin: boolean): Promise<SahneModeli> {
+  return sirayla(() => sahneModeliniAc(modelKlasoru, uzaktanIzin));
+}
+
+async function sahneModeliniAc(modelKlasoru: string, uzaktanIzin: boolean): Promise<SahneModeli> {
+  onbellekAyarla(modelKlasoru, uzaktanIzin, CLIP_PAKETI);
   const islemci = await AutoProcessor.from_pretrained(CLIP);
   const ayirici = await AutoTokenizer.from_pretrained(CLIP);
   type GorselModel = Awaited<ReturnType<typeof CLIPVisionModelWithProjection.from_pretrained>>;
@@ -76,6 +105,7 @@ export async function sahneModeliYukle(modelKlasoru: string, uzaktanIzin: boolea
     // ekran kartı açılamadı: işlemciyle devam
   }
   const metin = await CLIPTextModelWithProjection.from_pretrained(CLIP, { device: 'cpu', dtype: 'fp32' });
+  await indirilenleriDogrula(modelKlasoru, CLIP_PAKETI, uzaktanIzin);
 
   return {
     cihaz,
@@ -94,8 +124,12 @@ export async function sahneModeliYukle(modelKlasoru: string, uzaktanIzin: boolea
 
 /** Kullanıcının yazdığı Türkçe grup adını CLIP için İngilizceye çevirir. */
 export async function ingilizceyeCevir(metin: string, modelKlasoru: string, uzaktanIzin: boolean): Promise<string> {
-  onbellekAyarla(modelKlasoru, uzaktanIzin);
-  const cevirici = await pipeline('translation', CEVIRI);
+  const cevirici = await sirayla(async () => {
+    onbellekAyarla(modelKlasoru, uzaktanIzin, CEVIRI_PAKETI);
+    const p = await pipeline('translation', CEVIRI);
+    await indirilenleriDogrula(modelKlasoru, CEVIRI_PAKETI, uzaktanIzin);
+    return p;
+  });
   const sonuc = (await cevirici(metin)) as Array<{ translation_text: string }>;
   return sonuc[0]?.translation_text?.replace(/[.!]+$/, '').trim() || metin;
 }

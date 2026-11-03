@@ -152,7 +152,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
 
   async function modelDurumu(): Promise<ModelDurumuCevabi> {
     const d = await a.modelIzni.durum();
-    const paketler = d.eksik.map(({ dosyalar: _d, ...p }) => p);
+    const paketler = d.eksik.map(({ dosyalar: _d, surum: _s, ozetler: _o, ...p }) => p);
     return { indirmeGerekli: d.indirmeGerekli, paketler, toplamMB: paketler.reduce((t, p) => t + p.boyutMB, 0) };
   }
 

@@ -1,5 +1,6 @@
-import { access, mkdir, readFile, writeFile } from 'node:fs/promises';
+import { access, mkdir, readFile, rename, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { dosyaOzeti } from './disari-aktar';
 
 /** İnternetten bir kez inen yapay zekâ modeli: onay ekranında gösterilen bilgiler. */
 export interface ModelPaketi {
@@ -13,9 +14,14 @@ export interface ModelPaketi {
   kodLisansi: string;
   agirlikLisansi: string;
   atif?: string;
+  /** Sabitlenen HuggingFace commit'i: dosyalar yalnız bu sürümden iner (`main` dalı değişse de). */
+  surum: string;
+  /** Her dosyanın bu sürümdeki SHA-256'sı: inen dosya bununla doğrulanır. */
+  ozetler: Record<string, string>;
 }
 
-// Boyutlar HuggingFace dosya listesinden (2026-11-03). Lisanslar: docs/LISANSLAR.md
+// Boyutlar ve özetler HuggingFace API'sinden (2026-11-03); bu bilgisayardaki çalışan kopyayla birebir aynı.
+// Lisanslar: docs/LISANSLAR.md
 export const CLIP_PAKETI: ModelPaketi = {
   id: 'Xenova/clip-vit-base-patch32',
   ad: 'CLIP ViT-B/32 (OpenAI)',
@@ -32,6 +38,15 @@ export const CLIP_PAKETI: ModelPaketi = {
   kaynak: 'https://huggingface.co/Xenova/clip-vit-base-patch32',
   kodLisansi: 'MIT',
   agirlikLisansi: 'MIT',
+  surum: '6b7c523703ae26e39be4b03774966f8571c7f523',
+  ozetler: {
+    'config.json': '493ef57ff783e42d1530c91b53469b7fdf8db8a9c1408e86998fcb7899a4f495',
+    'preprocessor_config.json': '6f638fb9401a6d6296feff533ee7efe657b787c49f954f82f5906b36ef2a1b1f',
+    'tokenizer.json': 'f7f3b7af117d467b58374797691a6438d3e6b9e9cef800dfd5dced7f697a90cd',
+    'tokenizer_config.json': '60ba2912bc6344c94bc16bbdec27fa1209409167b6f2fdf3cfe9e65462ea3967',
+    'onnx/vision_model.onnx': 'fd6e1402a588279d1723c7534d4bcba5bc0b14b47dfab0e46f8c47b8270d7d40',
+    'onnx/text_model.onnx': '3f6571f5bad13a97c469c1622e1cfc4d9aef78b79fdbfcff804ca357bfada8cc',
+  },
 };
 
 export const CEVIRI_PAKETI: ModelPaketi = {
@@ -51,7 +66,43 @@ export const CEVIRI_PAKETI: ModelPaketi = {
   kodLisansi: 'MIT',
   agirlikLisansi: 'CC-BY 4.0 (atıf gerekir)',
   atif: 'OPUS-MT, Helsinki-NLP — Tiedemann & Thottingal (2020)',
+  surum: '78247f41f354af036d24e6f0f8a3d02c6806f96e',
+  ozetler: {
+    'config.json': 'c7997f0312362bd4b67b8f5184dd0ce9a09a8c6bfe76bddd1f7c5d1c58966fe0',
+    'generation_config.json': '606d03551f5442faaf22ebb638b10ddd7210c40cd13cb4d2193b9e4e874b3df3',
+    'tokenizer.json': '1aef432629956f2df4e06b2c7e703daaddcaf0c23ab45c7bfd5d253be954f32f',
+    'tokenizer_config.json': '73ced36b78140c779b6d98143e72b5cefbc4cc423acd5a5554d84e4f766132dc',
+    'onnx/encoder_model.onnx': '7dbf06083b95cbe241cf413ad50ef61465e6a609bd55ec8ad470e6b30a7f41a7',
+    'onnx/decoder_model_merged.onnx': 'fb5600bc5abc3467e7ac97fdeef9cab24be6e5dcec500190fa30ea411877fada',
+  },
 };
+
+/** Kütüphanenin indirme adresi şablonu: `{model}` yerine depo adı konur, sürüm sabittir. */
+export function indirmeSablonu(paket: ModelPaketi): string {
+  return `{model}/resolve/${paket.surum}/`;
+}
+
+/**
+ * Paketin diskteki dosyalarını beklenen SHA-256'larla karşılaştırır. Uyuşmayan ya da eksik dosyaları döndürür.
+ * `kenaraAl` true ise uyuşmayan dosya silinmez, `<dosya>.bozuk-<zaman>` olarak kenara alınır (bir sonraki
+ * onaylı açılışta doğru sürüm yeniden iner).
+ */
+export async function modelDosyalariniDogrula(modelKlasoru: string, paket: ModelPaketi, kenaraAl = false): Promise<string[]> {
+  const uyusmayan: string[] = [];
+  for (const d of paket.dosyalar) {
+    const yol = join(modelKlasoru, paket.id, d);
+    let ozet: string | null = null;
+    try {
+      ozet = await dosyaOzeti(yol);
+    } catch {
+      // yok ya da okunamıyor
+    }
+    if (ozet === paket.ozetler[d]) continue;
+    uyusmayan.push(d);
+    if (kenaraAl && ozet !== null) await rename(yol, `${yol}.bozuk-${new Date().toISOString().replace(/[:.]/g, '-')}`);
+  }
+  return uyusmayan;
+}
 
 export const MODEL_PAKETLERI: ModelPaketi[] = [CLIP_PAKETI, CEVIRI_PAKETI];
 

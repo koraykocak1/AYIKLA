@@ -1,8 +1,17 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { join } from 'node:path';
-import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { createHash } from 'node:crypto';
+import { mkdir, readdir, readFile, writeFile } from 'node:fs/promises';
 import { env } from '@huggingface/transformers';
-import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzni, ModelIzniGerekliHatasi, eksikPaketler } from '../src/motor/model-izni';
+import {
+  CEVIRI_PAKETI,
+  CLIP_PAKETI,
+  ModelIzni,
+  ModelIzniGerekliHatasi,
+  eksikPaketler,
+  indirmeSablonu,
+  modelDosyalariniDogrula,
+} from '../src/motor/model-izni';
 import { sahneModeliYukle, ingilizceyeCevir } from '../src/motor/sahne-model';
 import { sunucuOlustur } from '../src/motor/sunucu';
 import type { ArayuzOlayi, IsciIstegi, IsciMesaji, Istek, ModelDurumuCevabi, Sayim } from '../src/ortak/mesajlar';
@@ -139,5 +148,48 @@ describe('gerçek kütüphane: ağ izni kapalıyken indirme denenmez', () => {
     await expect(sahneModeliYukle(k.modeller, true)).rejects.toThrow();
     expect(sahteIndirici).toHaveBeenCalled();
     expect(String(sahteIndirici.mock.calls[0][0])).toContain('huggingface.co');
+    // Sürüm sabit: `main` değil, kayıtlı commit'ten iner
+    const clipAdresleri = sahteIndirici.mock.calls.map((c) => String(c[0]));
+    expect(clipAdresleri.every((u) => u.includes(`/${CLIP_PAKETI.id}/resolve/${CLIP_PAKETI.surum}/`))).toBe(true);
+    sahteIndirici.mockClear();
+    await expect(ingilizceyeCevir('deniz', k.modeller, true)).rejects.toThrow();
+    const ceviriAdresleri = sahteIndirici.mock.calls.map((c) => String(c[0]));
+    expect(ceviriAdresleri.length).toBeGreaterThan(0);
+    expect(ceviriAdresleri.every((u) => u.includes(`/${CEVIRI_PAKETI.id}/resolve/${CEVIRI_PAKETI.surum}/`))).toBe(true);
   }, 30_000);
+});
+
+describe('model sürümü sabit ve dosyalar doğrulanır', () => {
+  it("her paketin sabit commit'i ve her dosyanın SHA-256'sı kayıtlı", () => {
+    for (const p of [CLIP_PAKETI, CEVIRI_PAKETI]) {
+      expect(p.surum).toMatch(/^[0-9a-f]{40}$/);
+      expect(Object.keys(p.ozetler).sort()).toEqual([...p.dosyalar].sort());
+      for (const o of Object.values(p.ozetler)) expect(o).toMatch(/^[0-9a-f]{64}$/);
+      expect(indirmeSablonu(p)).toBe(`{model}/resolve/${p.surum}/`);
+    }
+  });
+
+  it('uyuşmayan ve eksik dosyayı bulur; istenirse uyuşmayanı silmeden kenara alır', async () => {
+    const k = await kur();
+    const icerik = 'doğru içerik';
+    const paket = {
+      ...CLIP_PAKETI,
+      id: 'Deneme/model',
+      dosyalar: ['a.json', 'b.onnx', 'c.onnx'],
+      ozetler: {
+        'a.json': createHash('sha256').update(icerik).digest('hex'),
+        'b.onnx': createHash('sha256').update('başka').digest('hex'),
+        'c.onnx': createHash('sha256').update('yok').digest('hex'),
+      },
+    };
+    await mkdir(join(k.modeller, 'Deneme', 'model'), { recursive: true });
+    await writeFile(join(k.modeller, 'Deneme', 'model', 'a.json'), icerik);
+    await writeFile(join(k.modeller, 'Deneme', 'model', 'b.onnx'), 'bozuk');
+    expect(await modelDosyalariniDogrula(k.modeller, paket)).toEqual(['b.onnx', 'c.onnx']);
+    expect(await modelDosyalariniDogrula(k.modeller, paket, true)).toEqual(['b.onnx', 'c.onnx']);
+    const kalan = await readdir(join(k.modeller, 'Deneme', 'model'));
+    expect(kalan).toContain('a.json');
+    expect(kalan.some((d) => d.startsWith('b.onnx.bozuk-'))).toBe(true);
+    expect(kalan).not.toContain('b.onnx');
+  });
 });

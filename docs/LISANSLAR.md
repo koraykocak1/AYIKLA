@@ -79,9 +79,9 @@ LGPL bileşenleri şu an programın içine gömülmüyor: `scripts/derle.mjs` do
 
 **Model boyutları** (program yalnız fp32 dosyalarını açar; HuggingFace API dosya listesi, 2026-11-03): CLIP `vision_model.onnx` 351,7 MB + `text_model.onnx` 254,1 MB + yapılandırma ≈ **610 MB**. opus-mt `encoder_model.onnx` 204,6 MB + `decoder_model_merged.onnx` 230,5 MB + yapılandırma ≈ **440 MB**. Eski metinlerdeki "~350 MB" bilgisi yanlıştı.
 
-**Sürüm sabitleme:** Modeller `main` dalından iniyor ve bu dal değişebilir. Nitekim `Xenova/clip-vit-base-patch32` en son 2026-10-28'de güncellenmiş. Lisans ve boyut bilgisinin indirilen dosyalarla uyuşması için belirli bir sürümün (revision) sabitlenmesi önerilir (açık iş, 087).
+**Sürüm sabitleme (yapıldı, 2026-11-03):** Modeller artık `main` dalından değil, sabit bir commit'ten iner: CLIP `6b7c523703ae26e39be4b03774966f8571c7f523` (2026-10-28), OPUS-MT `78247f41f354af036d24e6f0f8a3d02c6806f96e` (2025-07-14). Bunlar HuggingFace API'sindeki güncel commit'lerdi ve bu bilgisayardaki çalışan kopyanın 12 dosyasının özetleri bunlarla birebir aynıydı. Her dosyanın SHA-256'sı `src/motor/model-izni.ts`'te kayıtlı; indirme olduğunda inen dosyalar bununla doğrulanır, uyuşmayan silinmeden kenara alınır. Zaten inmiş modellerde her açılışta doğrulama yapılmaz (~1 GB okuma olmasın diye).
 
 ## 5. Uygulamadaki karşılığı
 
 - Onay ekranında gösterilen boyut, kaynak ve lisans bilgileri `src/motor/model-izni.ts` dosyasındaki `CLIP_PAKETI` ve `CEVIRI_PAKETI` tanımlarından geliyor. Bu tablo değişirse orası da güncellenmeli.
-- Henüz YAPILMADI: Hakkında/lisans ekranı, paketlenen programın yanına `LICENSE`/`THIRD_PARTY_NOTICES` dosyası koymak, model sürümünü sabitlemek. (ffprobe 2026-11-03'te kaldırıldı.)
+- Henüz YAPILMADI: Hakkında/lisans ekranı, paketlenen programın yanına `LICENSE`/`THIRD_PARTY_NOTICES` dosyası koymak. (ffprobe kaldırıldı ve model sürümü sabitlendi, 2026-11-03.)

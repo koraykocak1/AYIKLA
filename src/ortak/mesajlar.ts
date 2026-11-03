@@ -24,8 +24,8 @@ export type IsciIstegi =
   | { id: number; tur: 'modelDurumu' }
   | { id: number; tur: 'modelIzniVer' };
 
-/** Onay adımı için: indirilecek modeller ve bilgileri (dosya listesi arayüze gitmez). */
-export type ArayuzModelPaketi = Omit<ModelPaketi, 'dosyalar'>;
+/** Onay adımı için: indirilecek modeller ve bilgileri (dosya listesi, sürüm ve özetler arayüze gitmez). */
+export type ArayuzModelPaketi = Omit<ModelPaketi, 'dosyalar' | 'surum' | 'ozetler'>;
 export interface ModelDurumuCevabi {
   indirmeGerekli: boolean;
   paketler: ArayuzModelPaketi[]; // yalnız diskte eksik olanlar
