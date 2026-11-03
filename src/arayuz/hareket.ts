@@ -46,6 +46,67 @@ export const kure = {
   buyumeMesafesi: 80, // bu kadar uzaklaşan nokta en büyük ve krem rengine dönmüş olur (px)
 } as const;
 
+/*
+ * Ayıklama ekranı. Fizik değerleri 60 kare/sn'lik bir kareye göredir; bileşenler gerçek geçen süreyle ölçekler.
+ * Yerleşim oranları ekran yüksekliğine göredir (0 üst, 1 alt).
+ */
+
+/** Ortadaki sarı enerji halkası. */
+export const halka = {
+  merkezY: 0.7,
+  yaricapOrani: 0.165, // yarıçap = ekranın kısa kenarı × bu oran
+  kuculme: 0.2, // ayıklama bittikçe halka bu oranda küçülür
+  dogus: 1.4, // içten dışa açılıp belirme süresi (sn)
+  telSayisi: 11,
+  telNoktasi: 200,
+  dalga: 0.035, // tellerin titreşim genliği (yarıçapa oran)
+  kivrimSikligi: 3.6, // saniyede ortalama yeni alev kıvrımı
+  kivrimEnFazla: 9,
+  itmeYaricapi: 140, // fare bu kadar yaklaşınca tel itilir (px)
+  itmeGucu: 0.09,
+  hizEtkisi: 0.03,
+  surukleme: 0.014, // fare hızının tele geçen payı
+  donusYayi: 0.0024,
+  surtunme: 0.972,
+} as const;
+
+/** Halkadan kopup grubuna süzülen yıldız tozu (her biri bir ya da birkaç fotoğraf). */
+export const toz = {
+  yolculuk: 4.5, // halkadan gruba varış süresi (sn)
+  enFazla: 70, // aynı anda uçan toz; akış hızlıysa bir toz birkaç fotoğraf taşır (sayılar yine doğru)
+  paketBolen: 25, // bekleyen sayısı / bu = bir tozun taşıdığı en çok fotoğraf
+  aralik: 0.05, // iki toz arasındaki en kısa süre (sn)
+  zerre: 9, // bir bulutta zerrecik
+  sarmal: 0.12, // sarmalın genişliği (ekran enine oran)
+} as const;
+
+/** Üstte yan yana grup küreleri. */
+export const grupKuresi = {
+  ustY: 0.17,
+  kenar: 0.1, // en soldaki ve en sağdaki kürenin kenara uzaklığı (ekran enine oran)
+  enKucuk: 6, // boş kürenin yarıçapı (px)
+  enBuyuk: 44,
+  noktaSayisi: 90,
+  donusHizi: 0.24, // saniyede (radyan)
+} as const;
+
+/** Gruplar ile halka arasındaki zerrecikli "AYIKLA" yazısı (C tarzı: çok kalın, seyrek iri zerrecik, füme). */
+export const ayiklaYazisi = {
+  merkezY: 0.385,
+  boyOrani: 0.095, // yazı boyu = ekranın kısa kenarı × bu oran
+  harfAraligi: 0.22, // karşılamadaki geniş aralıkla uyumlu (yazı boyuna oran)
+  aralikOrani: 0.065, // zerrecikler arası (yazı boyuna oran)
+  zerreOrani: 0.046, // zerrecik boyu (yazı boyuna oran)
+  belirme: 0.9, // bütün yazının birden belirme süresi (sn)
+  yansima: 0.18, // ayna yansımasının parlaklığı
+  itmeYaricapi: 90, // fare zerrecikleri dağıtır, yavaşça geri toplanırlar
+  itmeGucu: 1.2,
+  hizEtkisi: 0.25,
+  surukleme: 0,
+  donusYayi: 0.06,
+  surtunme: 0.8,
+} as const;
+
 /** Sıralı giriş gecikmesi: ilk birkaç öğe sırayla gelir, gerisi beklemez (binlerce öğede gecikme birikmesin). */
 export function siraliGecikme(i: number, adim = 0.03, ust = 24): number {
   return Math.min(i, ust) * adim;

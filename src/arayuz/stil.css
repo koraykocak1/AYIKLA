@@ -260,50 +260,42 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 
 /* ---------- Ayıklama ---------- */
-.ayiklama { position: absolute; inset: 0; }
-.ayiklama .sahne { position: absolute; inset: 0; }
-.ust-serit { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between; padding: 18px 26px; z-index: 5; }
+/* Düzen: üstte ilerleme çizgisi ve şerit / sahnede küreler, yazı, halka, toz / alt şerit. Hizalar karşılamayla aynı. */
+.ayiklama { --kenar: clamp(20px, 3vw, 40px); position: absolute; inset: 0; overflow: hidden; }
+.ayiklama .etiket { letter-spacing: 0.22em; }
+.a-sahne { position: absolute; inset: 0; }
+.ayiklama-tuval { position: absolute; inset: 0; width: 100%; height: 100%; display: block; pointer-events: none; }
+
+/* En üstte ince sarı ilerleme çizgisi (yalnız transform ile dolar) */
+.a-ilerleme { position: absolute; top: 0; left: 0; right: 0; height: 2px; z-index: 3; background: rgba(250, 204, 21, 0.08); }
+.a-ilerleme-dolu {
+  height: 100%;
+  transform-origin: left center;
+  background: linear-gradient(90deg, rgba(250, 204, 21, 0.4), var(--sari));
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.7);
+}
+
+.a-ust,
+.a-alt { position: absolute; left: var(--kenar); right: var(--kenar); z-index: 2; display: flex; justify-content: space-between; gap: 24px; }
+.a-ust { top: var(--kenar); align-items: center; }
+.a-alt { bottom: var(--kenar); align-items: flex-end; }
+.a-ust .etiket { text-align: right; }
+
+/* "AYIKLANIYOR · %42": karşılamadaki teknik yazıyla aynı aile, sayılar sabit genişlikte (titremesin) */
+.a-yuzde {
+  font-family: Bahnschrift, 'DIN Alternate', var(--mono);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--metin);
+  font-variant-numeric: tabular-nums;
+}
+.a-nokta { color: var(--cok-soluk); margin: 0 0.2em; }
+.a-sayi { color: var(--sari); }
+.a-ayrinti { margin-top: 8px; color: var(--cok-soluk); font-size: 10px; font-variant-numeric: tabular-nums; }
+.a-alt .ikincil { padding: 12px 20px; letter-spacing: 0.22em; }
+
+/* Sonuç ekranının üst şeridindeki küçük marka */
 .marka-kucuk { font-family: var(--serif); letter-spacing: 0.3em; color: var(--altin); font-size: 18px; }
-.durum { color: var(--soluk); font-size: 13px; }
-.sayaclar { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; z-index: 5; }
-.sayac { min-width: 132px; padding: 10px 16px; border: 1px solid var(--cizgi); border-radius: 14px; background: rgba(15, 13, 10, 0.72); backdrop-filter: blur(10px); }
-.sayac .etiket { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: var(--cok-soluk); }
-.sayac .deger { font-family: var(--serif); font-size: 26px; color: var(--metin); font-variant-numeric: tabular-nums; }
-.sayac.vurgu .deger { color: var(--altin); }
-.grup-etiketi {
-  position: absolute;
-  z-index: 4;
-  pointer-events: none;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 4px 12px;
-  border-radius: 12px;
-  background: rgba(11, 10, 9, 0.55);
-  backdrop-filter: blur(4px);
-  white-space: nowrap;
-}
-.grup-etiketi .ad { font-family: var(--serif); color: var(--metin); line-height: 1.1; }
-.grup-etiketi .adet { color: var(--altin); font-size: 12px; font-variant-numeric: tabular-nums; }
-.grup-etiketi.elenecek .ad { color: var(--kirmizi); }
-.simdiki {
-  position: absolute;
-  left: 26px;
-  bottom: 26px;
-  z-index: 5;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  padding: 8px 16px 8px 8px;
-  border: 1px solid var(--cizgi);
-  border-radius: 14px;
-  background: rgba(15, 13, 10, 0.72);
-  backdrop-filter: blur(10px);
-  max-width: 360px;
-}
-.simdiki img { width: 64px; height: 48px; object-fit: cover; border-radius: 8px; }
-.simdiki .ad { font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.simdiki .soluk { font-size: 12px; }
 .model-uyari {
   position: absolute;
   left: 50%;
@@ -465,7 +457,15 @@ button:disabled { opacity: 0.5; cursor: default; }
   box-shadow: 0 30px 80px rgba(0, 0, 0, 0.6), 0 0 60px -20px rgba(232, 201, 138, 0.4);
 }
 .bitis-isaret { width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; font-size: 26px; color: #1a140a; background: linear-gradient(180deg, var(--altin-parlak), var(--altin)); }
-.bitis-baslik { font-family: var(--serif); font-size: 28px; color: var(--altin-parlak); }
+.bitis-baslik {
+  font-family: Bahnschrift, 'DIN Alternate', var(--sans);
+  font-weight: 300;
+  font-size: 22px;
+  letter-spacing: 0.24em;
+  margin-right: -0.24em;
+  text-transform: uppercase;
+  color: var(--altin-parlak);
+}
 
 /* Sayaç kartları ve grup menüsü: ufak dokunsal tepkiler */
 .grup { transition-property: background-color, color, transform; transition-duration: 0.25s; }

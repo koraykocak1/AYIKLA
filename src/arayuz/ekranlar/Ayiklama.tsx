@@ -1,14 +1,15 @@
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { AkanSayi } from '../bilesenler/AkanSayi';
-import { egri, sure, yay } from '../hareket';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Color } from 'three';
+import { egri, sure, yay } from '../hareket';
 import { api } from '../api';
-import { Yigin, yeniKart, type YiginVerisi } from '../bilesenler/Yigin';
-import { ELENECEK_KOSESI, etiketBoyu, etiketNoktasi, grupMerkezi, kumeKonumu, yuzde } from '../mantik/duzen';
+import { AyiklaYazisi } from '../bilesenler/AyiklaYazisi';
+import { GrupKureleri } from '../bilesenler/GrupKureleri';
+import { SariHalka } from '../bilesenler/SariHalka';
+import { YildizTozu } from '../bilesenler/YildizTozu';
 import { ELENECEK_ID } from '../mantik/gruplama';
+import { kuyrugaEkle, yeniSahne, type AyiklamaSahnesi, type SahneGrubu } from '../mantik/sahneDuzeni';
 import { HizOlcer } from '../mantik/zaman';
-import { elemeAdi, hataMetni, onizlemeAdresi, sayi, sonParca, sureMetni } from '../mantik/bicim';
+import { hataMetni, sayi, sureMetni } from '../mantik/bicim';
 import { DIGER_ID } from '../../motor/gruplar';
 import type { ArayuzMedya, Sayim } from '../../ortak/mesajlar';
 import type { Grup } from '../../motor/tipler';
@@ -22,8 +23,6 @@ interface Props {
 
 interface Sayaclar {
   taranan: number;
-  gruplanan: number;
-  elenecek: number;
   kalan: number | null;
   toplam: number;
 }
@@ -34,209 +33,159 @@ interface ModelDurumu {
   hata?: string;
 }
 
+const TOZ_BEKLEME_SINIRI = 8000; // bitince son tozların kürelere varması için en çok bu kadar beklenir (ms)
+
+/** Şeritlerdeki yazıların kısa, sırayla gelişi. */
+const belir = (gecikme: number) => ({
+  initial: { opacity: 0, y: 8 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: sure.yavas, ease: egri.yumusak, delay: gecikme },
+});
+
 export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
-  const bolgeler = useMemo(() => [...gruplar.map((g) => ({ id: g.id, ad: g.ad })), { id: DIGER_ID, ad: 'Diğer' }], [gruplar]);
-  const sahne = useRef<HTMLDivElement>(null);
-  const [en, setEn] = useState(1.6);
-  const veri = useRef<YiginVerisi>({ toplam: sayim.foto + sayim.video, en: 1.6, bitti: false, kartlar: [], hedef: () => ({ x: 0, y: 0 }) });
-  const [sayac, setSayac] = useState<Sayaclar>({ taranan: 0, gruplanan: 0, elenecek: 0, kalan: null, toplam: sayim.foto + sayim.video });
-  const [adetler, setAdetler] = useState<Record<string, number>>({});
+  // Üstteki küreler: gruplar + Diğer + Elenecek
+  const kureler = useMemo<SahneGrubu[]>(
+    () => [
+      ...gruplar.map((g) => ({ id: g.id, ad: g.ad })),
+      { id: DIGER_ID, ad: 'Diğer' },
+      { id: ELENECEK_ID, ad: 'Elenecek', elenecek: true },
+    ],
+    [gruplar],
+  );
+  const kureRef = useRef(kureler);
+  kureRef.current = kureler;
+  const sahne = useRef<AyiklamaSahnesi>(yeniSahne());
+  const [sayac, setSayac] = useState<Sayaclar>({ taranan: 0, kalan: null, toplam: sayim.foto + sayim.video });
   const [model, setModel] = useState<ModelDurumu>({ durum: 'yukleniyor' });
   const [calisiyor, setCalisiyor] = useState(false);
-  const [simdiki, setSimdiki] = useState<ArayuzMedya | null>(null);
   const [durduruluyor, setDurduruluyor] = useState(false);
   const [deneme, setDeneme] = useState(0);
   const [bitis, setBitis] = useState<{ adet: number; sure: number } | null>(null);
 
-  // Kartın hedefi o anki ekran oranından hesaplanır: pencere büyüyünce kümeler de kayar.
-  veri.current.hedef = (grup, k, oran) => {
-    if (grup === ELENECEK_ID) return kumeKonumu(ELENECEK_KOSESI(oran), k);
-    const i = bolgeler.findIndex((b) => b.id === grup);
-    return kumeKonumu(grupMerkezi(i < 0 ? bolgeler.length - 1 : i, bolgeler.length, oran), k);
-  };
-
   useEffect(() => {
-    const el = sahne.current;
-    if (!el) return;
-    const g = new ResizeObserver(() => {
-      const o = el.clientWidth / Math.max(1, el.clientHeight);
-      veri.current.en = o;
-      setEn(o);
-    });
-    g.observe(el);
-    return () => g.disconnect();
-  }, []);
-
-  useEffect(() => {
-    const v = veri.current;
+    const s = sahne.current;
     const hiz = new HizOlcer();
-    const kumeSayisi = new Map<string, number>();
-    const kartlar = new Map<string, { i: number; grup: string; renk: string }>();
-    let gruplanan = 0;
-    let elenecek = 0;
-    let sonKalkis = 0;
+    const yerler = new Map<string, string>(); // dosya anahtarı → gittiği küre (kopya çıkınca taşımak için)
+    const zamanlayicilar: number[] = [];
+    let bekleme = 0;
     const baslangic = performance.now();
 
-    function ucur(i: number, grup: string, renk: string) {
-      while (v.kartlar.length <= i) v.kartlar.push(yeniKart());
-      const k = kumeSayisi.get(grup) ?? 0;
-      kumeSayisi.set(grup, k + 1);
-      // Kartlar art arda kalkar; önbellekten gelen arşivde sıra uzarsa aralık kısalır (binlerce kart dakikalarca beklemesin)
-      const simdi = performance.now() / 1000;
-      sonKalkis = Math.max(simdi, sonKalkis + (sonKalkis - simdi > 1.5 ? 0.003 : 0.012));
-      const kart = v.kartlar[i];
-      kart.grup = grup;
-      kart.k = k;
-      kart.renk = new Color(renk);
-      kart.kalkis = sonKalkis;
-      kart.basladi = false;
-    }
-    // Önbellekten gelen arşivde binlerce olay art arda gelir: ekran durumu olay başına değil,
-    // kare başına bir kez güncellenir (akıcılık).
-    const adetYerel: Record<string, number> = {};
+    // Önbellekten gelen arşivde binlerce olay art arda gelir: ekran durumu olay başına değil, kare başına bir kez güncellenir
     let sayacYerel: Sayaclar | null = null;
-    let simdikiYerel: ArayuzMedya | null = null;
     let planli = 0;
     const yenile = () => {
       if (planli) return;
       planli = requestAnimationFrame(() => {
         planli = 0;
-        setAdetler({ ...adetYerel });
         if (sayacYerel) setSayac(sayacYerel);
-        if (simdikiYerel) setSimdiki(simdikiYerel);
       });
     };
-    const artir = (grup: string, n: number) => {
-      adetYerel[grup] = (adetYerel[grup] ?? 0) + n;
-      yenile();
-    };
+    const kureyeGore = (id: string) => (kureRef.current.some((k) => k.id === id) ? id : DIGER_ID);
 
     const birak = api.olaylariDinle((o) => {
       if (o.tur === 'model') {
         setModel({ durum: o.durum, cihaz: o.cihaz, hata: o.hata });
       } else if (o.tur === 'basladi') {
-        v.toplam = o.toplam;
-        // Önbellekte küçük resmi olanlar: yığın baştan gerçek fotoğraflarla dolar
-        o.onizlemeler.forEach((p, i) => p && v.resimIste?.(i, onizlemeAdresi(p)));
         setCalisiyor(true);
         setModel((m) => ({ ...m, durum: 'hazir' }));
-        setSayac((s) => ({ ...s, toplam: o.toplam }));
+        setSayac((x) => ({ ...x, toplam: o.toplam }));
       } else if (o.tur === 'dosya') {
-        const grup = o.medya.eleme ? ELENECEK_ID : o.medya.grupId;
-        if (o.medya.eleme) elenecek++;
-        else gruplanan++;
-        kartlar.set(o.medya.anahtar, { i: o.sira - 1, grup, renk: o.medya.renk });
-        v.resimIste?.(o.sira - 1, onizlemeAdresi(o.medya.onizlemeler[0]));
-        ucur(o.sira - 1, grup, o.medya.renk);
-        artir(grup, 1);
+        const grup = o.medya.eleme ? ELENECEK_ID : kureyeGore(o.medya.grupId);
+        yerler.set(o.medya.anahtar, grup);
+        kuyrugaEkle(s, grup);
         hiz.ekle(performance.now());
-        simdikiYerel = o.medya;
-        sayacYerel = { taranan: o.sira, gruplanan, elenecek, kalan: hiz.kalan(o.toplam - o.sira), toplam: o.toplam };
+        s.ilerleme = o.toplam ? o.sira / o.toplam : 0;
+        sayacYerel = { taranan: o.sira, kalan: hiz.kalan(o.toplam - o.sira), toplam: o.toplam };
         yenile();
       } else if (o.tur === 'kopyalar') {
         for (const a of o.anahtarlar) {
-          const k = kartlar.get(a);
-          if (!k || k.grup === ELENECEK_ID) continue;
-          artir(k.grup, -1);
-          artir(ELENECEK_ID, 1);
-          gruplanan--;
-          elenecek++;
-          k.grup = ELENECEK_ID;
-          ucur(k.i, ELENECEK_ID, k.renk);
+          const grup = yerler.get(a);
+          if (!grup || grup === ELENECEK_ID) continue;
+          yerler.set(a, ELENECEK_ID);
+          kuyrugaEkle(s, ELENECEK_ID, grup); // küresinden kopup elenecek küresine süzülür
         }
-        if (sayacYerel) sayacYerel = { ...sayacYerel, gruplanan, elenecek };
-        yenile();
       } else if (o.tur === 'bitti') {
-        v.bitti = true;
         if (sayacYerel) sayacYerel = { ...sayacYerel, kalan: 0 };
         yenile();
         if (o.durduruldu) {
-          window.setTimeout(() => onBitti(o.sonuc, true), 300);
-        } else {
-          // Son kart yerine oturunca "tamamlandı" anı, ardından sonuç ekranı
-          const inis = Math.max(0, sonKalkis + 1.2 - performance.now() / 1000) * 1000;
-          const sureSn = (performance.now() - baslangic) / 1000;
-          window.setTimeout(() => setBitis({ adet: o.sonuc.length, sure: sureSn }), inis);
-          window.setTimeout(() => onBitti(o.sonuc, false), inis + 2400);
+          zamanlayicilar.push(window.setTimeout(() => onBitti(o.sonuc, true), 300));
+          return;
         }
+        // Son tozlar kürelerine varınca "tamamlandı" anı, ardından sonuç ekranı
+        const sureSn = (performance.now() - baslangic) / 1000;
+        const bitti = performance.now();
+        bekleme = window.setInterval(() => {
+          const yolda = s.kuyruk.length > 0 || s.ucan > 0;
+          if (yolda && performance.now() - bitti < TOZ_BEKLEME_SINIRI) return;
+          clearInterval(bekleme);
+          setBitis({ adet: o.sonuc.length, sure: sureSn });
+          zamanlayicilar.push(window.setTimeout(() => onBitti(o.sonuc, false), 2400));
+        }, 200);
       }
     });
     api.baslat(girdiler).catch((h) => setModel({ durum: 'hata', hata: hataMetni(h) }));
     return () => {
       birak();
       cancelAnimationFrame(planli);
+      clearInterval(bekleme);
+      zamanlayicilar.forEach((z) => clearTimeout(z));
     };
   }, [deneme]);
 
-  const grupAdi = (m: ArayuzMedya) => (m.eleme ? `Elenecek › ${elemeAdi(m.eleme)}` : (bolgeler.find((b) => b.id === m.grupId)?.ad ?? 'Diğer'));
+  const oran = sayac.toplam ? Math.min(1, sayac.taranan / sayac.toplam) : 0;
   const durumMetni =
     model.durum === 'yukleniyor'
       ? 'Yapay zekâ hazırlanıyor… (ilk açılışta ~350 MB iner)'
       : calisiyor
-        ? `Yapay zekâ ${model.cihaz === 'dml' ? 'ekran kartında' : 'işlemcide'} çalışıyor`
+        ? `Yapay zekâ ${model.cihaz === 'dml' ? 'ekran kartında' : 'işlemcide'}`
         : '';
 
   return (
     <div className="ayiklama" data-durum={calisiyor ? 'calisiyor' : 'hazirlaniyor'}>
-      <div className="sahne" ref={sahne}>
-        <Yigin veri={veri} />
+      {/* Üstte ince sarı ilerleme çizgisi */}
+      <div className="a-ilerleme" aria-hidden="true">
+        <motion.div className="a-ilerleme-dolu" animate={{ scaleX: oran }} transition={{ duration: sure.normal, ease: egri.yumusak }} />
       </div>
 
-      <div className="ust-serit">
-        <span className="marka-kucuk">AYIKLA</span>
-        <span className="durum">{durumMetni}</span>
-        <button
+      <div className="a-sahne">
+        <GrupKureleri sahne={sahne} gruplar={kureler} toplam={sayac.toplam} />
+        <AyiklaYazisi />
+        <SariHalka sahne={sahne} />
+        <YildizTozu sahne={sahne} gruplar={kureler} />
+      </div>
+
+      <header className="a-ust">
+        <motion.p className="k-marka" {...belir(0.2)}>
+          <span className="k-isaret" aria-hidden="true" />
+          AYIKLA
+        </motion.p>
+        <motion.p className="etiket soluk" {...belir(0.3)}>
+          {durumMetni}
+        </motion.p>
+      </header>
+
+      <footer className="a-alt">
+        <motion.div {...belir(0.4)}>
+          <p className="a-yuzde etiket" role="status">
+            {durduruluyor ? 'Durduruluyor' : oran >= 1 ? 'Tamamlanıyor' : 'Ayıklanıyor'} <span className="a-nokta">·</span> <span className="a-sayi">%{Math.round(oran * 100)}</span>
+          </p>
+          <p className="a-ayrinti etiket">
+            {sayi(sayac.taranan)} / {sayi(sayac.toplam)}
+            {sayac.kalan != null && sayac.kalan > 0 && <> · Kalan {sureMetni(sayac.kalan)}</>}
+          </p>
+        </motion.div>
+        <motion.button
           className="ikincil"
-          disabled={durduruluyor || model.durum === 'hata'}
+          {...belir(0.5)}
+          disabled={durduruluyor || model.durum === 'hata' || !!bitis}
           onClick={() => {
             setDurduruluyor(true);
             void api.durdur();
           }}
         >
           {durduruluyor ? 'Durduruluyor…' : 'Durdur'}
-        </button>
-      </div>
-
-      <div className="sayaclar">
-        <SayacKarti
-          etiket="Taranan"
-          deger={
-            <>
-              <AkanSayi deger={sayac.taranan} /> / {sayi(sayac.toplam)}
-            </>
-          }
-        />
-        <SayacKarti etiket="Gruplanan" deger={<AkanSayi deger={sayac.gruplanan} />} vurgu />
-        <SayacKarti etiket="Elenecek" deger={<AkanSayi deger={sayac.elenecek} />} />
-        <SayacKarti etiket="Kalan süre" deger={sureMetni(sayac.kalan)} />
-      </div>
-
-      {bolgeler.map((b, i) => (
-        <Etiket
-          key={b.id}
-          ad={b.ad}
-          adet={adetler[b.id] ?? 0}
-          konum={yuzde(etiketNoktasi(grupMerkezi(i, bolgeler.length, en), adetler[b.id] ?? 0), en)}
-        />
-      ))}
-      <Etiket
-        ad="Elenecekler"
-        adet={adetler[ELENECEK_ID] ?? 0}
-        konum={yuzde(etiketNoktasi(ELENECEK_KOSESI(en), adetler[ELENECEK_ID] ?? 0), en)}
-        elenecek
-      />
-
-      <AnimatePresence>
-        {simdiki && (
-          <motion.div className="simdiki" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-            <img src={onizlemeAdresi(simdiki.onizlemeler[0])} alt="" />
-            <div>
-              <div className="ad">{sonParca(simdiki.yol)}</div>
-              <div className="soluk">{grupAdi(simdiki)}</div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        </motion.button>
+      </footer>
 
       <AnimatePresence>
         {bitis && (
@@ -255,7 +204,7 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
               ✓
             </motion.div>
             <p className="bitis-baslik">Ayıklama tamamlandı</p>
-            <p className="soluk">
+            <p className="etiket soluk">
               {sayi(bitis.adet)} dosya · {sureMetni(bitis.sure)}
             </p>
           </motion.div>
@@ -279,49 +228,5 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
         </div>
       )}
     </div>
-  );
-}
-
-function SayacKarti({ etiket, deger, vurgu }: { etiket: string; deger: ReactNode; vurgu?: boolean }) {
-  return (
-    <motion.div
-      className={`sayac${vurgu ? ' vurgu' : ''}`}
-      initial={{ opacity: 0, y: 14 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: sure.yavas, ease: egri.yumusak, delay: 0.15 }}
-    >
-      <div className="etiket">{etiket}</div>
-      <div className="deger">{deger}</div>
-    </motion.div>
-  );
-}
-
-function Etiket({ ad, adet, konum, elenecek }: { ad: string; adet: number; konum: { sol: number; ust: number }; elenecek?: boolean }) {
-  return (
-    <AnimatePresence>
-      {adet > 0 && (
-        <motion.div
-          className={`grup-etiketi${elenecek ? ' elenecek' : ''}`}
-          style={{ left: `${konum.sol}%`, top: `${konum.ust}%`, x: '-50%', y: '-100%' }}
-          initial={{ opacity: 0, scale: 0.6 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <span className="ad" style={{ fontSize: etiketBoyu(adet) }}>
-            {ad}
-          </span>
-          <motion.span
-            key={adet}
-            className="adet"
-            initial={{ scale: 1.35, opacity: 0.6 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={yay.zipla}
-          >
-            {sayi(adet)}
-          </motion.span>
-        </motion.div>
-      )}
-    </AnimatePresence>
   );
 }
