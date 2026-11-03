@@ -53,6 +53,7 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 0 belgeleri | Matris 130/130 ve dört belge yazıldı |
 | 2026-11-03 | Parti 1 (1.1–1.5) | Uygulandı. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 23 dosya, 125 test geçti (önce 105); `npm.cmd run derle` temiz. Gerçek arşivde ve uygulama penceresinde denenmedi |
 | 2026-11-03 | FAZ 1 #2–#3 (motor + belge) | Model indirme onayı motorda: onay yoksa ve model diskte eksikse yükleyici çağrılmaz, kütüphanenin ağı kapalı (`model-izni.ts`). Lisans tablosu `docs/LISANSLAR.md`. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 24 dosya, 132 test geçti (önce 125). Gerçek önbellek ağsız açıldı (0 ağ çağrısı). Karşılama ekranına onay adımı eklendi (kullanıcı taslağı onayladı) |
+| 2026-11-03 | FAZ 1 #4 (katalog) | `better-sqlite3` 13.0.3 seçildi (kullanıcı onayı; MIT, hazır ikili, Electron 45 ve Node 26 altında derlemesiz çalıştı). `src/motor/katalog.ts` `kayit.ts`’in yerine geçti, dışa açık davranış aynı. `kayit.json` bir kez aktarılır, silinmez. 058/107 Kısmen kaldı, 070 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 24 dosya, 139 test geçti (önce 132); `npm.cmd run derle` temiz. Gerçek `kayit.json`’un kopyası (1.744 kayıt) Electron altında aktarıldı, sayılar tuttu. Uygulama penceresinde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
@@ -60,6 +61,13 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
 - Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+
+**FAZ 1 #4 ayrıntıları ve sınırları**
+- Katalog yeri: `~/.ayikla/katalog.db` (çalışırken yanında `-wal`, `-shm`). Eski `kayit.json` olduğu yerde kalır; programın yeni sürümü onu bir daha okumaz.
+- Medya kaydı tabloda JSON olarak duruyor (şema sürümü 1). Ayrıntılı şema #6 ve #8'de gelecek.
+- Bozuk veritabanı `katalog.db.bozuk-<zaman>` olarak kenara alınıp eski `kayit.json`'dan yeniden kurulur; bu durumda geçişten sonraki düzeltmeler yalnız kenara alınan dosyada kalır. Kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+- Programın eski sürümüne dönülürse eski sürüm `kayit.json`'u okur; yeni katalogdaki değişiklikleri görmez.
+- Eşlenmiş ağ sürücüsü algılanmıyor; yalnız UNC yolu reddediliyor.
 
 **FAZ 1 #2–#3 ayrıntıları ve sınırları**
 - Modeller zaten indirildiyse hiçbir şey değişmez: onay sorulmaz, onay dosyası yazılmaz, model yalnız diskten açılır.

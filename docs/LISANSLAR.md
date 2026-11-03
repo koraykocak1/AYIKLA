@@ -19,6 +19,7 @@
 |---|---|---|---|---|---|
 | `@huggingface/transformers` | 4.3.2 | Apache-2.0 | Lisans metni + NOTICE (varsa) dağıtımla verilir | [github.com/huggingface/transformers.js](https://github.com/huggingface/transformers.js) | 2026-11-03 |
 | `@react-three/fiber` | 9.8.2 | MIT | Telif + lisans metni | [github.com/pmndrs/react-three-fiber](https://github.com/pmndrs/react-three-fiber) | 2026-11-03 |
+| `better-sqlite3` | 13.0.3 | MIT | Telif + lisans metni. Hazır yerel ikili (`prebuilds/win32-x64.node`) paketle gelir; derleme yok | [github.com/WiseLibs/better-sqlite3](https://github.com/WiseLibs/better-sqlite3) (`LICENSE`) | 2026-11-03 |
 | `exifr` | 7.1.3 | MIT | Telif + lisans metni | [github.com/MikeKovarik/exifr](https://github.com/MikeKovarik/exifr) | 2026-11-03 |
 | `ffmpeg-static` (paket) | 5.3.0 | GPL-3.0-or-later | Bkz. bölüm 3: ikili GPLv3 | [github.com/eugeneware/ffmpeg-static](https://github.com/eugeneware/ffmpeg-static) | 2026-11-03 |
 | `ffprobe-static` (paket) | 3.1.0 | MIT (yalnız JS sarmalayıcı) | **İçindeki ikili GPLv3**, bkz. bölüm 3 | [github.com/joshwnj/ffprobe-static](https://github.com/joshwnj/ffprobe-static) | 2026-11-03 |
@@ -35,6 +36,7 @@
 
 | Bileşen | Sürüm | Nereden gelir | Lisans | Yükümlülük | Kaynak | Kontrol |
 |---|---|---|---|---|---|---|
+| SQLite | 3.53.4 | better-sqlite3 içine gömülü | Kamu malı (public domain) | Yükümlülük yok | [sqlite.org/copyright.html](https://www.sqlite.org/copyright.html) | 2026-11-03 |
 | `onnxruntime-node` | 1.30.0 | transformers.js | MIT | Telif + lisans metni | [github.com/microsoft/onnxruntime](https://github.com/microsoft/onnxruntime) (`LICENSE`) | 2026-11-03 |
 | `onnxruntime-web` | 1.31.0-dev.20260914 | transformers.js | MIT | Telif + lisans metni. Not: geliştirme (dev) sürümü | aynı depo | 2026-11-03 |
 | `DirectML.dll` | 1.15.4 | `onnxruntime-node/bin/napi-v6/win32/x64` | Microsoft'un kendi lisansı ("Microsoft Software License Terms – DirectML"), açık kaynak değil | Geliştirdiğin uygulamanın içinde dağıtılabilir; tek başına dağıtılamaz | [nuget.org/packages/Microsoft.AI.DirectML/1.15.4/License](https://www.nuget.org/packages/Microsoft.AI.DirectML/1.15.4/License) | 2026-11-03 |
@@ -44,7 +46,7 @@
 | `heic-decode` | 2.1.0 | heic-convert | ISC | Telif + lisans metni | [github.com/catdad-experiments/heic-decode](https://github.com/catdad-experiments/heic-decode) | 2026-11-03 |
 | `libheif-js` (libheif + libde265, JS/WASM'a derlenmiş) | 1.23.5 | heic-decode | LGPL-3.0 | LGPL: ayrı dosya olarak kalmalı; lisans metni + kaynak bağlantısı verilmeli. libheif ve libde265 ikisi de LGPL (örnek uygulamaları MIT) | [github.com/catdad-experiments/libheif-js](https://github.com/catdad-experiments/libheif-js), [github.com/strukturag/libheif](https://github.com/strukturag/libheif), [github.com/strukturag/libde265](https://github.com/strukturag/libde265) | 2026-11-03 |
 
-LGPL bileşenleri şu an programın içine gömülmüyor: `scripts/derle.mjs` dosyasındaki `DISARIDA` listesi sharp, heic-convert ve transformers paketlerini `node_modules` içinden ayrı dosyalar olarak yüklüyor. Paketleme (FAZ 4) yapılırken bu düzen korunmalı.
+LGPL bileşenleri şu an programın içine gömülmüyor: `scripts/derle.mjs` dosyasındaki `DISARIDA` listesi sharp, better-sqlite3, heic-convert ve transformers paketlerini `node_modules` içinden ayrı dosyalar olarak yüklüyor. Paketleme (FAZ 4) yapılırken bu düzen korunmalı.
 
 ## 3. ffmpeg ve ffprobe ikilileri: GPL mi?
 

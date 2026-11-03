@@ -9,7 +9,7 @@ import { parmakiziHesapla, kopyaKumeleri } from './parmakizi';
 import { hamMi } from './ham';
 import { grupSec, ortalamaVektor, type GrupVektoru } from './sahne-puan';
 import { DIGER_ID, EKRAN_ID, ekranGoruntusuAdiMi, puanlamaTarifleri } from './gruplar';
-import { KayitDeposu, anahtarUret } from './kayit';
+import { anahtarUret, katalogAc } from './katalog';
 import { ortalamaRenk } from './renk';
 import type { Grup, IsciOlayi, IslenmisMedya, MedyaDosyasi, SahneModeli } from './tipler';
 
@@ -102,8 +102,7 @@ function kopyalariIsaretle(liste: IslenmisMedya[]): string[] {
 
 export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
   const { islenecek: dosyalar, esler } = hamEsleriniAyir(await tara(a.girdiler, { haric: [a.calismaKlasoru] }));
-  const kayit = new KayitDeposu(join(a.calismaKlasoru, 'kayit.json'));
-  await kayit.yukle();
+  const kayit = await katalogAc(a.calismaKlasoru);
   // Önbellekteki küçük resimler: arayüz dönen yığını baştan gerçek fotoğraflarla doldurur
   const onizlemeler = dosyalar.map((d) => kayit.al(anahtarUret(d))?.onizlemeler[0] ?? null);
   a.olay({ tur: 'basladi', toplam: dosyalar.length, onizlemeler });
@@ -113,7 +112,7 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
   const gv = await grupVektorleriHazirla(a.gruplar, a.model);
 
   const sonuc: IslenmisMedya[] = [];
-  // Kayıt yalnızca yeni bir şey öğrenildiyse yazılır: önbellekten gelen arşivde büyük JSON'u boşuna yazmamak için.
+  // Katalog yalnızca yeni bir şey öğrenildiyse yazılır: önbellekten gelen arşivde veritabanına boşuna dokunmamak için.
   let degisti = false;
   for (let i = 0; i < dosyalar.length; i++) {
     if (a.durdur?.aborted) break;

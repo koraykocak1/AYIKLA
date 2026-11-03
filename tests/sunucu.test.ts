@@ -4,7 +4,7 @@ import { mkdir, readdir } from 'node:fs/promises';
 import sharp from 'sharp';
 import { sunucuOlustur } from '../src/motor/sunucu';
 import { normalize } from '../src/motor/sahne-puan';
-import { KayitDeposu } from '../src/motor/kayit';
+import { katalogAc } from '../src/motor/katalog';
 import type { ArayuzMedya, ArayuzOlayi, IsciIstegi, IsciMesaji, Istek, Sayim } from '../src/ortak/mesajlar';
 import type { Grup, SahneModeli } from '../src/motor/tipler';
 import type { AktarmaSonucu } from '../src/motor/disari-aktar';
@@ -104,8 +104,7 @@ describe('sunucu', () => {
     const geri = await s.iste<ArayuzMedya>({ tur: 'geriAl', anahtar: mavi.anahtar });
     expect(geri.geriAlindi).toBe(true);
 
-    const d = new KayitDeposu(join(s.calisma, 'kayit.json'));
-    await d.yukle();
+    const d = await katalogAc(s.calisma);
     expect(d.al(bulanik.anahtar)).toMatchObject({ elleGrup: 'deniz', geriAlindi: true });
     expect(d.al(mavi.anahtar)?.geriAlindi).toBe(true);
   });

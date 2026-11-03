@@ -4,7 +4,7 @@ import { ayikla } from './motor/isci';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './motor/gruplar';
 import { sahneModeliYukle, ingilizceyeCevir } from './motor/sahne-model';
 import { disariAktar, hedefSorunu } from './motor/disari-aktar';
-import { KayitDeposu } from './motor/kayit';
+import { katalogAc } from './motor/katalog';
 import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzni } from './motor/model-izni';
 
 const ELEME_ADI = { kopya: 'Elenecek › Kopya', bulanik: 'Elenecek › Bulanık', karanlik: 'Elenecek › Karanlık' } as const;
@@ -31,8 +31,7 @@ async function main() {
     process.exit(1);
   }
 
-  const kayit = new KayitDeposu(join(calisma, 'kayit.json'));
-  await kayit.yukle();
+  const kayit = await katalogAc(calisma);
   const grupIndex = secenekler.indexOf('--grup');
   if (grupIndex >= 0) {
     const ad = secenekler[grupIndex + 1];

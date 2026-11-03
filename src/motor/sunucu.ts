@@ -1,9 +1,8 @@
 import { ortalamaRenk } from './renk';
 import { stat } from 'node:fs/promises';
-import { join } from 'node:path';
 import { ayikla, yenidenPuanla } from './isci';
 import { tara, hamEsleriniAyir } from './tarayici';
-import { KayitDeposu } from './kayit';
+import { type Katalog, katalogAc } from './katalog';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './gruplar';
 import { disariAktar, hedefSorunu, type AktarmaSonucu } from './disari-aktar';
 import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzniGerekliHatasi, type ModelIzni } from './model-izni';
@@ -26,8 +25,6 @@ function hataMetni(h: unknown): string {
 
 /** İşçi sürecin beyni: istekleri işler, motor olaylarını arayüze uygun hâle getirip yollar. */
 export function sunucuOlustur(a: SunucuAyarlari) {
-  const kayitYolu = join(a.calismaKlasoru, 'kayit.json');
-
   let modelSozu: Promise<SahneModeli> | null = null;
   let durdurucu: AbortController | null = null;
   let son: IslenmisMedya[] = [];
@@ -67,17 +64,15 @@ export function sunucuOlustur(a: SunucuAyarlari) {
   const disa = async (m: IslenmisMedya): Promise<ArayuzMedya> => arayuzIcin(m, await renk(m));
   const disaListe = (l: IslenmisMedya[]) => Promise.all(l.map(disa));
 
-  async function kayitAc(): Promise<KayitDeposu> {
-    const k = new KayitDeposu(kayitYolu);
-    await k.yukle();
-    return k;
+  function kayitAc(): Promise<Katalog> {
+    return katalogAc(a.calismaKlasoru);
   }
 
   async function gruplar(): Promise<Grup[]> {
     return [...HAZIR_GRUPLAR, ...(await kayitAc()).veri.kullaniciGruplari];
   }
 
-  /** Bir kaydı hem dosyada hem bellekteki son sonuçta değiştirir. */
+  /** Bir kaydı hem katalogda hem bellekteki son sonuçta değiştirir. */
   async function degistir(anahtar: string, f: (m: IslenmisMedya) => void): Promise<ArayuzMedya> {
     const k = await kayitAc();
     const m = k.al(anahtar);

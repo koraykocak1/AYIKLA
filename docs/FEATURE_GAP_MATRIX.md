@@ -7,7 +7,7 @@ Tarih: 3 Kasım 2026 · Kod tabanı: `main`, commit `f3fee81` · Kaynak: `claude
 
 Matris yalnız gerçekten okunan koda dayanır: `src/motor/*`, `src/ana/*`, `src/ortak/mesajlar.ts`, `src/cli.ts`, `src/isci-giris.ts`, `src/arayuz/*`, `tests/*`, `package.json`.
 
-**Bugünkü ürün:** AYIKLA bir **ayıklama ve kopyalama aracıdır**, arşiv yöneticisi (DAM) değildir. Akış: klasör seç → tara (`tarayici.ts`) → önizleme, tarih, kalite, dHash ve CLIP vektörü üret (`isci.ts`) → gruplara ayır, kopyaları ve bulanık/karanlık olanları işaretle → kullanıcı düzeltir → seçilen hedefe `Grup/Yıl/Ay-Adı` biçiminde kopyala (`disari-aktar.ts`). Kaynak dosyalar yalnız okunur. Katalog `~/.ayikla/kayit.json` dosyasıdır (SQLite değil). Kalıcı bir "arşiv kökü", albüm, etiket, arama, geri dönüşüm kutusu ya da yedek yoktur.
+**Bugünkü ürün:** AYIKLA bir **ayıklama ve kopyalama aracıdır**, arşiv yöneticisi (DAM) değildir. Akış: klasör seç → tara (`tarayici.ts`) → önizleme, tarih, kalite, dHash ve CLIP vektörü üret (`isci.ts`) → gruplara ayır, kopyaları ve bulanık/karanlık olanları işaretle → kullanıcı düzeltir → seçilen hedefe `Grup/Yıl/Ay-Adı` biçiminde kopyala (`disari-aktar.ts`). Kaynak dosyalar yalnız okunur. Katalog `~/.ayikla/kayit.json` dosyasıdır (SQLite değil; FAZ 1 #4’ten beri `~/.ayikla/katalog.db`, SQLite). Kalıcı bir "arşiv kökü", albüm, etiket, arama, geri dönüşüm kutusu ya da yedek yoktur.
 
 Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürünün bugünkü kapsamıdır. Bu oturumda uygulanan ilk parti (bkz. yol haritası, "Parti 1") için satırlar ayrıca işaretlenir.
 
@@ -19,8 +19,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | Durum | Adet |
 |---|---|
 | ✅ Uygulanmış | 4 (003, 025, 068, 078) |
-| 🟡 Kısmen | 66 |
-| ⬜ Yok | 54 |
+| 🟡 Kısmen | 67 |
+| ⬜ Yok | 53 |
 | ⛔ Blokeli | 6 (028, 034, 095, 100, 102, 113) |
 | **Toplam** | **130** |
 
@@ -29,6 +29,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 **Parti 1'den sonra (3 Kasım 2026):** 029, 115, 116 "Yok"tan "Kısmen"e çıktı; 041, 048, 050, 058, 075 aynı durumda kaldı ama açıkları daraldı. Hiçbiri "Uygulanmış" sayılmadı, çünkü kalıcı arşiv ve içe aktarma henüz yok.
 
 **FAZ 1 #2–#3’ten sonra (3 Kasım 2026):** 086 ve 087 "Yok"tan "Kısmen"e çıktı (lisans tablosu `docs/LISANSLAR.md`); 055, 064, 073, 081 "Kısmen" kaldı ama açıkları daraldı: model artık onaysız inmiyor. Karşılama ekranına onay adımı eklendi; paket seçimi, bağlantı geçmişi ve lisans çözümleri eksik olduğu için hiçbiri "Uygulanmış" sayılmadı.
+
+**FAZ 1 #4’ten sonra (3 Kasım 2026):** katalog artık SQLite (`katalog.db`, `better-sqlite3`); `kayit.json` bir kez aktarılır ve yedek olarak kalır. 070 "Yok"tan "Kısmen"e çıktı (UNC ağ yolu reddedilir); 058 ve 107 "Kısmen" kaldı ama açıkları daraldı: online yedek, ayrıntılı şema ve arşiv manifesti henüz yok. 041’in kanıtı güncellendi.
 
 ## Matris
 
@@ -86,7 +88,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 038 | Yönetilebilir bildirimler | ⬜ | — | Tamamı | P2 | 040 | Her tür ayrı kapatılır |
 | 039 | Akıllı albümler | ⬜ | — | Tamamı | P1 | 058, 057 | Kurala uyan yeni dosya kendiliğinden albümde |
 | 040 | Merkezi işlem yöneticisi | 🟡 | `sunucu.ts` tek iş + `aktarim` olayı | Kuyruk, duraklat/sürdür, yeniden dene yok | P1 | 094 | 3 işten biri hata verir, diğerleri sürer |
-| 041 | Kesintiden devam / crash recovery | 🟡 | `kayit.ts` geçici dosya + rename, `yukle()` bozuk kaydı kenara alır; `disari-aktar.ts` geçici kopya (Parti 1) | İşlem günlüğü/checkpoint ve iş kuyruğunda kaldığı yerden devam YAPILMADI | P0 | 029, 058 | Bozuk katalog `kayit.json.bozuk-*` olarak kalır ✅; yarım kopya final adla kalmaz ✅ |
+| 041 | Kesintiden devam / crash recovery | 🟡 | `katalog.ts` SQLite transaction (FAZ 1 #4), bozuk JSON ve bozuk veritabanı kenara alınır; `disari-aktar.ts` geçici kopya (Parti 1) | İşlem günlüğü/checkpoint ve iş kuyruğunda kaldığı yerden devam YAPILMADI | P0 | 029, 058 | Bozuk katalog `kayit.json.bozuk-*` olarak kalır ✅; yarım kopya final adla kalmaz ✅ |
 | 042 | Üç katmanlı metadata | 🟡 | `IslenmisMedya`: `tarih/tarihKaynagi` (kaynak), `grupId` (AI), `elleGrup/geriAlindi` (kullanıcı) | Katmanlar tek nesnede; ham EXIF saklanmıyor | P0 (şema) | 058 | AI yeniden çalışınca `elleGrup` korunur (testi var) |
 | 043 | Düzeltmelerden yerel öğrenme | ⬜ | (`elleGrup` yalnız o dosya için) | Kural öğrenme ve silme | P2 | 042 | Silinen tercih sonraki öneriyi etkilemez |
 | 044 | Dış uygulamalarla çalışma | ⬜ | — | "Birlikte aç", dışarı sürükleme | P2 | 052 | Dış düzenleme yeni sürüm olarak gelir |
@@ -108,7 +110,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 055 | Tam çevrimdışı temel işlev | 🟡 | Model indirildikten sonra ağsız çalışır: diskte tamsa `env.allowRemoteModels=false` (`sahne-model.ts`); izinsiz indirme yok (`model-izni.ts`, FAZ 1 #2) | Karşılama onay adımı eklendi (`Karsilama.tsx`); internetsiz ilk açılışta ayrı bir mesaj YAPILMADI (indirme hatası mevcut "Ayıklama başlatılamadı" kutusunda görünür) | P0 (izin) | 073, 081 | `tests/model-izni.test.ts`: modeller inmişse yükleyici ağsız çağrılır ✅; gerçek önbellekte 0 ağ çağrısıyla açıldı ✅ |
 | 056 | Klavye kısayolları | 🟡 | `BuyukGorunum.tsx` ←/→/Esc; `Sonuc.tsx` Esc | Seçim, puan, geri al kısayolu yok | P2 | 035 | Kısayollar Win/Mac'e uygun |
 | 057 | Kayıtlı aramalar | ⬜ | — | Tamamı | P1 | 010 | Kayıtlı arama yeni dosyayı içerir |
-| 058 | Güvenli yerel katalog (SQLite) | 🟡 | `kayit.ts` JSON, atomik yazma, bozuk kayıt kenara alınır (Parti 1) | SQLite, şema, migration, online backup YAPILMADI | P0 | — | Bozuk katalog veri kaybettirmez ✅; migration testi |
+| 058 | Güvenli yerel katalog (SQLite) | 🟡 | `katalog.ts` (FAZ 1 #4): `better-sqlite3`, WAL + `synchronous=FULL`, tek transaction, şema sürümü 1; `kayit.json` → DB geçişi; bozuk DB ve bozuk JSON kenara alınır | Online backup + `integrity_check` (FAZ 1 #9), ayrıntılı şema (blob/öğe/katman/albüm, #6 ve #8) YAPILMADI | P0 | — | Bozuk katalog veri kaybettirmez ✅; migration testi ✅ (`tests/katalog.test.ts`) |
 | 059 | Güvenli güncelleme | ⬜ | `npm run kur` yalnız kısayol | Paketleme, migration öncesi yedek | P3 | 058, 100 | Güncelleme sonrası katalog açılır |
 | 060 | Açık/taşınabilir arşiv | 🟡 | `kayit.json` düz JSON; dışa aktarım normal klasör | Belgelenmiş JSON/CSV dışa aktarma yok | P1 | 058 | Dışa aktarılan JSON başka araçla okunur |
 | 061 | Yerel hata günlüğü | 🟡 | `okunamadi` olayı (yalnız bellekte) | Kalıcı günlük, hata kodu, yol redaksiyonu | P1 | — | Günlükte tam kişisel yol yok |
@@ -125,7 +127,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 |---|---|---|---|---|---|---|---|
 | 068 | Çapraz platform teknoloji | ✅ | Electron 45 + React 19 + TS (`package.json`) | Karar: Electron'da kalınır; Tauri geçişi maliyetli, kazancı düşük | — | — | — |
 | 069 | Katmanlı modüler mimari | 🟡 | arayüz ↔ `ana.ts` IPC ↔ `isci.mjs` utilityProcess ↔ `motor/*` | Katalog/medya/AI ayrı modül değil | P1 | 058 | Motor çökünce arayüz açık kalır |
-| 070 | SQLite ve WAL sınırları | ⬜ | (SQLite yok) | Ağ paylaşımında DB açmayı engelle | P0 (SQLite ile) | 058 | Ağ yolundaki DB reddedilir |
+| 070 | SQLite ve WAL sınırları | 🟡 | `katalog.ts` `agYoluMu`: UNC (`\\sunucu\…`, `\\?\UNC\…`) yolda katalog açılmaz (FAZ 1 #4) | Eşlenmiş ağ sürücüsü (`Z:`) ve bulut eşitleme klasörü anlaşılmıyor | P0 (SQLite ile) | 058 | Ağ yolundaki DB reddedilir ✅ (UNC); eşlenmiş sürücü YAPILMADI |
 | 071 | Mantıksal arşiv dizini | ⬜ | `~/.ayikla/{kayit.json,onizleme,modeller}` çalışma klasörü | Arşiv kökünde katalog/medya/önizleme/yedek ayrımı | P0 | 006 | Arşiv kökü yapısı belgelenmiş |
 | 072 | Tek-yazıcı arşiv | ⬜ | — | Kilit dosyası, bayat kilit kurtarma | P0 | 071 | İki pencere aynı arşive yazamaz |
 | 073 | İsteğe bağlı AI paketleri | 🟡 | `model-izni.ts`: CLIP ve opus-mt paket tanımı (boyut, kaynak, kod/ağırlık lisansı), `model-izni.json` onayı; `sunucu.ts` onaysız yükleyiciyi çağırmaz (`modelDurumu`/`modelIzniVer` istekleri) | Karşılama ekranında onay adımı var (boyut, kaynak, lisans; "İndir ve ayıkla" / "Şimdi değil"). Paket başına seçim yok (tek onay ikisini kapsar); onayı geri alma ekranı yok | P1 | 092 | `tests/model-izni.test.ts`: onaysız sahte indirici çağrılmaz ✅ |
@@ -172,7 +174,7 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 | 104 | Güvenli eklenti mimarisi | ⬜ | (`SahneModeli` arayüzü bir adaptör sınırı) | Sınırlar ve kurallar belgesi | P3 | 063 | — |
 | 105 | Fotoğraftan/bölgeden arama | ⬜ | (Vektörler hazır) | Tamamı | P1 | 089 | Sonuçlar "benzer" etiketli |
 | 106 | Güvenli model kaynağı + hash | ⬜ | HuggingFace'ten sürüm kilidi olmadan iner | Sürüm kilidi, SHA-256 | P1 | 092 | Değiştirilmiş model çalıştırılmaz |
-| 107 | Geleceğe dönük arşiv uyumu | 🟡 | `KayitVerisi.surum: 1` | Migration, manifest sürümü | P0 | 058 | Eski kayıt yeni sürümde açılır |
+| 107 | Geleceğe dönük arşiv uyumu | 🟡 | `katalog.ts`: `PRAGMA user_version` şema sürümü, adım adım `semaKur`; eski `kayit.json` aktarılır; daha yeni sürümün kataloğu değiştirilmez (FAZ 1 #4) | Arşiv manifest sürümü (`.ayikla-arsiv`, #5); sürüm 1 → 2 geçişi henüz yazılmadı | P0 | 058 | Eski kayıt yeni sürümde açılır ✅ (`tests/katalog.test.ts`) |
 | 108 | Artımlı tarama/reanaliz | 🟡 | `anahtarUret` yol+boyut+mtime önbelleği | İçerik hash'i yok; yeniden adlandırma = yeni dosya | P1 | 029 | Yeniden adlandırılan dosya yeniden analiz edilmez |
 | 109 | RAW + JPEG + XMP | 🟡 | `tarayici.ts` `hamEsleriniAyir` (yalnız NEF), `isci.ts` görsel kopya eşi | CR2/ARW/DNG ve XMP yok | P2 | 005 | XMP eşi dışa aktarmada kaybolmaz |
 | 110 | Toplu yeniden adlandırma | ⬜ | (Ad çakışmasında "(2)") | Şablon, önizleme, geri alma | P2 | 123 | Kaynak adları değişmez |
