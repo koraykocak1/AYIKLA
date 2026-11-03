@@ -51,23 +51,15 @@ export const kure = {
  * Yerleşim oranları ekran yüksekliğine göredir (0 üst, 1 alt).
  */
 
-/** Ortadaki sarı enerji halkası. */
+/**
+ * Ayıklamada karşılamanın büyük noktalı küresi kalır: ortadan küçülüp aşağıdaki yerine iner,
+ * tozlar oradan kopar. (Eski sarı halka sürümü "ayiklama-halka" etiketiyle kayıtlı.)
+ */
 export const halka = {
   merkezY: 0.7,
-  yaricapOrani: 0.165, // yarıçap = ekranın kısa kenarı × bu oran
-  kuculme: 0.2, // ayıklama bittikçe halka bu oranda küçülür
-  dogus: 1.4, // içten dışa açılıp belirme süresi (sn)
-  telSayisi: 11,
-  telNoktasi: 200,
-  dalga: 0.035, // tellerin titreşim genliği (yarıçapa oran)
-  kivrimSikligi: 3.6, // saniyede ortalama yeni alev kıvrımı
-  kivrimEnFazla: 9,
-  itmeYaricapi: 140, // fare bu kadar yaklaşınca tel itilir (px)
-  itmeGucu: 0.09,
-  hizEtkisi: 0.03,
-  surukleme: 0.014, // fare hızının tele geçen payı
-  donusYayi: 0.0024,
-  surtunme: 0.972,
+  yaricapOrani: 0.165, // son yarıçap = ekranın kısa kenarı × bu oran
+  kuculme: 0.2, // ayıklama bittikçe küre bu oranda daha küçülür
+  inis: 1.8, // büyük kürenin küçülüp yerine inme süresi (sn); tozlar bundan sonra başlar
 } as const;
 
 /** Halkadan kopup grubuna süzülen yıldız tozu (her biri bir ya da birkaç fotoğraf). */
@@ -98,6 +90,7 @@ export const ayiklaYazisi = {
   aralikOrani: 0.065, // zerrecikler arası (yazı boyuna oran)
   zerreOrani: 0.046, // zerrecik boyu (yazı boyuna oran)
   belirme: 0.9, // bütün yazının birden belirme süresi (sn)
+  gecikme: 1.2, // küre aşağı inerken bekler (sn)
   yansima: 0.18, // ayna yansımasının parlaklığı
   itmeYaricapi: 90, // fare zerrecikleri dağıtır, yavaşça geri toplanırlar
   itmeGucu: 1.2,

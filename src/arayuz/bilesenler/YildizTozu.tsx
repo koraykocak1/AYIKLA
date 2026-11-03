@@ -1,5 +1,5 @@
 import { useRef, type RefObject } from 'react';
-import { toz } from '../hareket';
+import { halka as kureInisi, toz } from '../hareket';
 import {
   bekleyenSayisi,
   enBuyukYaricap,
@@ -51,7 +51,8 @@ export function YildizTozu({ sahne, gruplar }: { sahne: RefObject<AyiklamaSahnes
     }
 
     // Kalkış: aynı anda uçan toz sınırlı; bekleyen çoksa her toz birkaç fotoğraf taşır
-    for (let k = 0; k < 3 && tozlar.current.length < toz.enFazla && sn - sonKalkis.current >= toz.aralik; k++) {
+    // Küre yerine inmeden toz kopmaz
+    for (let k = 0; k < 3 && sn >= kureInisi.inis && tozlar.current.length < toz.enFazla && sn - sonKalkis.current >= toz.aralik; k++) {
       const paket = Math.max(1, Math.ceil(bekleyenSayisi(s) / toz.paketBolen));
       const b = kuyruktanAl(s, paket);
       if (!b) break;

@@ -4,6 +4,11 @@ import { kure } from '../hareket';
 interface Props {
   /** Klasör kürenin üstünde sürüklenirken noktalar daha parlak yanar. */
   parlak?: boolean;
+  /**
+   * Kürenin yeri ve yarıçapı (px), başlayalı geçen süreye (sn) göre. Verilmezse ekranın ortasında, büyük durur.
+   * Ayıklamada küre bununla küçülüp aşağı iner.
+   */
+  yer?: (W: number, H: number, sn: number) => { x: number; y: number; r: number };
 }
 
 /** Bir noktanın küre üstündeki yeri (birim küre) ve fareyle itilince ekrandaki kayması. */
@@ -36,10 +41,12 @@ function noktalariDiz(n: number): Nokta[] {
  * ağır ağır dağıtır, noktalar yaylı olarak yerine döner. Hareket gerçek zamana bağlıdır.
  * Pencere gizliyken durur; "hareketi azalt" açıksa tek durağan kare çizilir.
  */
-export function NoktaKure({ parlak = false }: Props) {
+export function NoktaKure({ parlak = false, yer }: Props) {
   const tuval = useRef<HTMLCanvasElement>(null);
   const parlakRef = useRef(parlak);
   parlakRef.current = parlak;
+  const yerRef = useRef(yer);
+  yerRef.current = yer;
 
   useEffect(() => {
     const c = tuval.current;
@@ -84,14 +91,17 @@ export function NoktaKure({ parlak = false }: Props) {
     };
 
     let aci = 0;
-    let son = performance.now();
+    const baslangic = performance.now();
+    let son = baslangic;
     let istek = 0;
 
     const ciz = (dt: number) => {
       x.clearRect(0, 0, W, H);
-      const R = Math.min(W, H) * kure.yaricapOrani;
-      const mx = W / 2;
-      const my = H / 2;
+      // Hareketi azaltta küre doğrudan son yerinde durur
+      const konum = yerRef.current?.(W, H, azalt ? Infinity : (performance.now() - baslangic) / 1000);
+      const R = konum?.r ?? Math.min(W, H) * kure.yaricapOrani;
+      const mx = konum?.x ?? W / 2;
+      const my = konum?.y ?? H / 2;
       const ca = Math.cos(aci);
       const sa = Math.sin(aci);
       const ce = Math.cos(kure.egim);

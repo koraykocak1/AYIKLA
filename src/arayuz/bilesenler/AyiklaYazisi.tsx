@@ -80,7 +80,8 @@ export function AyiklaYazisi() {
   const tuval = useTuvalDongusu(({ x, W, H, dt, sn, fare, azalt }) => {
     if (yazi.current?.anahtar !== `${W}x${H}`) yazi.current = yaziyiKur(W, H);
     const { zerreler, zerreBoyu, alt, yukseklik } = yazi.current;
-    const belir = azalt ? 1 : Math.min(sn / ay.belirme, 1);
+    // Küre aşağı inerken yolunu açar; yazı ondan sonra belirir
+    const belir = azalt ? 1 : Math.min(Math.max(0, sn - ay.gecikme) / ay.belirme, 1);
     const t = azalt ? 0 : sn;
     const ayna = alt + zerreBoyu * 1.6; // yansımanın başladığı çizgi
     const derinlik = Math.max(1, yukseklik * 0.9);

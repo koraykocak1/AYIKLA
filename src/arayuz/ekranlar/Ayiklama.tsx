@@ -1,13 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { egri, sure, yay } from '../hareket';
+import { egri, halka, kure, sure, yay } from '../hareket';
 import { api } from '../api';
 import { AyiklaYazisi } from '../bilesenler/AyiklaYazisi';
 import { GrupKureleri } from '../bilesenler/GrupKureleri';
-import { SariHalka } from '../bilesenler/SariHalka';
+import { NoktaKure } from '../bilesenler/NoktaKure';
 import { YildizTozu } from '../bilesenler/YildizTozu';
 import { ELENECEK_ID } from '../mantik/gruplama';
-import { kuyrugaEkle, yeniSahne, type AyiklamaSahnesi, type SahneGrubu } from '../mantik/sahneDuzeni';
+import { halkaYeri, kuyrugaEkle, yeniSahne, type AyiklamaSahnesi, type SahneGrubu } from '../mantik/sahneDuzeni';
 import { HizOlcer } from '../mantik/zaman';
 import { hataMetni, sayi, sureMetni } from '../mantik/bicim';
 import { DIGER_ID } from '../../motor/gruplar';
@@ -55,6 +55,14 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
   const kureRef = useRef(kureler);
   kureRef.current = kureler;
   const sahne = useRef<AyiklamaSahnesi>(yeniSahne());
+  // Karşılamadaki büyük küre ortadan küçülerek aşağıdaki yerine iner (iki ekran arasında kopukluk olmasın)
+  const kureYeri = useRef((W: number, H: number, sn: number) => {
+    const son = halkaYeri(W, H, sahne.current.ilerleme);
+    const u = Math.min(sn / halka.inis, 1);
+    const e = u < 0.5 ? 4 * u ** 3 : 1 - (-2 * u + 2) ** 3 / 2;
+    const basR = Math.min(W, H) * kure.yaricapOrani;
+    return { x: W / 2 + (son.x - W / 2) * e, y: H / 2 + (son.y - H / 2) * e, r: basR + (son.r - basR) * e };
+  }).current;
   const [sayac, setSayac] = useState<Sayaclar>({ taranan: 0, kalan: null, toplam: sayim.foto + sayim.video });
   const [model, setModel] = useState<ModelDurumu>({ durum: 'yukleniyor' });
   const [calisiyor, setCalisiyor] = useState(false);
@@ -149,8 +157,8 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
 
       <div className="a-sahne">
         <GrupKureleri sahne={sahne} gruplar={kureler} toplam={sayac.toplam} />
+        <NoktaKure yer={kureYeri} />
         <AyiklaYazisi />
-        <SariHalka sahne={sahne} />
         <YildizTozu sahne={sahne} gruplar={kureler} />
       </div>
 
