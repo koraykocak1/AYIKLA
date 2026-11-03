@@ -1,5 +1,6 @@
-import { useEffect, useState, type DragEvent, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { AkanSayi } from '../bilesenler/AkanSayi';
+import { NoktaKure } from '../bilesenler/NoktaKure';
 import { egri, siraliGecikme, sure, yay } from '../hareket';
 import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../api';
@@ -13,6 +14,16 @@ interface Props {
   onBaslat: (girdiler: string[], sayim: Sayim) => void;
 }
 
+/** Klasör bırakılınca sayımın görünmesi için başlamadan önce kısa bekleyiş. */
+const OTOMATIK_BASLAMA_MS = 1400;
+
+/** Yumuşak beliriş (gecikme saniye cinsinden). */
+const belir = (gecikme: number) => ({
+  initial: { opacity: 0, y: 10 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: sure.yavas, ease: egri.yumusak, delay: gecikme },
+});
+
 export function Karsilama({ not, onceki, onBaslat }: Props) {
   const [girdiler, setGirdiler] = useState<string[] | null>(null);
   const [sayim, setSayim] = useState<Sayim | null>(null);
@@ -21,14 +32,30 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
   const [ustunde, setUstunde] = useState(false);
   const [arsivler, setArsivler] = useState<SonArsiv[]>([]);
 
-  async function sec(g: string[]) {
+  const [basliyor, setBasliyor] = useState(false);
+  const zamanlayici = useRef<number | undefined>(undefined);
+  useEffect(() => () => clearTimeout(zamanlayici.current), []);
+
+  /**
+   * Klasörü seçer ve dosyaları sayar. `kendiliginden` ise (küreye bırakma, klasör seçme, son arşiv)
+   * sayım görünür görünmez kısa bir bekleyişten sonra ayıklama kendiliğinden başlar.
+   * Açılışta hatırlanan klasörde ise başlamaz: kullanıcı ortadaki "ayıkla"ya basar (ör. durdurulunca devam).
+   */
+  async function sec(g: string[], kendiliginden = false) {
     if (!g.length) return;
+    clearTimeout(zamanlayici.current);
+    setBasliyor(false);
     setGirdiler(g);
     setSayim(null);
     setHata(null);
     setSayiliyor(true);
     try {
-      setSayim(await api.say(g));
+      const s = await api.say(g);
+      setSayim(s);
+      if (kendiliginden && s.foto + s.video > 0) {
+        setBasliyor(true);
+        zamanlayici.current = window.setTimeout(() => onBaslat(g, s), OTOMATIK_BASLAMA_MS);
+      }
     } catch (h) {
       setHata(hataMetni(h));
     } finally {
@@ -37,7 +64,10 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
   }
 
   useEffect(() => {
-    api.sonArsivler().then(setArsivler).catch(() => {});
+    api
+      .sonArsivler()
+      .then(setArsivler)
+      .catch(() => {});
     if (onceki?.length) void sec(onceki);
     else
       api
@@ -51,115 +81,127 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
   function birak(e: DragEvent) {
     e.preventDefault();
     setUstunde(false);
-    const yollar = Array.from(e.dataTransfer.files).map((f) => api.yolAl(f)).filter(Boolean);
-    void sec(yollar);
+    const yollar = Array.from(e.dataTransfer.files)
+      .map((f) => api.yolAl(f))
+      .filter(Boolean);
+    void sec(yollar, true);
   }
 
+  async function klasorSec() {
+    const k = await api.klasorSec();
+    if (k) void sec([k], true);
+  }
+
+  const hazir = !!(girdiler && sayim && sayim.foto + sayim.video > 0);
+  const yonerge = ustunde
+    ? 'Bırak'
+    : basliyor
+      ? 'Ayıklama başlıyor…'
+      : hazir
+        ? 'Başlamak için ayıkla’ya bas'
+        : 'Klasörü küreye bırak';
+
   return (
-    <div className="karsilama">
-      <header className="marka">
-        <h1 aria-label="AYIKLA">
-          {'AYIKLA'.split('').map((h, i) => (
-            <motion.span
-              key={i}
-              aria-hidden="true"
-              style={{ display: 'inline-block' }}
-              initial={{ opacity: 0, y: 28, filter: 'blur(10px)' }}
-              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-              transition={{ duration: sure.sinematik, ease: egri.yumusak, delay: 0.1 + i * 0.07 }}
-            >
-              {h}
-            </motion.span>
-          ))}
-        </h1>
-        <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: sure.yavas, delay: 0.65 }}>
-          Fotoğraflarını sahneye ve tarihe göre ayıkla
+    // Bütün ekran bırakma alanı: klasör nereye bırakılırsa bırakılsın küreye düşer
+    <div
+      className={`karsilama${ustunde ? ' ustunde' : ''}`}
+      onDragOver={(e) => {
+        e.preventDefault();
+        setUstunde(true);
+      }}
+      onDragLeave={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setUstunde(false);
+      }}
+      onDrop={birak}
+    >
+      <motion.div
+        className="kure-kap"
+        initial={{ opacity: 0, scale: 0.92 }}
+        animate={{ opacity: 1, scale: ustunde ? 1.03 : 1 }}
+        transition={ustunde ? yay.yumusak : { duration: sure.sinematik * 1.6, ease: egri.yumusak }}
+      >
+        <NoktaKure parlak={ustunde} />
+      </motion.div>
+
+      {/* Üst şerit: marka solda, açıklama sağda */}
+      <header className="k-ust">
+        <motion.p className="k-marka" {...belir(0.5)}>
+          <span className="k-isaret" aria-hidden="true" />
+          AYIKLA
+        </motion.p>
+        <motion.p className="etiket soluk" {...belir(0.6)}>
+          Fotoğrafları sahneye ve tarihe göre ayıklar
         </motion.p>
       </header>
 
-      <motion.div
-        initial={{ opacity: 0, y: 24, scale: 0.98 }}
-        animate={{ opacity: 1, y: 0, scale: ustunde ? 1.02 : 1 }}
-        transition={ustunde ? yay.canli : { duration: sure.sinematik, ease: egri.yumusak, delay: 0.45 }}
-        className={`birakma${ustunde ? ' ustunde' : ''}`}
-        onDragOver={(e) => {
-          e.preventDefault();
-          setUstunde(true);
-        }}
-        onDragLeave={() => setUstunde(false)}
-        onDrop={birak}
-      >
-        <div className="birakma-ic">
-          <div className="deste" aria-hidden="true">
-            <span />
-            <span />
-            <span />
-          </div>
-          <p className="birakma-baslik">Fotoğrafları veya klasörü buraya bırak</p>
+      {/* Kürenin ortası */}
+      <div className="kure-orta">
+        <motion.h1
+          initial={{ opacity: 0, y: 16, filter: 'blur(10px)' }}
+          animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+          transition={{ duration: sure.sinematik, ease: egri.yumusak, delay: 0.25 }}
+        >
+          {/* Ortadaki kelime aynı zamanda başlatma düğmesi (yalnız sayım hazırken basılabilir) */}
           <button
-            className="ikincil"
-            onClick={async () => {
-              const k = await api.klasorSec();
-              if (k) void sec([k]);
+            className={`k-baslat${hazir && !basliyor ? ' hazir' : ''}`}
+            aria-label="Ayıkla"
+            disabled={!hazir || basliyor}
+            onClick={() => {
+              if (girdiler && sayim) onBaslat(girdiler, sayim);
             }}
           >
+            ayıkla
+          </button>
+        </motion.h1>
+        <motion.p className="k-yonerge etiket" {...belir(0.55)}>
+          {yonerge}
+        </motion.p>
+        <AnimatePresence>
+          {girdiler && (
+            <motion.div className="secim" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
+              <p className="secilen etiket">{girdiler.map(sonParca).join(', ')}</p>
+              {sayiliyor && <p className="etiket soluk">Dosyalar sayılıyor…</p>}
+              {sayim && (
+                <p className="bulundu" aria-label={bulunduMetni(sayim)}>
+                  <BulunduSayaci sayim={sayim} />
+                </p>
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+        {not && <p className="not">{not}</p>}
+        {hata && <p className="hata">{hata}</p>}
+      </div>
+
+      {/* Alt şerit: son arşivler solda, klasör seç sağda — ikisi aynı alt çizgide */}
+      <footer className="k-alt">
+        <div className="k-alt-sol">
+          {arsivler.length > 0 && (
+            <section className="son-arsivler" aria-label="Son arşivler">
+              <motion.h2 className="etiket" {...belir(0.8)}>
+                Son arşivler
+              </motion.h2>
+              <ul>
+                {arsivler.slice(0, 3).map((a, i) => (
+                  <motion.li key={a.girdiler.join('|')} {...belir(0.85 + siraliGecikme(i, 0.06))}>
+                    <button onClick={() => void sec(a.girdiler, true)}>
+                      <span className="ad">{a.girdiler.map(sonParca).join(', ')}</span>
+                      <span className="etiket soluk">
+                        {sayi(a.foto + a.video)} dosya · {tarihMetni(a.tarih)}
+                      </span>
+                    </button>
+                  </motion.li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
+        <motion.div className="k-alt-sag" {...belir(0.8)}>
+          <button className="ikincil" onClick={() => void klasorSec()}>
             Klasör seç
           </button>
-          <AnimatePresence>
-            {girdiler && (
-              <motion.div className="secim" initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                <p className="secilen">{girdiler.map(sonParca).join(', ')}</p>
-                {sayiliyor && <p className="soluk">Dosyalar sayılıyor…</p>}
-                {sayim && (
-                  <p className="bulundu" aria-label={bulunduMetni(sayim)}>
-                    <BulunduSayaci sayim={sayim} />
-                  </p>
-                )}
-                {sayim && sayim.foto + sayim.video > 0 && (
-                  <motion.button
-                    className="altin parlak"
-                    initial={{ opacity: 0, scale: 0.6, y: 10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    transition={{ ...yay.zipla, delay: 0.35 }}
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => onBaslat(girdiler, sayim)}
-                  >
-                    Ayıkla
-                  </motion.button>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-          {not && <p className="not">{not}</p>}
-          {hata && <p className="hata">{hata}</p>}
-        </div>
-      </motion.div>
-
-      {arsivler.length > 0 ? (
-        <section className="son-arsivler">
-          <h2>Son arşivler</h2>
-          <ul>
-            {arsivler.map((a, i) => (
-              <motion.li
-                key={a.girdiler.join('|')}
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: sure.yavas, ease: egri.yumusak, delay: 0.8 + siraliGecikme(i, 0.06) }}
-              >
-                <button onClick={() => void sec(a.girdiler)}>
-                  <span className="ad">{a.girdiler.map(sonParca).join(', ')}</span>
-                  <span className="soluk">
-                    {sayi(a.foto + a.video)} dosya · {tarihMetni(a.tarih)}
-                  </span>
-                </button>
-              </motion.li>
-            ))}
-          </ul>
-        </section>
-      ) : (
-        <div />
-      )}
+        </motion.div>
+      </footer>
     </div>
   );
 }
@@ -168,8 +210,18 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
 function BulunduSayaci({ sayim }: { sayim: Sayim }) {
   if (sayim.foto + sayim.video === 0) return <>{bulunduMetni(sayim)}</>;
   const parcalar: ReactNode[] = [];
-  if (sayim.foto) parcalar.push(<span key="f"><AkanSayi deger={sayim.foto} /> fotoğraf</span>);
-  if (sayim.video) parcalar.push(<span key="v"><AkanSayi deger={sayim.video} /> video</span>);
+  if (sayim.foto)
+    parcalar.push(
+      <span key="f">
+        <AkanSayi deger={sayim.foto} /> fotoğraf
+      </span>,
+    );
+  if (sayim.video)
+    parcalar.push(
+      <span key="v">
+        <AkanSayi deger={sayim.video} /> video
+      </span>,
+    );
   return (
     <>
       {parcalar.map((p, i) => (
