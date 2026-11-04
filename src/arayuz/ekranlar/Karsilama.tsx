@@ -4,6 +4,7 @@ import { NoktaKure } from '../bilesenler/NoktaKure';
 import { egri, siraliGecikme, sure, yay } from '../hareket';
 import { AnimatePresence, motion } from 'motion/react';
 import { api } from '../api';
+import { Hakkinda } from '../bilesenler/Hakkinda';
 import { bulunduMetni, hataMetni, sayi, sonParca, tarihMetni } from '../mantik/bicim';
 import type { ModelDurumuCevabi, Sayim } from '../../ortak/mesajlar';
 import type { SonArsiv } from '../../motor/tipler';
@@ -16,6 +17,15 @@ interface Props {
 
 /** Klasör bırakılınca sayımın görünmesi için başlamadan önce kısa bekleyiş. */
 const OTOMATIK_BASLAMA_MS = 1400;
+
+/** Kayıt dosyası bozuk çıkıp kenara alındıysa kullanıcıya bir kez söylenecek cümle. */
+export function katalogNotuMetni(kurtarilan: string | null): string | null {
+  if (!kurtarilan) return null;
+  const ad = sonParca(kurtarilan);
+  return ad.startsWith('katalog.db')
+    ? `Kayıt dosyan bozuk çıktı. Silmedim, kenara aldım: ${ad}. Eski kayıtlarından yeniden kuruldu; son düzeltmelerin o dosyada kalmış olabilir.`
+    : `Eski kayıt dosyan okunamadı. Silmedim, kenara aldım: ${ad}. Ayıklama yeni bir kayıtla sürüyor.`;
+}
 
 /** Yumuşak beliriş (gecikme saniye cinsinden). */
 const belir = (gecikme: number) => ({
@@ -36,6 +46,8 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
   // Modeller inmemişse ayıklamadan önce indirme onayı istenir (boyut, kaynak, lisans gösterilir)
   const [onay, setOnay] = useState<ModelDurumuCevabi | null>(null);
   const [onaylaniyor, setOnaylaniyor] = useState(false);
+  const [katalogNotu, setKatalogNotu] = useState<string | null>(null);
+  const [hakkinda, setHakkinda] = useState(false);
   const zamanlayici = useRef<number | undefined>(undefined);
   useEffect(() => () => clearTimeout(zamanlayici.current), []);
 
@@ -98,6 +110,10 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
     api
       .sonArsivler()
       .then(setArsivler)
+      .catch(() => {});
+    api
+      .katalogDurumu()
+      .then((d) => setKatalogNotu(katalogNotuMetni(d.kurtarilan)))
       .catch(() => {});
     if (onceki?.length) void sec(onceki);
     else
@@ -237,6 +253,8 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
             </motion.section>
           )}
         </AnimatePresence>
+        <AnimatePresence>{hakkinda && !onay && <Hakkinda onKapat={() => setHakkinda(false)} />}</AnimatePresence>
+        {katalogNotu && <p className="not">{katalogNotu}</p>}
         {not && <p className="not">{not}</p>}
         {hata && <p className="hata">{hata}</p>}
       </div>
@@ -263,6 +281,9 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
               </ul>
             </section>
           )}
+          <motion.button className="hakkinda-dugme etiket soluk" onClick={() => setHakkinda((h) => !h)} {...belir(0.9)}>
+            Hakkında
+          </motion.button>
         </div>
         <motion.div className="k-alt-sag" {...belir(0.8)}>
           <button className="ikincil" onClick={() => void klasorSec()}>

@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { join } from 'node:path';
-import { mkdir, readdir } from 'node:fs/promises';
+import { mkdir, readdir, writeFile } from 'node:fs/promises';
 import sharp from 'sharp';
 import { sunucuOlustur } from '../src/motor/sunucu';
 import { normalize } from '../src/motor/sahne-puan';
 import { katalogAc } from '../src/motor/katalog';
-import type { ArayuzMedya, ArayuzOlayi, IsciIstegi, IsciMesaji, Istek, Sayim } from '../src/ortak/mesajlar';
+import type { ArayuzMedya, ArayuzOlayi, IsciIstegi, IsciMesaji, Istek, KatalogDurumuCevabi, Sayim } from '../src/ortak/mesajlar';
 import type { Grup, SahneModeli } from '../src/motor/tipler';
 import type { AktarmaSonucu } from '../src/motor/disari-aktar';
 import { geciciKlasor, inmisModelIzni, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
@@ -55,6 +55,17 @@ describe('sunucu', () => {
   it('klasördeki fotoğraf ve videoları sayar', async () => {
     const s = await hazirla();
     expect(await s.iste<Sayim>({ tur: 'say', girdiler: [s.girdi] })).toEqual({ foto: 2, video: 1, ham: 0 });
+  });
+
+  it('bozuk kayıt dosyası kenara alındıysa arayüze bir kez söyler', async () => {
+    const temiz = await hazirla();
+    expect(await temiz.iste<KatalogDurumuCevabi>({ tur: 'katalogDurumu' })).toEqual({ kurtarilan: null });
+
+    const s = await hazirla();
+    await writeFile(join(s.calisma, 'katalog.db'), 'bu bir veritabanı değil'.repeat(100));
+    const ilk = await s.iste<KatalogDurumuCevabi>({ tur: 'katalogDurumu' });
+    expect(ilk.kurtarilan).toMatch(/katalog\.db\.bozuk-/);
+    expect(await s.iste<KatalogDurumuCevabi>({ tur: 'katalogDurumu' })).toEqual({ kurtarilan: null });
   });
 
   it('ayıklarken olayları sırayla yollar, son arşivi kaydeder', async () => {

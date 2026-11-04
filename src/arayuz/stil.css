@@ -236,6 +236,8 @@ button:disabled { opacity: 0.5; cursor: default; }
   gap: 24px;
 }
 .k-alt-sag { justify-self: end; }
+.hakkinda-dugme { margin-top: 14px; padding: 4px 0; transition: color 0.2s; }
+.hakkinda-dugme:hover { color: var(--sari); }
 .k-alt .ikincil { padding: 12px 20px; letter-spacing: 0.22em; }
 
 /* Son arşivler: sol altta sade liste, solda ince çizgi */

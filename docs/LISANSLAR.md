@@ -84,4 +84,5 @@ LGPL bileşenleri şu an programın içine gömülmüyor: `scripts/derle.mjs` do
 ## 5. Uygulamadaki karşılığı
 
 - Onay ekranında gösterilen boyut, kaynak ve lisans bilgileri `src/motor/model-izni.ts` dosyasındaki `CLIP_PAKETI` ve `CEVIRI_PAKETI` tanımlarından geliyor. Bu tablo değişirse orası da güncellenmeli.
-- Henüz YAPILMADI: Hakkında/lisans ekranı, paketlenen programın yanına `LICENSE`/`THIRD_PARTY_NOTICES` dosyası koymak. (ffprobe kaldırıldı ve model sürümü sabitlendi, 2026-11-03.)
+- Hakkında kutusu karşılama ekranında (2026-11-04, `src/arayuz/bilesenler/Hakkinda.tsx`); OPUS-MT atıf metni orada. Bu tablo değişirse orası da güncellenmeli.
+- Henüz YAPILMADI: paketlenen programın yanına `LICENSE`/`THIRD_PARTY_NOTICES` dosyası koymak, FFmpeg için GPL kaynak teklifi.

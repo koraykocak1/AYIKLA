@@ -22,7 +22,13 @@ export type IsciIstegi =
   | { id: number; tur: 'sonArsivler' }
   | { id: number; tur: 'aktar'; hedef: string }
   | { id: number; tur: 'modelDurumu' }
-  | { id: number; tur: 'modelIzniVer' };
+  | { id: number; tur: 'modelIzniVer' }
+  | { id: number; tur: 'katalogDurumu' };
+
+/** Kayıt dosyası bozuk çıkıp kenara alındıysa o dosyanın yolu (silinmez); yoksa null. Bir kez döner. */
+export interface KatalogDurumuCevabi {
+  kurtarilan: string | null;
+}
 
 /** Onay adımı için: indirilecek modeller ve bilgileri (dosya listesi, sürüm ve özetler arayüze gitmez). */
 export type ArayuzModelPaketi = Omit<ModelPaketi, 'dosyalar' | 'surum' | 'ozetler'>;

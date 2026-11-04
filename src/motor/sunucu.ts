@@ -6,7 +6,7 @@ import { type Katalog, katalogAc } from './katalog';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './gruplar';
 import { disariAktar, hedefSorunu, type AktarmaSonucu } from './disari-aktar';
 import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzniGerekliHatasi, type ModelIzni } from './model-izni';
-import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type IsciIstegi, type IsciMesaji, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
+import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type IsciIstegi, type IsciMesaji, type KatalogDurumuCevabi, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
 import type { Grup, IslenmisMedya, SahneModeli } from './tipler';
 
 export interface SunucuAyarlari {
@@ -64,8 +64,13 @@ export function sunucuOlustur(a: SunucuAyarlari) {
   const disa = async (m: IslenmisMedya): Promise<ArayuzMedya> => arayuzIcin(m, await renk(m));
   const disaListe = (l: IslenmisMedya[]) => Promise.all(l.map(disa));
 
-  function kayitAc(): Promise<Katalog> {
-    return katalogAc(a.calismaKlasoru);
+  /** Bu çalışmada bozuk bulunup kenara alınan kayıt dosyası; arayüze bir kez bildirilir. */
+  let kurtarilanKayit: string | null = null;
+
+  async function kayitAc(): Promise<Katalog> {
+    const k = await katalogAc(a.calismaKlasoru);
+    if (k.kurtarilan) kurtarilanKayit ??= k.kurtarilan;
+    return k;
   }
 
   async function gruplar(): Promise<Grup[]> {
@@ -211,6 +216,12 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       case 'modelIzniVer':
         await a.modelIzni.ver();
         return modelDurumu();
+      case 'katalogDurumu': {
+        await kayitAc();
+        const kurtarilan = kurtarilanKayit;
+        kurtarilanKayit = null; // bir kez söylenir
+        return { kurtarilan } satisfies KatalogDurumuCevabi;
+      }
     }
   }
 

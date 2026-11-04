@@ -105,6 +105,9 @@ export const sahteApi: AyiklaApi = {
       case 'modelIzniVer':
         sahteIzin = true;
         return sahteModelDurumu();
+      case 'katalogDurumu':
+        // Adres '?bozuk' ile açılırsa kayıt dosyası bozuk çıkmış sayılır
+        return { kurtarilan: location.search.includes('bozuk') ? 'C:/Users/Örnek/.ayikla/katalog.db.bozuk-2026-11-04T09-12-30-000Z' : null };
       case 'say':
         return { foto: 1240, video: 86, ham: 0 };
       case 'baslat':

@@ -64,13 +64,14 @@ Büyük arşiv ölçümleri (076, 083, 090), renk yönetimi/HDR (119), paketleme
 | 2026-11-03 | FAZ 1 #12 (kabul testi) | `tests/kabul.test.ts`: DoD 1–4, 9 senaryo, hepsi geçti; çalıştırılamayanlar aşağıdaki raporda. Yeni `src/motor/arsiv-kurtar.ts` (kayıp/bozuk katalogdan yeniden keşif, DoD 4 için); `iceAl`'a durdurma sinyali eklendi. 124 Yok → Kısmen. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 32 dosya, 186 test geçti (önce 177); `npm.cmd run derle` temiz. Uygulama penceresinde DENENMEDİ |
 | 2026-11-03 | Yayın öncesi: ffprobe kaldırıldı | `ffprobe-static` (içinde 2018 tarihli, kaynağı belirsiz GPL `ffprobe.exe`) `npm uninstall` ile çıkarıldı; yeni paket kurulmadı. `videoBilgisi` aynı bilgileri (süre, boyut, oluşturma tarihi) paketteki `ffmpeg.exe -i` çıktısından okuyor; video olmayan dosyada yine hata veriyor. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 32 dosya, 188 test geçti (önce 186); `npm.cmd run derle` temiz. Gerçek telefon videolarıyla ve uygulama penceresinde DENENMEDİ |
 | 2026-11-03 | Yayın öncesi: model sürümü sabit | `model-izni.ts` `ModelPaketi.surum` (commit) + `ozetler` (SHA-256), `indirmeSablonu`, `modelDosyalariniDogrula`; `sahne-model.ts` indirme adresini sabit commit'e bağlar, yüklemeleri sıraya koyar, indirme olduysa dosyaları doğrular. Kütüphanenin `revision` seçeneği BİLEREK kullanılmadı: önbellek yolunu değiştirip inmiş ~1 GB modeli yeniden indirtirdi. `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 32 dosya, 190 test geçti (önce 188). Gerçek önbellek: 12 dosya sabit sürümle aynı, iki model ağsız açıldı, 0 ağ çağrısı. Sıfırdan gerçek indirme DENENMEDİ (1 GB, onay ister) |
+| 2026-11-04 | Yayın öncesi: bozuk katalog haberi + Hakkında (kullanıcı taslağı onayladı) | Motor: `katalogDurumu` isteği kenara alınan kayıt dosyasının yolunu bir kez döndürür (`sunucu.ts`). Arayüz: karşılama ekranında mevcut sarı `.not` satırıyla haber; alt şeritte küçük "Hakkında" yazısı → model onay kutusu görünümünde lisans kutusu (`bilesenler/Hakkinda.tsx`; CLIP MIT, OPUS-MT CC-BY 4.0 atfı, FFmpeg GPLv3 kaynağı, diğer paketler). Yeni CSS yalnız `.hakkinda-dugme` (iki satır). Adresler düz metin (pencere içinde site açılmasın). `npx.cmd tsc --noEmit` temiz; `npx.cmd vitest run` 32 dosya, 191 test geçti (önce 190); `npm.cmd run derle` temiz. Geliştirme önizlemesinde (`?bozuk`) görüldü, konsol temiz. Gerçek Electron penceresinde DENENMEDİ |
 
 **Parti 1 ayrıntıları ve sınırları**
 - Arayüz değişmedi. Kaydetme sonucundaki "kopyalandı" sayısı artık yalnız SHA-256 ile doğrulanmış kopyaları sayar.
 - Kayıt klasörü kaynağın içinde seçilirse arayüzde mevcut "Kaydedilemedi: …" mesajıyla Türkçe neden görünür.
 - Sistem klasörü listesi Windows içindir; Mac karşılığı YAPILMADI.
 - Kullanıcının doğrudan seçtiği işaretli klasör yine taranır (bilinçli seçim). İşaret yalnız iç içe bulunan klasörlerde dışlama yapar.
-- Bozuk `kayit.json` kenara alındığında kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+- Bozuk `kayit.json` kenara alındığında karşılama ekranında bir kez sarı notla söylenir (2026-11-04, `katalogDurumu` isteği).
 
 **FAZ 1 #12 kabul raporu (talimat bölüm 6, DoD 1–4; 3 Kasım 2026)**
 
@@ -161,7 +162,7 @@ DoD 5–10 bu görevin kapsamında değil (büyük arşiv, mahremiyet, çapraz p
 **FAZ 1 #4 ayrıntıları ve sınırları**
 - Katalog yeri: `~/.ayikla/katalog.db` (çalışırken yanında `-wal`, `-shm`). Eski `kayit.json` olduğu yerde kalır; programın yeni sürümü onu bir daha okumaz.
 - Medya kaydı tabloda JSON olarak duruyor (şema sürümü 1). Ayrıntılı şema #6 ve #8'de gelecek.
-- Bozuk veritabanı `katalog.db.bozuk-<zaman>` olarak kenara alınıp eski `kayit.json`'dan yeniden kurulur; bu durumda geçişten sonraki düzeltmeler yalnız kenara alınan dosyada kalır. Kullanıcıya ekranda haber verilmiyor (`kurtarilan` alanı hazır) — YAPILMADI.
+- Bozuk veritabanı `katalog.db.bozuk-<zaman>` olarak kenara alınıp eski `kayit.json`'dan yeniden kurulur; bu durumda geçişten sonraki düzeltmeler yalnız kenara alınan dosyada kalır. Karşılama ekranında bir kez sarı notla söylenir (2026-11-04).
 - Programın eski sürümüne dönülürse eski sürüm `kayit.json`'u okur; yeni katalogdaki değişiklikleri görmez.
 - Eşlenmiş ağ sürücüsü algılanmıyor; yalnız UNC yolu reddediliyor.
 
