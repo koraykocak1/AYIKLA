@@ -23,7 +23,24 @@ export type IsciIstegi =
   | { id: number; tur: 'aktar'; hedef: string }
   | { id: number; tur: 'modelDurumu' }
   | { id: number; tur: 'modelIzniVer' }
-  | { id: number; tur: 'katalogDurumu' };
+  | { id: number; tur: 'katalogDurumu' }
+  | { id: number; tur: 'arsivDurumu' }
+  | { id: number; tur: 'arsiveAl'; kok: string };
+
+/** Bilinen (son kullanılan) arşiv. `ad` yalnız arşiv şu an erişilebilirse dolu (disk takılı değilse null). */
+export interface ArsivDurumuCevabi {
+  kok: string | null;
+  ad: string | null;
+}
+
+export interface ArsivAlimSonucu {
+  kok: string;
+  ad: string;
+  yeni: number; // arşive yeni giren dosya
+  zaten: number; // içeriği zaten arşivde olan (tek kopya saklanır)
+  hata: number;
+  durduruldu: boolean;
+}
 
 /** Kayıt dosyası bozuk çıkıp kenara alındıysa o dosyanın yolu (silinmez); yoksa null. Bir kez döner. */
 export interface KatalogDurumuCevabi {
@@ -50,7 +67,8 @@ export type ArayuzOlayi =
   | { tur: 'okunamadi'; yol: string; hata: string }
   | { tur: 'kopyalar'; anahtarlar: string[] }
   | { tur: 'bitti'; sonuc: ArayuzMedya[]; durduruldu: boolean }
-  | { tur: 'aktarim'; bitti: number; toplam: number };
+  | { tur: 'aktarim'; bitti: number; toplam: number }
+  | { tur: 'arsivAlim'; bitti: number; toplam: number; zaten: number };
 
 export type IsciCevabi = { id: number; tamam: true; veri: unknown } | { id: number; tamam: false; hata: string };
 

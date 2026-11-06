@@ -5,10 +5,10 @@ import sharp from 'sharp';
 import { sunucuOlustur } from '../src/motor/sunucu';
 import { normalize } from '../src/motor/sahne-puan';
 import { katalogAc } from '../src/motor/katalog';
-import type { ArayuzMedya, ArayuzOlayi, IsciIstegi, IsciMesaji, Istek, KatalogDurumuCevabi, Sayim } from '../src/ortak/mesajlar';
+import type { ArayuzMedya, ArayuzOlayi, ArsivAlimSonucu, ArsivDurumuCevabi, IsciIstegi, IsciMesaji, Istek, KatalogDurumuCevabi, Sayim } from '../src/ortak/mesajlar';
 import type { Grup, SahneModeli } from '../src/motor/tipler';
 import type { AktarmaSonucu } from '../src/motor/disari-aktar';
-import { geciciKlasor, inmisModelIzni, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
+import { geciciKlasor, klasorGoruntusu, medyaDosyalari, inmisModelIzni, desenliResim, bulanikResim, ornekVideo, sahteNef, gurultuJpeg } from './yardimci';
 
 // Sahte model: resmin ortalama rengi vektör olur; ana konusu "blue" olan tarifler maviye, diğer her tarif yeşile denk gelir.
 const sahteModel: SahneModeli = {
@@ -157,6 +157,36 @@ describe('sunucu', () => {
     const dosyalar = (await Promise.all(ay.map(async (y) => Promise.all((await readdir(join(hedef, grup, y))).map((a) => readdir(join(hedef, grup, y, a)))))))
       .flat(2);
     expect(dosyalar).toEqual(expect.arrayContaining(['mavi.jpg', 'mavi.NEF']));
+  });
+
+  it('arşive alır: kaynağa dokunmaz, ikinci alımda yeni kopya yapmaz, arşivi hatırlar', async () => {
+    const s = await hazirla();
+    expect(await s.iste<ArsivDurumuCevabi>({ tur: 'arsivDurumu' })).toEqual({ kok: null, ad: null });
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    const once = await klasorGoruntusu(s.girdi);
+    const kok = join(s.kok, 'Arsivim');
+
+    const r = await s.iste<ArsivAlimSonucu>({ tur: 'arsiveAl', kok });
+    expect(r).toMatchObject({ ad: 'Arsivim', yeni: 2, zaten: 0, hata: 0, durduruldu: false }); // bulanık elenmiş
+    expect(await medyaDosyalari(kok)).toHaveLength(2);
+    expect(s.olaylar().filter((o) => o.tur === 'arsivAlim').at(-1)).toEqual({ tur: 'arsivAlim', bitti: 2, toplam: 2, zaten: 0 });
+    expect(await s.iste<ArsivDurumuCevabi>({ tur: 'arsivDurumu' })).toEqual({ kok: r.kok, ad: 'Arsivim' });
+
+    const ikinci = await s.iste<ArsivAlimSonucu>({ tur: 'arsiveAl', kok });
+    expect(ikinci).toMatchObject({ yeni: 0, zaten: 2, hata: 0 });
+    expect(await medyaDosyalari(kok)).toHaveLength(2);
+    expect(await klasorGoruntusu(s.girdi)).toEqual(once);
+  });
+
+  it('arşiv kaynak klasörün içindeyse ya da klasör boş değilse Türkçe hata verir', async () => {
+    const s = await hazirla();
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    await expect(s.iste({ tur: 'arsiveAl', kok: join(s.girdi, 'Arsiv') })).rejects.toThrow(/Arşiv klasörü.*içinde olamaz/);
+    const dolu = join(s.kok, 'dolu');
+    await mkdir(dolu);
+    await writeFile(join(dolu, 'not.txt'), 'x');
+    await expect(s.iste({ tur: 'arsiveAl', kok: dolu })).rejects.toThrow(/boş bir klasör seç/);
+    expect(await s.iste<ArsivDurumuCevabi>({ tur: 'arsivDurumu' })).toEqual({ kok: null, ad: null });
   });
 
   it('model yüklenemezse hata bildirir, sonraki denemede yeniden yükler', async () => {

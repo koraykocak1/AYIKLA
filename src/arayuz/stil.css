@@ -365,6 +365,11 @@ button:disabled { opacity: 0.5; cursor: default; }
   margin-bottom: 8px;
 }
 .s-araclar { display: flex; align-items: center; gap: 14px; }
+.s-alim { color: var(--sari); font-variant-numeric: tabular-nums; }
+/* Arşiv yeri kutusu: model onay kutusu, ekranın ortasında */
+.s-perde { position: fixed; inset: 0; z-index: 30; display: grid; place-items: center; background: rgba(0, 0, 0, 0.6); }
+.s-perde .model-onay { margin-top: 0; }
+.mo-yol { margin-top: 10px; font-family: var(--mono); color: var(--sari); word-break: break-all; }
 /* IZGARA | KÜRE anahtarı: seçilinin altında kayan sarı zemin */
 .s-anahtar { display: flex; border: 1px solid var(--cizgi-guclu); border-radius: 4px; padding: 3px; }
 .s-anahtar button { position: relative; padding: 8px 16px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--cok-soluk); transition: color 0.25s; }

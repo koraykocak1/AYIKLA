@@ -1,12 +1,15 @@
 import { ortalamaRenk } from './renk';
-import { stat } from 'node:fs/promises';
+import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
+import { join } from 'node:path';
+import { Arsiv, ArsivHatasi, arsivKimligiOku, arsivOlustur } from './arsiv';
+import { iceAl, type IceAlinacak } from './arsiv-depo';
 import { ayikla, yenidenPuanla } from './isci';
 import { tara, hamEsleriniAyir } from './tarayici';
 import { type Katalog, katalogAc } from './katalog';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './gruplar';
 import { disariAktar, hedefSorunu, type AktarmaSonucu } from './disari-aktar';
 import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzniGerekliHatasi, type ModelIzni } from './model-izni';
-import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type IsciIstegi, type IsciMesaji, type KatalogDurumuCevabi, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
+import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type ArsivAlimSonucu, type ArsivDurumuCevabi, type IsciIstegi, type IsciMesaji, type KatalogDurumuCevabi, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
 import type { Grup, IslenmisMedya, SahneModeli } from './tipler';
 
 export interface SunucuAyarlari {
@@ -141,18 +144,71 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     return liste;
   }
 
+  /** Kaydedilecek / arşive alınacak dosyalar: elenmeyenler ve RAW (NEF) eşleri — hiçbir RAW kaybolmaz. */
+  function secilenler(): { yol: string; m: IslenmisMedya }[] {
+    return son.filter((m) => !m.eleme).flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, m })));
+  }
+
   async function aktar(hedef: string): Promise<AktarmaSonucu> {
     const sorun = hedefSorunu(hedef, await kaynakKlasorleri(), a.calismaKlasoru);
     if (sorun) throw new Error(sorun);
     const gs = await gruplar();
     const ad = (id: string) => gs.find((g) => g.id === id)?.ad ?? (id === DIGER_ID ? 'Diğer' : id);
-    // RAW (NEF) eşleri JPG'nin yanına, aynı klasöre kopyalanır: hiçbir RAW kaybolmaz.
-    const ogeler = son
-      .filter((m) => !m.eleme)
-      .flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, grupAdi: ad(m.grupId), tarih: m.tarih })));
+    // RAW eşleri JPG'nin yanına, aynı klasöre kopyalanır.
+    const ogeler = secilenler().map(({ yol, m }) => ({ yol, grupAdi: ad(m.grupId), tarih: m.tarih }));
     return disariAktar(ogeler, hedef, (bitti, toplam) => {
       if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'aktarim', bitti, toplam });
     });
+  }
+
+  // ------------------------------------------------------------ arşiv
+
+  const arsivDosyasi = () => join(a.calismaKlasoru, 'arsiv.json');
+
+  async function bilinenArsiv(): Promise<{ kok: string; kimlik: string } | null> {
+    try {
+      const v = JSON.parse(await readFile(arsivDosyasi(), 'utf8')) as { kok?: unknown; kimlik?: unknown };
+      return typeof v.kok === 'string' && typeof v.kimlik === 'string' ? { kok: v.kok, kimlik: v.kimlik } : null;
+    } catch {
+      return null;
+    }
+  }
+
+  async function arsivDurumu(): Promise<ArsivDurumuCevabi> {
+    const b = await bilinenArsiv();
+    if (!b) return { kok: null, ad: null };
+    try {
+      const k = await arsivKimligiOku(b.kok);
+      // Aynı yerde başka bir arşiv varsa (disk değişmiş) bilinen arşiv sayılmaz
+      return k.kimlik === b.kimlik ? { kok: b.kok, ad: k.ad } : { kok: null, ad: null };
+    } catch {
+      return { kok: b.kok, ad: null }; // disk takılı değil: yol hatırlanır, ad okunamaz
+    }
+  }
+
+  async function arsiveAl(kok: string): Promise<ArsivAlimSonucu> {
+    try {
+      await arsivKimligiOku(kok);
+    } catch (h) {
+      if (!(h instanceof ArsivHatasi) || h.kod !== 'arsiv-degil') throw h;
+      await arsivOlustur(kok, { kaynaklar: await kaynakKlasorleri(), calismaKlasoru: a.calismaKlasoru });
+    }
+    const ar = await Arsiv.ac(kok);
+    try {
+      // Öğe seçimi "Klasöre kaydet" ile aynı: elenmeyenler ve RAW eşleri
+      const dosyalar: IceAlinacak[] = secilenler().map(({ yol, m }) => ({ yol, tur: yol === m.yol ? m.tur : undefined, tarih: m.tarih }));
+      olay({ tur: 'arsivAlim', bitti: 0, toplam: dosyalar.length, zaten: 0 });
+      const r = await iceAl(ar, dosyalar, (bitti, toplam, ara) => {
+        if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'arsivAlim', bitti, toplam, zaten: ara.tekil + ara.kayitli });
+      });
+      return { kok: ar.kok, ad: ar.kimlik.ad, yeni: r.yeni, zaten: r.tekil + r.kayitli, hata: r.hatalar.length, durduruldu: r.durduruldu };
+    } finally {
+      await ar.kapat();
+      await mkdir(a.calismaKlasoru, { recursive: true });
+      const gecici = `${arsivDosyasi()}.gecici`;
+      await writeFile(gecici, JSON.stringify({ kok: ar.kok, kimlik: ar.kimlik.kimlik }, null, 2));
+      await rename(gecici, arsivDosyasi());
+    }
   }
 
   async function modelDurumu(): Promise<ModelDurumuCevabi> {
@@ -211,6 +267,10 @@ export function sunucuOlustur(a: SunucuAyarlari) {
         return (await kayitAc()).veri.sonArsivler ?? [];
       case 'aktar':
         return aktar(i.hedef);
+      case 'arsivDurumu':
+        return arsivDurumu();
+      case 'arsiveAl':
+        return arsiveAl(i.kok);
       case 'modelDurumu':
         return modelDurumu();
       case 'modelIzniVer':

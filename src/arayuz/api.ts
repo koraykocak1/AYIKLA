@@ -1,5 +1,5 @@
 import type { AyiklaApi } from '../ana/onyukle';
-import type { ArayuzMedya, ArayuzOlayi, KatalogDurumuCevabi, ModelDurumuCevabi, Sayim } from '../ortak/mesajlar';
+import type { ArayuzMedya, ArayuzOlayi, ArsivAlimSonucu, ArsivDurumuCevabi, KatalogDurumuCevabi, ModelDurumuCevabi, Sayim } from '../ortak/mesajlar';
 import type { Grup, SonArsiv } from '../motor/tipler';
 import type { AktarmaSonucu } from '../motor/disari-aktar';
 
@@ -25,6 +25,9 @@ export const api = {
   katalogDurumu: () => k().istek({ tur: 'katalogDurumu' }) as Promise<KatalogDurumuCevabi>,
   sonArsivler: () => k().istek({ tur: 'sonArsivler' }) as Promise<SonArsiv[]>,
   aktarSec: () => k().aktarSec() as Promise<AktarmaSonucu | null>,
+  arsivDurumu: () => k().istek({ tur: 'arsivDurumu' }) as Promise<ArsivDurumuCevabi>,
+  arsivSec: () => k().arsivSec(),
+  arsiveAl: (kok: string) => k().arsiveAl(kok) as Promise<ArsivAlimSonucu>,
   klasorSec: () => k().klasorSec(),
   baslangicKlasoru: () => k().baslangicKlasoru(),
   yolAl: (f: File) => k().yolAl(f),

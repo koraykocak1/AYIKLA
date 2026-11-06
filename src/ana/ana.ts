@@ -11,8 +11,8 @@ protocol.registerSchemesAsPrivileged([
 ]);
 
 const ONIZLEME_KLASORU = join(process.env.AYIKLA_CALISMA ?? join(homedir(), '.ayikla'), 'onizleme');
-/** Arayüzün işçiye doğrudan iletebileceği istekler. "aktar" yalnızca klasör seçme penceresinden sonra ana süreçten gider. */
-const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer']);
+/** Arayüzün işçiye doğrudan iletebileceği istekler. "aktar" ve "arsiveAl" yalnızca klasör seçme penceresinden sonra ana süreçten gider. */
+const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer', 'arsivDurumu']);
 /** Bu oturumda işçinin bildirdiği dosyalar: yalnızca bunların orijinali ayikla://dosya ile açılır. */
 const izinliDosyalar = new Set<string>();
 const bekleyen = new Map<number, { coz: (v: unknown) => void; reddet: (h: Error) => void }>();
@@ -116,6 +116,26 @@ void app.whenReady().then(() => {
     });
     if (r.canceled || !r.filePaths[0]) return null;
     return iste({ tur: 'aktar', hedef: r.filePaths[0] });
+  });
+  // Arşiv klasörü: seçilen yol yalnız arayüze döner (kutuda gösterilir). "Arşive al" yalnız bu pencereden
+  // seçilmiş ya da motorun bildiği arşivin yolu için kabul edilir; arayüz başka bir yol uyduramaz.
+  const secilenArsivler = new Set<string>();
+  ipcMain.handle('arsiv-sec', async () => {
+    if (!pencere) return null;
+    const r = await dialog.showOpenDialog(pencere, {
+      title: 'Arşiv klasörünü seç',
+      buttonLabel: 'Bu klasörü seç',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    const yol = r.canceled ? null : (r.filePaths[0] ?? null);
+    if (yol) secilenArsivler.add(yol);
+    return yol;
+  });
+  ipcMain.handle('arsive-al', async (_e, kok: unknown) => {
+    if (typeof kok !== 'string') throw new Error('İzin verilmeyen istek');
+    const bilinen = ((await iste({ tur: 'arsivDurumu' })) as { kok: string | null }).kok;
+    if (!secilenArsivler.has(kok) && kok !== bilinen) throw new Error('İzin verilmeyen istek');
+    return iste({ tur: 'arsiveAl', kok });
   });
   ipcMain.handle('baslangic-klasoru', () => baslangicKlasoru(process.argv, app.getAppPath(), klasorMu));
 

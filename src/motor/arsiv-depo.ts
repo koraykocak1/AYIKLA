@@ -144,7 +144,8 @@ async function blobYerlestir(
 export async function iceAl(
   a: Arsiv,
   dosyalar: IceAlinacak[],
-  ilerleme?: (bitti: number, toplam: number) => void,
+  /** Üçüncü değer o ana kadarki sayımlar (yeni / tekil / kayıtlı): "kaçı zaten arşivde" göstermek için. */
+  ilerleme?: (bitti: number, toplam: number, ara: Readonly<IceAlmaSonucu>) => void,
   kanca?: AktarmaKancalari,
   durdur?: AbortSignal,
 ): Promise<IceAlmaSonucu> {
@@ -202,7 +203,7 @@ export async function iceAl(
       sonuc.hatalar.push({ yol: d.yol, hata: h instanceof Error ? h.message : String(h) });
       if ((h as NodeJS.ErrnoException).code === 'ENOSPC') break;
     }
-    ilerleme?.(i + 1, dosyalar.length);
+    ilerleme?.(i + 1, dosyalar.length, sonuc);
   }
   return sonuc;
 }

@@ -1,5 +1,5 @@
 import type { AyiklaApi } from '../ana/onyukle';
-import type { ArayuzMedya, ArayuzOlayi, Istek, ModelDurumuCevabi } from '../ortak/mesajlar';
+import type { ArayuzMedya, ArayuzOlayi, ArsivDurumuCevabi, Istek, ModelDurumuCevabi } from '../ortak/mesajlar';
 import type { Grup, SonArsiv } from '../motor/tipler';
 
 /**
@@ -28,6 +28,11 @@ function sahteModelDurumu(): ModelDurumuCevabi {
     ],
   };
 }
+
+// Adres "?arsivyok" ile açılırsa bilinen arşiv yok sayılır: "Arşivin nerede dursun?" kutusu denenir
+let sahteArsiv: ArsivDurumuCevabi = location.search.includes('arsivyok')
+  ? { kok: null, ad: null }
+  : { kok: 'E:\\AYIKLA Arşiv', ad: 'AYIKLA Arşiv' };
 
 // Sahte ayıklama: motorun olaylarını uydurma dosyalarla, gerçeğe yakın bir hızda yayınlar
 const dinleyiciler = new Set<(o: ArayuzOlayi) => void>();
@@ -108,6 +113,8 @@ export const sahteApi: AyiklaApi = {
       case 'katalogDurumu':
         // Adres '?bozuk' ile açılırsa kayıt dosyası bozuk çıkmış sayılır
         return { kurtarilan: location.search.includes('bozuk') ? 'C:/Users/Örnek/.ayikla/katalog.db.bozuk-2026-11-04T09-12-30-000Z' : null };
+      case 'arsivDurumu':
+        return sahteArsiv;
       case 'say':
         return { foto: 1240, video: 86, ham: 0 };
       case 'baslat':
@@ -146,6 +153,19 @@ export const sahteApi: AyiklaApi = {
     }
     yayinla({ tur: 'aktarim', bitti: toplam, toplam });
     return { kopyalanan: toplam, atlanan: 0, hatalar: [] };
+  },
+  arsivSec: async () => 'E:\\AYIKLA Arşiv',
+  // Arşive alma: her 20 dosyadan biri "zaten arşivde" sayılır
+  arsiveAl: async (kok: string) => {
+    const toplam = sonSonuc.filter((m) => !m.eleme).length || 100;
+    const zatenOlan = (b: number) => Math.floor(b / 20);
+    for (let b = 0; b < toplam; b += Math.ceil(toplam / 60)) {
+      yayinla({ tur: 'arsivAlim', bitti: b, toplam, zaten: zatenOlan(b) });
+      await bekle(70);
+    }
+    yayinla({ tur: 'arsivAlim', bitti: toplam, toplam, zaten: zatenOlan(toplam) });
+    sahteArsiv = { kok, ad: 'AYIKLA Arşiv' };
+    return { kok, ad: 'AYIKLA Arşiv', yeni: toplam - zatenOlan(toplam), zaten: zatenOlan(toplam), hata: 0, durduruldu: false };
   },
   baslangicKlasoru: async () => null,
   yolAl: (f: File) => f.name,
