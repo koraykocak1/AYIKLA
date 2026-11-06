@@ -12,7 +12,7 @@ protocol.registerSchemesAsPrivileged([
 
 const ONIZLEME_KLASORU = join(process.env.AYIKLA_CALISMA ?? join(homedir(), '.ayikla'), 'onizleme');
 /** Arayüzün işçiye doğrudan iletebileceği istekler. "aktar" ve "arsiveAl" yalnızca klasör seçme penceresinden sonra ana süreçten gider. */
-const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer', 'katalogDurumu', 'arsivDurumu', 'arsivGoster', 'arsivIslem', 'bayatKilidiKaldir', 'yedekDurumu', 'arsivDenetle']);
+const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer', 'katalogDurumu', 'arsivDurumu', 'arsivAlimDurdur', 'arsivGoster', 'arsivIslem', 'bayatKilidiKaldir', 'yedekDurumu', 'arsivDenetle']);
 /** Bu oturumda işçinin bildirdiği dosyalar: yalnızca bunların orijinali ayikla://dosya ile açılır. */
 const izinliDosyalar = new Set<string>();
 const bekleyen = new Map<number, { coz: (v: unknown) => void; reddet: (h: Error) => void }>();
@@ -131,11 +131,14 @@ void app.whenReady().then(() => {
     if (yol) secilenArsivler.add(yol);
     return yol;
   });
-  ipcMain.handle('arsive-al', async (_e, kok: unknown) => {
+  ipcMain.handle('arsive-al', async (_e, kok: unknown, anahtarlar: unknown) => {
     if (typeof kok !== 'string') throw new Error('İzin verilmeyen istek');
+    if (anahtarlar !== undefined && !(Array.isArray(anahtarlar) && anahtarlar.every((x) => typeof x === 'string'))) {
+      throw new Error('İzin verilmeyen istek');
+    }
     const bilinen = ((await iste({ tur: 'arsivDurumu' })) as { kok: string | null }).kok;
     if (!secilenArsivler.has(kok) && kok !== bilinen) throw new Error('İzin verilmeyen istek');
-    return iste({ tur: 'arsiveAl', kok });
+    return iste({ tur: 'arsiveAl', kok, anahtarlar: anahtarlar as string[] | undefined });
   });
   // Yedek ve geri yükleme: klasörler yalnız bu pencerelerden gelir
   const klasorSor = async (title: string, buttonLabel: string) => {

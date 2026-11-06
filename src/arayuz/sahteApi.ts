@@ -37,6 +37,7 @@ let sahteArsiv: ArsivDurumuCevabi = location.search.includes('arsivyok')
 
 // Sahte arşiv (Arşivim, Kutu, Yedek). "?kilit" ile açılırsa arşiv ilk açılışta düzgün kapatılmamış sayılır.
 let sahteKilit = location.search.includes('kilit');
+let alimDurdur = false;
 let sahteAlbumId = 3;
 const sahteAlbumler = [
   { id: 1, ad: 'Tatil 2024', ogeler: new Set<number>() },
@@ -201,6 +202,9 @@ export const sahteApi: AyiklaApi = {
         return { kurtarilan: location.search.includes('bozuk') ? 'C:/Users/Örnek/.ayikla/katalog.db.bozuk-2026-11-04T09-12-30-000Z' : null };
       case 'arsivDurumu':
         return sahteArsiv;
+      case 'arsivAlimDurdur':
+        alimDurdur = true;
+        return true;
       case 'arsivGoster':
         return sahteGorunum(i.sorgu);
       case 'arsivIslem':
@@ -257,16 +261,19 @@ export const sahteApi: AyiklaApi = {
   },
   arsivSec: async () => 'E:\\AYIKLA Arşiv',
   // Arşive alma: her 20 dosyadan biri "zaten arşivde" sayılır
-  arsiveAl: async (kok: string) => {
-    const toplam = sonSonuc.filter((m) => !m.eleme).length || 100;
+  arsiveAl: async (kok: string, anahtarlar?: string[]) => {
+    const toplam = anahtarlar?.length ?? (sonSonuc.filter((m) => !m.eleme).length || 100);
     const zatenOlan = (b: number) => Math.floor(b / 20);
-    for (let b = 0; b < toplam; b += Math.ceil(toplam / 60)) {
+    alimDurdur = false;
+    let b = 0;
+    for (; b < toplam && !alimDurdur; b += Math.ceil(toplam / 60)) {
       yayinla({ tur: 'arsivAlim', bitti: b, toplam, zaten: zatenOlan(b) });
       await bekle(70);
     }
-    yayinla({ tur: 'arsivAlim', bitti: toplam, toplam, zaten: zatenOlan(toplam) });
+    b = Math.min(b, toplam);
+    yayinla({ tur: 'arsivAlim', bitti: b, toplam, zaten: zatenOlan(b) });
     sahteArsiv = { kok, ad: 'AYIKLA Arşiv' };
-    return { kok, ad: 'AYIKLA Arşiv', yeni: toplam - zatenOlan(toplam), zaten: zatenOlan(toplam), hata: 0, durduruldu: false };
+    return { kok, ad: 'AYIKLA Arşiv', yeni: b - zatenOlan(b), zaten: zatenOlan(b), hata: 0, durduruldu: alimDurdur };
   },
   yedekSec: async () => {
     await sahteIs('yedek', sahteOgeler.length);

@@ -179,6 +179,24 @@ describe('sunucu', () => {
     expect(await klasorGoruntusu(s.girdi)).toEqual(once);
   });
 
+  it('yalnız istenen grubu arşive alır; durdurulunca kalanlara dokunmaz', async () => {
+    const s = await hazirla();
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    const bitti = s.olaylar().at(-1);
+    if (bitti?.tur !== 'bitti') throw new Error('bitmedi');
+    const mavi = bitti.sonuc.find((m) => m.yol.endsWith('mavi.jpg'))!;
+    const kok = join(s.kok, 'Arsivim');
+    const r = await s.iste<ArsivAlimSonucu>({ tur: 'arsiveAl', kok, anahtarlar: [mavi.anahtar] });
+    expect(r).toMatchObject({ yeni: 1, zaten: 0, durduruldu: false });
+    expect(await medyaDosyalari(kok)).toHaveLength(1);
+
+    // Durdur, alım başlar başlamaz: hiçbir yeni dosya alınmaz
+    const alim = s.iste<ArsivAlimSonucu>({ tur: 'arsiveAl', kok });
+    await s.iste({ tur: 'arsivAlimDurdur' });
+    expect(await alim).toMatchObject({ yeni: 0, durduruldu: true });
+    expect(await medyaDosyalari(kok)).toHaveLength(1);
+  });
+
   it('Arşivim: albüm, etiket, arama, kutu, geri al ve kalıcı sil', async () => {
     const s = await hazirla();
     await s.iste({ tur: 'baslat', girdiler: [s.girdi] });

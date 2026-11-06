@@ -25,7 +25,9 @@ export type IsciIstegi =
   | { id: number; tur: 'modelIzniVer' }
   | { id: number; tur: 'katalogDurumu' }
   | { id: number; tur: 'arsivDurumu' }
-  | { id: number; tur: 'arsiveAl'; kok: string }
+  /** `anahtarlar`: yalnız bu medyalar (Sonuç ekranında açık grup); verilmezse elenmeyenlerin hepsi. */
+  | { id: number; tur: 'arsiveAl'; kok: string; anahtarlar?: string[] }
+  | { id: number; tur: 'arsivAlimDurdur' }
   | { id: number; tur: 'arsivGoster'; sorgu: ArsivSorgusu }
   | { id: number; tur: 'arsivIslem'; islem: ArsivIslemi }
   | { id: number; tur: 'bayatKilidiKaldir' }

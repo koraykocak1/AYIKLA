@@ -206,7 +206,19 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     }
   }
 
-  async function arsiveAl(kok: string): Promise<ArsivAlimSonucu> {
+  let alimDurdurucu: AbortController | null = null;
+
+  async function arsiveAl(kok: string, anahtarlar?: string[]): Promise<ArsivAlimSonucu> {
+    const durdur = new AbortController();
+    alimDurdurucu = durdur;
+    try {
+      return await arsiveAlDurdurulabilir(kok, anahtarlar, durdur.signal);
+    } finally {
+      if (alimDurdurucu === durdur) alimDurdurucu = null;
+    }
+  }
+
+  async function arsiveAlDurdurulabilir(kok: string, anahtarlar: string[] | undefined, durdur: AbortSignal): Promise<ArsivAlimSonucu> {
     try {
       await arsivKimligiOku(kok);
     } catch (h) {
@@ -217,12 +229,22 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       throw h instanceof ArsivHatasi && h.kod === 'bayat-kilit' ? new Error(BAYAT_KILIT + h.message) : h;
     });
     try {
-      // Öğe seçimi "Klasöre kaydet" ile aynı: elenmeyenler ve RAW eşleri
-      const dosyalar: IceAlinacak[] = secilenler().map(({ yol, m }) => ({ yol, tur: yol === m.yol ? m.tur : undefined, tarih: m.tarih }));
+      // Açık grup verildiyse yalnız o (gösterilen ne ise); yoksa "Klasöre kaydet" ile aynı seçim. RAW eşleri her zaman yanında.
+      const istenen = anahtarlar && new Set(anahtarlar);
+      const kaynak = istenen
+        ? son.filter((m) => istenen.has(m.anahtar)).flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, m })))
+        : secilenler();
+      const dosyalar: IceAlinacak[] = kaynak.map(({ yol, m }) => ({ yol, tur: yol === m.yol ? m.tur : undefined, tarih: m.tarih }));
       olay({ tur: 'arsivAlim', bitti: 0, toplam: dosyalar.length, zaten: 0 });
-      const r = await iceAl(ar, dosyalar, (bitti, toplam, ara) => {
-        if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'arsivAlim', bitti, toplam, zaten: ara.tekil + ara.kayitli });
-      });
+      const r = await iceAl(
+        ar,
+        dosyalar,
+        (bitti, toplam, ara) => {
+          if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'arsivAlim', bitti, toplam, zaten: ara.tekil + ara.kayitli });
+        },
+        undefined,
+        durdur,
+      );
       return { kok: ar.kok, ad: ar.kimlik.ad, yeni: r.yeni, zaten: r.tekil + r.kayitli, hata: r.hatalar.length, durduruldu: r.durduruldu };
     } finally {
       await ar.kapat();
@@ -401,7 +423,10 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       case 'arsivDurumu':
         return arsivDurumu();
       case 'arsiveAl':
-        return arsiveAl(i.kok);
+        return arsiveAl(i.kok, i.anahtarlar);
+      case 'arsivAlimDurdur':
+        alimDurdurucu?.abort();
+        return true;
       case 'arsivGoster':
         return arsivGoster(i.sorgu);
       case 'arsivIslem':

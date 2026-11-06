@@ -171,9 +171,13 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
     setArsivKutusu(null);
     setAlim(null);
     try {
-      const r = await api.arsiveAl(kok);
+      // Yalnız açık grup (ekranda gösterilenler) arşive gider
+      const r = await api.arsiveAl(
+        kok,
+        liste.map((m) => m.anahtar),
+      );
       setBilgi({
-        metin: `${sayi(r.yeni)} dosya “${r.ad}” arşivine alındı · ${sayi(r.zaten)} zaten arşivdeydi${r.hata ? ` · ${sayi(r.hata)} hata` : ''}. Kaynak klasörlere dokunulmadı.`,
+        metin: `${r.durduruldu ? 'Durduruldu: ' : ''}${sayi(r.yeni)} dosya “${r.ad}” arşivine alındı · ${sayi(r.zaten)} zaten arşivdeydi${r.hata ? ` · ${sayi(r.hata)} hata` : ''}. Kaynak klasörlere dokunulmadı.`,
       });
     } catch (h) {
       // Düzgün kapatılmamış arşiv: kilidi kaldırma Arşivim ekranındaki "Devam et" ile yapılır
@@ -297,14 +301,18 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
               <p className="etiket s-alim" role="status">
                 arşive alınıyor {sayi(alim.bitti)} / {sayi(alim.toplam)}
                 {alim.zaten > 0 && ` · ${sayi(alim.zaten)} kopya zaten arşivde`}
+                {' · '}
+                <button className="metin-dugme etiket" onClick={() => void api.arsivAlimDurdur()}>
+                  Durdur
+                </button>
               </p>
             ) : (
               <>
                 <button className="ikincil" disabled={!!kaydediliyor} onClick={() => void aktar()}>
                   {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : 'Klasöre kaydet'}
                 </button>
-                <button className="altin" disabled={!!kaydediliyor} onClick={() => void arsiveAlTikla()}>
-                  Arşive al ›
+                <button className="altin" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void arsiveAlTikla()} title={`Yalnız “${seciliAd}” grubu arşive alınır`}>
+                  Arşive al · {sayi(liste.length)} ›
                 </button>
               </>
             )}
@@ -396,6 +404,9 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
               transition={{ duration: sure.yavas, ease: egri.yumusak }}
             >
               <p className="mo-baslik">Arşivin nerede dursun?</p>
+              <p className="etiket s-alim">
+                {seciliAd} · {sayi(liste.length)} dosya arşive alınacak
+              </p>
               <p className="soluk">
                 Boş bir klasör seç (harici disk olabilir). Aynı fotoğraf iki kez gelirse tek kopya saklanır. Kaynak klasörlerine dokunulmaz.
               </p>
