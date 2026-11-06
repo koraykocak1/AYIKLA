@@ -12,7 +12,7 @@ protocol.registerSchemesAsPrivileged([
 
 const ONIZLEME_KLASORU = join(process.env.AYIKLA_CALISMA ?? join(homedir(), '.ayikla'), 'onizleme');
 /** Arayüzün işçiye doğrudan iletebileceği istekler. "aktar" ve "arsiveAl" yalnızca klasör seçme penceresinden sonra ana süreçten gider. */
-const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer', 'arsivDurumu']);
+const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer', 'katalogDurumu', 'arsivDurumu']);
 /** Bu oturumda işçinin bildirdiği dosyalar: yalnızca bunların orijinali ayikla://dosya ile açılır. */
 const izinliDosyalar = new Set<string>();
 const bekleyen = new Map<number, { coz: (v: unknown) => void; reddet: (h: Error) => void }>();
