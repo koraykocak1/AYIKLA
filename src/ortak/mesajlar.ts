@@ -25,7 +25,54 @@ export type IsciIstegi =
   | { id: number; tur: 'modelIzniVer' }
   | { id: number; tur: 'katalogDurumu' }
   | { id: number; tur: 'arsivDurumu' }
-  | { id: number; tur: 'arsiveAl'; kok: string };
+  | { id: number; tur: 'arsiveAl'; kok: string }
+  | { id: number; tur: 'arsivGoster'; sorgu: ArsivSorgusu }
+  | { id: number; tur: 'arsivIslem'; islem: ArsivIslemi }
+  | { id: number; tur: 'bayatKilidiKaldir' }
+  | { id: number; tur: 'yedekDurumu' }
+  | { id: number; tur: 'arsivDenetle' }
+  | { id: number; tur: 'yedekAl'; hedef: string }
+  | { id: number; tur: 'geriYukle'; yedek: string; kok: string };
+
+/** Arşiv düzgün kapatılmamışsa hata metni bununla başlar; arayüz "Devam et" notunu gösterir. */
+export const BAYAT_KILIT = 'bayat-kilit:';
+
+export interface ArsivSorgusu {
+  metin?: string;
+  albumId?: number;
+  etiket?: string; // motorun yolu: "Yer > Deniz"
+  kutu?: boolean;
+}
+
+export interface ArsivOgesi {
+  id: number;
+  ad: string;
+  tur: 'foto' | 'video';
+  tarih: string | null; // ISO
+  kaliciSilinme: string | null; // ISO; yalnız kutudakilerde
+}
+
+export interface ArsivGorunumu {
+  ad: string;
+  albumler: { id: number; ad: string; adet: number }[];
+  etiketler: string[];
+  kutuAdet: number;
+  ogeler: ArsivOgesi[];
+}
+
+export type ArsivIslemi =
+  | { islem: 'albumOlustur'; ad: string }
+  | { islem: 'albumeEkle'; albumId: number; idler: number[] }
+  | { islem: 'albumdenKaldir'; albumId: number; idler: number[] }
+  | { islem: 'etiketle'; idler: number[]; yol: string }
+  | { islem: 'kutuyaTasi'; idler: number[] }
+  | { islem: 'kutudanGeriAl'; idler: number[] }
+  | { islem: 'kaliciSil'; idler: number[] };
+
+export interface YedekDurumu {
+  yedek: { yol: string; zaman: string; dogrulandi: boolean } | null;
+  saglik: { zaman: string; denetlenen: number; saglam: number; sorun: number } | null;
+}
 
 /** Bilinen (son kullanılan) arşiv. `ad` yalnız arşiv şu an erişilebilirse dolu (disk takılı değilse null). */
 export interface ArsivDurumuCevabi {
@@ -68,7 +115,8 @@ export type ArayuzOlayi =
   | { tur: 'kopyalar'; anahtarlar: string[] }
   | { tur: 'bitti'; sonuc: ArayuzMedya[]; durduruldu: boolean }
   | { tur: 'aktarim'; bitti: number; toplam: number }
-  | { tur: 'arsivAlim'; bitti: number; toplam: number; zaten: number };
+  | { tur: 'arsivAlim'; bitti: number; toplam: number; zaten: number }
+  | { tur: 'arsivIs'; ad: 'yedek' | 'denetim'; bitti: number; toplam: number };
 
 export type IsciCevabi = { id: number; tamam: true; veri: unknown } | { id: number; tamam: false; hata: string };
 

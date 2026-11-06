@@ -5,6 +5,7 @@ import sharp from 'sharp';
 import { sunucuOlustur } from '../src/motor/sunucu';
 import { normalize } from '../src/motor/sahne-puan';
 import { katalogAc } from '../src/motor/katalog';
+import type { ArsivGorunumu, ArsivIslemi, ArsivSorgusu, YedekDurumu } from '../src/ortak/mesajlar';
 import type { ArayuzMedya, ArayuzOlayi, ArsivAlimSonucu, ArsivDurumuCevabi, IsciIstegi, IsciMesaji, Istek, KatalogDurumuCevabi, Sayim } from '../src/ortak/mesajlar';
 import type { Grup, SahneModeli } from '../src/motor/tipler';
 import type { AktarmaSonucu } from '../src/motor/disari-aktar';
@@ -176,6 +177,67 @@ describe('sunucu', () => {
     expect(ikinci).toMatchObject({ yeni: 0, zaten: 2, hata: 0 });
     expect(await medyaDosyalari(kok)).toHaveLength(2);
     expect(await klasorGoruntusu(s.girdi)).toEqual(once);
+  });
+
+  it('Arşivim: albüm, etiket, arama, kutu, geri al ve kalıcı sil', async () => {
+    const s = await hazirla();
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    const once = await klasorGoruntusu(s.girdi);
+    const kok = join(s.kok, 'Arsivim');
+    await s.iste({ tur: 'arsiveAl', kok });
+    const goster = (sorgu: ArsivSorgusu = {}) => s.iste<ArsivGorunumu>({ tur: 'arsivGoster', sorgu });
+    const islem = <T,>(i: ArsivIslemi) => s.iste<T>({ tur: 'arsivIslem', islem: i });
+
+    const g = await goster();
+    expect(g).toMatchObject({ ad: 'Arsivim', albumler: [], etiketler: [], kutuAdet: 0 });
+    expect(g.ogeler).toHaveLength(2);
+    const [ilk, ikinci] = g.ogeler;
+
+    const albumId = await islem<number>({ islem: 'albumOlustur', ad: 'Tatil' });
+    await islem({ islem: 'albumeEkle', albumId, idler: [ilk.id] });
+    await islem({ islem: 'etiketle', idler: [ilk.id], yol: 'Yer › Deniz' });
+    const g2 = await goster();
+    expect(g2.albumler).toEqual([{ id: albumId, ad: 'Tatil', adet: 1 }]);
+    expect(g2.etiketler).toEqual(['Yer', 'Yer > Deniz']);
+    expect((await goster({ albumId })).ogeler.map((o) => o.id)).toEqual([ilk.id]);
+    expect((await goster({ etiket: 'Yer' })).ogeler.map((o) => o.id)).toEqual([ilk.id]);
+    expect((await goster({ metin: ilk.ad.replace(/\..*$/, '') })).ogeler.map((o) => o.id)).toContain(ilk.id);
+    await islem({ islem: 'albumdenKaldir', albumId, idler: [ilk.id] });
+    expect((await goster({ albumId })).ogeler).toEqual([]);
+
+    await islem({ islem: 'kutuyaTasi', idler: [ilk.id, ikinci.id] });
+    const k = await goster({ kutu: true });
+    expect(k.kutuAdet).toBe(2);
+    expect(k.ogeler[0].kaliciSilinme).toMatch(/^\d{4}-/);
+    expect((await goster()).ogeler).toEqual([]);
+    await islem({ islem: 'kutudanGeriAl', idler: [ilk.id] });
+    await islem({ islem: 'kaliciSil', idler: [ikinci.id] });
+    expect((await goster()).ogeler.map((o) => o.id)).toEqual([ilk.id]);
+    expect((await goster({ kutu: true })).kutuAdet).toBe(0);
+    expect(await medyaDosyalari(kok)).toHaveLength(1);
+    expect(await klasorGoruntusu(s.girdi)).toEqual(once); // kalıcı sil kaynağa dokunmaz
+  });
+
+  it('yedek alır ve doğrular, arşivi denetler, yedekten geri yükleyince yeni arşivi hatırlar', async () => {
+    const s = await hazirla();
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    await s.iste({ tur: 'arsiveAl', kok: join(s.kok, 'Arsivim') });
+    expect(await s.iste<YedekDurumu>({ tur: 'yedekDurumu' })).toEqual({ yedek: null, saglik: null });
+
+    const yedek = join(s.kok, 'Yedek');
+    const d = await s.iste<YedekDurumu>({ tur: 'yedekAl', hedef: yedek });
+    expect(d.yedek).toMatchObject({ yol: yedek, dogrulandi: true });
+    expect(s.olaylar().filter((o) => o.tur === 'arsivIs').at(-1)).toMatchObject({ ad: 'yedek', bitti: 2, toplam: 2 });
+
+    const d2 = await s.iste<YedekDurumu>({ tur: 'arsivDenetle' });
+    expect(d2.saglik).toMatchObject({ denetlenen: 2, saglam: 2, sorun: 0 });
+    expect(d2.yedek).toEqual(d.yedek); // ikinci arşive alım/denetim yedeği unutturmaz
+
+    const yeni = join(s.kok, 'Geri');
+    const r = await s.iste<ArsivDurumuCevabi>({ tur: 'geriYukle', yedek, kok: yeni });
+    expect(r).toEqual({ kok: yeni, ad: 'Arsivim' });
+    expect(await s.iste<ArsivDurumuCevabi>({ tur: 'arsivDurumu' })).toEqual(r);
+    expect((await s.iste<ArsivGorunumu>({ tur: 'arsivGoster', sorgu: {} })).ogeler).toHaveLength(2);
   });
 
   it('arşiv kaynak klasörün içindeyse ya da klasör boş değilse Türkçe hata verir', async () => {

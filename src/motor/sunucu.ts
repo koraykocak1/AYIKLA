@@ -1,15 +1,28 @@
 import { ortalamaRenk } from './renk';
 import { mkdir, readFile, rename, stat, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { Arsiv, ArsivHatasi, arsivKimligiOku, arsivOlustur } from './arsiv';
-import { iceAl, type IceAlinacak } from './arsiv-depo';
+import { iceAl, type IceAlinacak, type OgeSatiri } from './arsiv-depo';
+import { albumOlustur, albumdenKaldir, albumeEkle, albumler, ara, etiketle, etiketler } from './arsiv-album';
+import { kaliciSil, kaliciSilinmeTarihi, kutudakiler, kutudanGeriAl, kutuyaTasi } from './arsiv-kutu';
+import { arsivYedekle, yedekDogrula, yedektenGeriYukle } from './arsiv-yedek';
+import { saglikDenetimi, sonSaglikRaporu } from './arsiv-saglik';
 import { ayikla, yenidenPuanla } from './isci';
 import { tara, hamEsleriniAyir } from './tarayici';
 import { type Katalog, katalogAc } from './katalog';
 import { HAZIR_GRUPLAR, DIGER_ID, kullaniciGrubu } from './gruplar';
 import { disariAktar, hedefSorunu, type AktarmaSonucu } from './disari-aktar';
 import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzniGerekliHatasi, type ModelIzni } from './model-izni';
-import { arayuzIcin, type ArayuzMedya, type ArayuzOlayi, type ArsivAlimSonucu, type ArsivDurumuCevabi, type IsciIstegi, type IsciMesaji, type KatalogDurumuCevabi, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
+import {
+  arayuzIcin,
+  BAYAT_KILIT,
+  type ArsivGorunumu,
+  type ArsivIslemi,
+  type ArsivOgesi,
+  type ArsivSorgusu,
+  type YedekDurumu,
+} from '../ortak/mesajlar';
+import { type ArayuzMedya, type ArayuzOlayi, type ArsivAlimSonucu, type ArsivDurumuCevabi, type IsciIstegi, type IsciMesaji, type KatalogDurumuCevabi, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
 import type { Grup, IslenmisMedya, SahneModeli } from './tipler';
 
 export interface SunucuAyarlari {
@@ -20,6 +33,13 @@ export interface SunucuAyarlari {
   /** İndirme onayı: onay yoksa ve model diskte eksikse hiçbir yükleyici çağrılmaz. */
   modelIzni: ModelIzni;
   gonder: (m: IsciMesaji) => void;
+}
+
+/** Çalışma klasöründeki `arsiv.json`: son kullanılan arşiv ve (varsa) son yedeği. */
+interface BilinenArsiv {
+  kok: string;
+  kimlik: string;
+  yedek?: { yol: string; zaman: string; dogrulandi: boolean };
 }
 
 function hataMetni(h: unknown): string {
@@ -165,10 +185,10 @@ export function sunucuOlustur(a: SunucuAyarlari) {
 
   const arsivDosyasi = () => join(a.calismaKlasoru, 'arsiv.json');
 
-  async function bilinenArsiv(): Promise<{ kok: string; kimlik: string } | null> {
+  async function bilinenArsiv(): Promise<BilinenArsiv | null> {
     try {
-      const v = JSON.parse(await readFile(arsivDosyasi(), 'utf8')) as { kok?: unknown; kimlik?: unknown };
-      return typeof v.kok === 'string' && typeof v.kimlik === 'string' ? { kok: v.kok, kimlik: v.kimlik } : null;
+      const v = JSON.parse(await readFile(arsivDosyasi(), 'utf8')) as Partial<BilinenArsiv>;
+      return typeof v.kok === 'string' && typeof v.kimlik === 'string' ? { kok: v.kok, kimlik: v.kimlik, yedek: v.yedek } : null;
     } catch {
       return null;
     }
@@ -193,7 +213,9 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       if (!(h instanceof ArsivHatasi) || h.kod !== 'arsiv-degil') throw h;
       await arsivOlustur(kok, { kaynaklar: await kaynakKlasorleri(), calismaKlasoru: a.calismaKlasoru });
     }
-    const ar = await Arsiv.ac(kok);
+    const ar = await Arsiv.ac(kok).catch((h: unknown) => {
+      throw h instanceof ArsivHatasi && h.kod === 'bayat-kilit' ? new Error(BAYAT_KILIT + h.message) : h;
+    });
     try {
       // Öğe seçimi "Klasöre kaydet" ile aynı: elenmeyenler ve RAW eşleri
       const dosyalar: IceAlinacak[] = secilenler().map(({ yol, m }) => ({ yol, tur: yol === m.yol ? m.tur : undefined, tarih: m.tarih }));
@@ -204,11 +226,120 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       return { kok: ar.kok, ad: ar.kimlik.ad, yeni: r.yeni, zaten: r.tekil + r.kayitli, hata: r.hatalar.length, durduruldu: r.durduruldu };
     } finally {
       await ar.kapat();
-      await mkdir(a.calismaKlasoru, { recursive: true });
-      const gecici = `${arsivDosyasi()}.gecici`;
-      await writeFile(gecici, JSON.stringify({ kok: ar.kok, kimlik: ar.kimlik.kimlik }, null, 2));
-      await rename(gecici, arsivDosyasi());
+      await arsivKaydet({ kok: ar.kok, kimlik: ar.kimlik.kimlik });
     }
+  }
+
+  /** Bilinen arşivi yazar; aynı arşivse son yedeğin bilgisi korunur. */
+  async function arsivKaydet(yeni: BilinenArsiv): Promise<void> {
+    const eski = await bilinenArsiv();
+    const kayit: BilinenArsiv = { yedek: eski?.kimlik === yeni.kimlik ? eski.yedek : undefined, ...yeni };
+    await mkdir(a.calismaKlasoru, { recursive: true });
+    const gecici = `${arsivDosyasi()}.gecici`;
+    await writeFile(gecici, JSON.stringify(kayit, null, 2));
+    await rename(gecici, arsivDosyasi());
+  }
+
+  /** Bilinen arşivi açar, işi yapar, kapatır (kilit yalnız iş süresince tutulur). */
+  async function arsivle<T>(f: (ar: Arsiv) => Promise<T> | T, secenek: { bayatKilidiKaldir?: boolean } = {}): Promise<T> {
+    const b = await bilinenArsiv();
+    if (!b) throw new Error('Henüz arşiv yok. Sonuç ekranında “Arşive al” ile başla.');
+    let ar: Arsiv;
+    try {
+      ar = await Arsiv.ac(b.kok, secenek);
+    } catch (h) {
+      if (h instanceof ArsivHatasi && h.kod === 'bayat-kilit') throw new Error(BAYAT_KILIT + h.message);
+      if (h instanceof ArsivHatasi && h.kod === 'arsiv-degil') throw new Error(`Arşiv bulunamadı: ${b.kok}. Disk takılı mı?`);
+      throw h;
+    }
+    try {
+      if (ar.kimlik.kimlik !== b.kimlik) throw new Error(`${b.kok} klasöründe başka bir arşiv var.`);
+      return await f(ar);
+    } finally {
+      await ar.kapat();
+    }
+  }
+
+  function arsivOgesi(o: OgeSatiri): ArsivOgesi {
+    return { id: o.id, ad: o.ad_orijinal, tur: o.tur, tarih: o.tarih, kaliciSilinme: kaliciSilinmeTarihi(o)?.toISOString() ?? null };
+  }
+
+  function arsivGoster(s: ArsivSorgusu): Promise<ArsivGorunumu> {
+    return arsivle((ar) => {
+      const kutu = kutudakiler(ar);
+      const ogeler = s.kutu ? kutu : ara(ar, { metin: s.metin, albumId: s.albumId, etiket: s.etiket });
+      return {
+        ad: ar.kimlik.ad,
+        albumler: albumler(ar).map((x) => ({ id: x.id, ad: x.ad, adet: x.oge_sayisi })),
+        etiketler: etiketler(ar).map((e) => e.yol),
+        kutuAdet: kutu.length,
+        ogeler: ogeler.map(arsivOgesi),
+      };
+    });
+  }
+
+  function arsivIslem(i: ArsivIslemi): Promise<unknown> {
+    return arsivle<unknown>((ar) => {
+      switch (i.islem) {
+        case 'albumOlustur':
+          return albumOlustur(ar, i.ad);
+        case 'albumeEkle':
+          return albumeEkle(ar, i.albumId, i.idler);
+        case 'albumdenKaldir':
+          return albumdenKaldir(ar, i.albumId, i.idler);
+        case 'etiketle':
+          return etiketle(ar, i.idler, i.yol.replaceAll('›', '>'));
+        case 'kutuyaTasi':
+          return kutuyaTasi(ar, i.idler);
+        case 'kutudanGeriAl':
+          return kutudanGeriAl(ar, i.idler);
+        case 'kaliciSil':
+          return kaliciSil(ar, i.idler);
+      }
+    });
+  }
+
+  async function yedekDurumu(): Promise<YedekDurumu> {
+    const b = await bilinenArsiv();
+    const saglik = await arsivle((ar) => sonSaglikRaporu(ar)).catch(() => null);
+    return {
+      yedek: b?.yedek ?? null,
+      saglik: saglik && {
+        zaman: saglik.zaman,
+        denetlenen: saglik.denetlenen,
+        saglam: saglik.saglam,
+        sorun: saglik.degismis.length + saglik.eksik.length + saglik.refHatali.length + (saglik.katalog === 'ok' ? 0 : 1),
+      },
+    };
+  }
+
+  async function yedekAl(hedef: string): Promise<YedekDurumu> {
+    const is = (bitti: number, toplam: number) => {
+      if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'arsivIs', ad: 'yedek', bitti, toplam });
+    };
+    const r = await arsivle((ar) => arsivYedekle(ar, hedef, is));
+    const d = await yedekDogrula(hedef);
+    const b = await bilinenArsiv();
+    if (b) await arsivKaydet({ ...b, yedek: { yol: resolve(hedef), zaman: r.bilgi.zaman, dogrulandi: d.tamam } });
+    if (!d.tamam) throw new Error('Yedek alındı ama denetimde sorun çıktı: ' + d.sorunlar.slice(0, 3).join(' · '));
+    return yedekDurumu();
+  }
+
+  async function arsivDenetle(): Promise<YedekDurumu> {
+    await arsivle((ar) =>
+      saglikDenetimi(ar, {
+        ilerleme: (bitti, toplam) => {
+          if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'arsivIs', ad: 'denetim', bitti, toplam });
+        },
+      }),
+    );
+    return yedekDurumu();
+  }
+
+  async function geriYukle(yedek: string, kok: string): Promise<ArsivDurumuCevabi> {
+    const r = await yedektenGeriYukle(yedek, kok);
+    await arsivKaydet({ kok: resolve(kok), kimlik: r.kimlik.kimlik });
+    return { kok: resolve(kok), ad: r.kimlik.ad };
   }
 
   async function modelDurumu(): Promise<ModelDurumuCevabi> {
@@ -271,6 +402,20 @@ export function sunucuOlustur(a: SunucuAyarlari) {
         return arsivDurumu();
       case 'arsiveAl':
         return arsiveAl(i.kok);
+      case 'arsivGoster':
+        return arsivGoster(i.sorgu);
+      case 'arsivIslem':
+        return arsivIslem(i.islem);
+      case 'bayatKilidiKaldir':
+        return arsivle(() => true, { bayatKilidiKaldir: true });
+      case 'yedekDurumu':
+        return yedekDurumu();
+      case 'arsivDenetle':
+        return arsivDenetle();
+      case 'yedekAl':
+        return yedekAl(i.hedef);
+      case 'geriYukle':
+        return geriYukle(i.yedek, i.kok);
       case 'modelDurumu':
         return modelDurumu();
       case 'modelIzniVer':
