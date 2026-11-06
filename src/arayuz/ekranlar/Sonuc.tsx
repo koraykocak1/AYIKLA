@@ -7,7 +7,7 @@ import { ELENECEK_ID, duzlestir, grupAdiBul, grupMenusu, menuAnahtari, yilAyGrup
 import { elemeAdi, hataMetni, sayi } from '../mantik/bicim';
 import { egri, sure, yay } from '../hareket';
 import { DIGER_ID } from '../../motor/gruplar';
-import type { ArayuzMedya } from '../../ortak/mesajlar';
+import { BAYAT_KILIT, type ArayuzMedya } from '../../ortak/mesajlar';
 import type { Grup } from '../../motor/tipler';
 
 interface Props {
@@ -176,7 +176,8 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
         metin: `${sayi(r.yeni)} dosya “${r.ad}” arşivine alındı · ${sayi(r.zaten)} zaten arşivdeydi${r.hata ? ` · ${sayi(r.hata)} hata` : ''}. Kaynak klasörlere dokunulmadı.`,
       });
     } catch (h) {
-      setBilgi({ metin: 'Arşive alınamadı: ' + hataMetni(h) });
+      // Düzgün kapatılmamış arşiv: kilidi kaldırma Arşivim ekranındaki "Devam et" ile yapılır
+      setBilgi({ metin: 'Arşive alınamadı: ' + hataMetni(h).replace(BAYAT_KILIT, '') + (hataMetni(h).startsWith(BAYAT_KILIT) ? ' Arşivim ekranından devam edebilirsin.' : '') });
     } finally {
       setAlim(null);
     }

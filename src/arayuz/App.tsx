@@ -5,6 +5,7 @@ import { api } from './api';
 import { Karsilama } from './ekranlar/Karsilama';
 import { Ayiklama } from './ekranlar/Ayiklama';
 import { Sonuc } from './ekranlar/Sonuc';
+import { Arsivim } from './ekranlar/Arsivim';
 import { KorArkaPlan } from './bilesenler/KorArkaPlan';
 import type { ArayuzMedya, Sayim } from '../ortak/mesajlar';
 import type { Grup } from '../motor/tipler';
@@ -12,7 +13,8 @@ import type { Grup } from '../motor/tipler';
 type Ekran =
   | { ad: 'karsilama'; not?: string; girdiler?: string[] }
   | { ad: 'ayiklama'; girdiler: string[]; sayim: Sayim }
-  | { ad: 'sonuc' };
+  | { ad: 'sonuc' }
+  | { ad: 'arsivim' };
 
 export function App() {
   const [ekran, setEkran] = useState<Ekran>({ ad: 'karsilama' });
@@ -37,8 +39,14 @@ export function App() {
         exit={{ opacity: 0, scale: 0.97, transition: { duration: sure.normal, ease: egri.cikis } }}
       >
         {ekran.ad === 'karsilama' && (
-          <Karsilama not={ekran.not} onceki={ekran.girdiler} onBaslat={(girdiler, sayim) => setEkran({ ad: 'ayiklama', girdiler, sayim })} />
+          <Karsilama
+            not={ekran.not}
+            onceki={ekran.girdiler}
+            onBaslat={(girdiler, sayim) => setEkran({ ad: 'ayiklama', girdiler, sayim })}
+            onArsivim={() => setEkran({ ad: 'arsivim' })}
+          />
         )}
+        {ekran.ad === 'arsivim' && <Arsivim onKapat={() => setEkran({ ad: 'karsilama' })} />}
         {ekran.ad === 'ayiklama' && (
           <Ayiklama
             girdiler={ekran.girdiler}

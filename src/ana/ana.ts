@@ -12,7 +12,7 @@ protocol.registerSchemesAsPrivileged([
 
 const ONIZLEME_KLASORU = join(process.env.AYIKLA_CALISMA ?? join(homedir(), '.ayikla'), 'onizleme');
 /** Arayüzün işçiye doğrudan iletebileceği istekler. "aktar" ve "arsiveAl" yalnızca klasör seçme penceresinden sonra ana süreçten gider. */
-const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer', 'katalogDurumu', 'arsivDurumu']);
+const ARAYUZDEN_IZINLI = new Set<Istek['tur']>(['say', 'baslat', 'durdur', 'gruplar', 'grupEkle', 'grupTasi', 'geriAl', 'sonArsivler', 'modelDurumu', 'modelIzniVer', 'katalogDurumu', 'arsivDurumu', 'arsivGoster', 'arsivIslem', 'bayatKilidiKaldir', 'yedekDurumu', 'arsivDenetle']);
 /** Bu oturumda işçinin bildirdiği dosyalar: yalnızca bunların orijinali ayikla://dosya ile açılır. */
 const izinliDosyalar = new Set<string>();
 const bekleyen = new Map<number, { coz: (v: unknown) => void; reddet: (h: Error) => void }>();
@@ -136,6 +136,22 @@ void app.whenReady().then(() => {
     const bilinen = ((await iste({ tur: 'arsivDurumu' })) as { kok: string | null }).kok;
     if (!secilenArsivler.has(kok) && kok !== bilinen) throw new Error('İzin verilmeyen istek');
     return iste({ tur: 'arsiveAl', kok });
+  });
+  // Yedek ve geri yükleme: klasörler yalnız bu pencerelerden gelir
+  const klasorSor = async (title: string, buttonLabel: string) => {
+    if (!pencere) return null;
+    const r = await dialog.showOpenDialog(pencere, { title, buttonLabel, properties: ['openDirectory', 'createDirectory'] });
+    return r.canceled ? null : (r.filePaths[0] ?? null);
+  };
+  ipcMain.handle('yedek-sec', async () => {
+    const hedef = await klasorSor('Yedeğin alınacağı klasörü seç (başka bir disk olmalı)', 'Buraya yedekle');
+    return hedef ? iste({ tur: 'yedekAl', hedef }) : null;
+  });
+  ipcMain.handle('geri-yukle-sec', async () => {
+    const yedek = await klasorSor('Yedek klasörünü seç', 'Bu yedeği kullan');
+    if (!yedek) return null;
+    const kok = await klasorSor('Arşivin geri yükleneceği boş klasörü seç', 'Buraya geri yükle');
+    return kok ? iste({ tur: 'geriYukle', yedek, kok }) : null;
   });
   ipcMain.handle('baslangic-klasoru', () => baslangicKlasoru(process.argv, app.getAppPath(), klasorMu));
 

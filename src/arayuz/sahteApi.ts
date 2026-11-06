@@ -1,4 +1,5 @@
 import type { AyiklaApi } from '../ana/onyukle';
+import type { ArsivGorunumu, ArsivIslemi, ArsivOgesi, ArsivSorgusu, YedekDurumu } from '../ortak/mesajlar';
 import type { ArayuzMedya, ArayuzOlayi, ArsivDurumuCevabi, Istek, ModelDurumuCevabi } from '../ortak/mesajlar';
 import type { Grup, SonArsiv } from '../motor/tipler';
 
@@ -33,6 +34,91 @@ function sahteModelDurumu(): ModelDurumuCevabi {
 let sahteArsiv: ArsivDurumuCevabi = location.search.includes('arsivyok')
   ? { kok: null, ad: null }
   : { kok: 'E:\\AYIKLA Arşiv', ad: 'AYIKLA Arşiv' };
+
+// Sahte arşiv (Arşivim, Kutu, Yedek). "?kilit" ile açılırsa arşiv ilk açılışta düzgün kapatılmamış sayılır.
+let sahteKilit = location.search.includes('kilit');
+let sahteAlbumId = 3;
+const sahteAlbumler = [
+  { id: 1, ad: 'Tatil 2024', ogeler: new Set<number>() },
+  { id: 2, ad: 'Aile', ogeler: new Set<number>() },
+];
+const sahteEtiketler = new Map<string, Set<number>>([
+  ['Yer > Deniz', new Set()],
+  ['Araçlar > Otomobil', new Set()],
+]);
+const sahteOgeler: (ArsivOgesi & { silinme: number | null })[] = Array.from({ length: 140 }, (_, i) => ({
+  id: i + 1,
+  ad: `IMG_${String(400 + i).padStart(4, '0')}.jpg`,
+  tur: i % 17 === 0 ? 'video' : 'foto',
+  tarih: new Date(2024 - (i % 3 === 0 ? 1 : 0), 11 - ((i * 5) % 12), 1 + (i % 27)).toISOString(),
+  kaliciSilinme: null,
+  silinme: i % 31 === 5 ? Date.now() - (i % 20) * 86_400_000 : null,
+}));
+sahteOgeler.slice(0, 38).forEach((o) => sahteAlbumler[0].ogeler.add(o.id));
+sahteOgeler.slice(50, 70).forEach((o) => sahteAlbumler[1].ogeler.add(o.id));
+sahteOgeler.slice(0, 20).forEach((o) => sahteEtiketler.get('Yer > Deniz')!.add(o.id));
+let sahteYedek: YedekDurumu = {
+  yedek: { yol: 'F:\\AYIKLA yedeği', zaman: new Date(2026, 10, 2).toISOString(), dogrulandi: true },
+  saglik: { zaman: new Date(2026, 10, 2).toISOString(), denetlenen: 1326, saglam: 1326, sorun: 0 },
+};
+
+function sahteGorunum(s: ArsivSorgusu): ArsivGorunumu {
+  if (sahteKilit) throw new Error('bayat-kilit:Bu arşiv son kullanımda düzgün kapatılmamış.');
+  const canli = sahteOgeler.filter((o) => o.silinme === null);
+  const kutu = sahteOgeler.filter((o) => o.silinme !== null);
+  let l = s.kutu ? kutu : canli;
+  if (s.albumId) l = l.filter((o) => sahteAlbumler.find((a) => a.id === s.albumId)?.ogeler.has(o.id));
+  if (s.etiket) l = l.filter((o) => [...sahteEtiketler].some(([y, k]) => (y === s.etiket || y.startsWith(s.etiket + ' > ')) && k.has(o.id)));
+  for (const p of (s.metin ?? '').toLocaleLowerCase('tr').split(/\s+/).filter(Boolean)) {
+    l = l.filter((o) => (/^\d{4}$/.test(p) ? o.tarih?.startsWith(p) : o.ad.toLocaleLowerCase('tr').includes(p)));
+  }
+  const etiketler = [...new Set([...sahteEtiketler.keys()].flatMap((y) => y.split(' > ').map((_, i, p) => p.slice(0, i + 1).join(' > '))))].sort();
+  return {
+    ad: 'AYIKLA Arşiv',
+    albumler: sahteAlbumler.map((a) => ({ id: a.id, ad: a.ad, adet: canli.filter((o) => a.ogeler.has(o.id)).length })),
+    etiketler,
+    kutuAdet: kutu.length,
+    ogeler: l.map(({ silinme, ...o }) => ({ ...o, kaliciSilinme: silinme === null ? null : new Date(silinme + 30 * 86_400_000).toISOString() })),
+  };
+}
+
+function sahteIslem(i: ArsivIslemi): unknown {
+  const bul = (idler: number[]) => sahteOgeler.filter((o) => idler.includes(o.id));
+  switch (i.islem) {
+    case 'albumOlustur':
+      sahteAlbumler.push({ id: sahteAlbumId, ad: i.ad, ogeler: new Set() });
+      return sahteAlbumId++;
+    case 'albumeEkle':
+      i.idler.forEach((id) => sahteAlbumler.find((a) => a.id === i.albumId)?.ogeler.add(id));
+      return i.idler.length;
+    case 'albumdenKaldir':
+      i.idler.forEach((id) => sahteAlbumler.find((a) => a.id === i.albumId)?.ogeler.delete(id));
+      return i.idler.length;
+    case 'etiketle': {
+      const yol = i.yol.replaceAll('›', '>').split('>').map((p) => p.trim()).filter(Boolean).join(' > ');
+      if (!sahteEtiketler.has(yol)) sahteEtiketler.set(yol, new Set());
+      i.idler.forEach((id) => sahteEtiketler.get(yol)!.add(id));
+      return i.idler.length;
+    }
+    case 'kutuyaTasi':
+      bul(i.idler).forEach((o) => (o.silinme = Date.now()));
+      return i.idler.length;
+    case 'kutudanGeriAl':
+      bul(i.idler).forEach((o) => (o.silinme = null));
+      return i.idler;
+    case 'kaliciSil':
+      for (const o of bul(i.idler)) sahteOgeler.splice(sahteOgeler.indexOf(o), 1);
+      return { silinenOge: i.idler.length, silinenDosya: i.idler.length, korunanDosya: 0, hatalar: [] };
+  }
+}
+
+async function sahteIs(ad: 'yedek' | 'denetim', toplam: number) {
+  for (let b = 0; b <= toplam; b += Math.ceil(toplam / 40)) {
+    yayinla({ tur: 'arsivIs', ad, bitti: b, toplam });
+    await bekle(50);
+  }
+  yayinla({ tur: 'arsivIs', ad, bitti: toplam, toplam });
+}
 
 // Sahte ayıklama: motorun olaylarını uydurma dosyalarla, gerçeğe yakın bir hızda yayınlar
 const dinleyiciler = new Set<(o: ArayuzOlayi) => void>();
@@ -115,6 +201,21 @@ export const sahteApi: AyiklaApi = {
         return { kurtarilan: location.search.includes('bozuk') ? 'C:/Users/Örnek/.ayikla/katalog.db.bozuk-2026-11-04T09-12-30-000Z' : null };
       case 'arsivDurumu':
         return sahteArsiv;
+      case 'arsivGoster':
+        return sahteGorunum(i.sorgu);
+      case 'arsivIslem':
+        return sahteIslem(i.islem);
+      case 'bayatKilidiKaldir':
+        sahteKilit = false;
+        return true;
+      case 'yedekDurumu':
+        return sahteYedek;
+      case 'arsivDenetle': {
+        const n = sahteOgeler.length;
+        await sahteIs('denetim', n);
+        sahteYedek = { ...sahteYedek, saglik: { zaman: new Date().toISOString(), denetlenen: n, saglam: n, sorun: 0 } };
+        return sahteYedek;
+      }
       case 'say':
         return { foto: 1240, video: 86, ham: 0 };
       case 'baslat':
@@ -167,6 +268,12 @@ export const sahteApi: AyiklaApi = {
     sahteArsiv = { kok, ad: 'AYIKLA Arşiv' };
     return { kok, ad: 'AYIKLA Arşiv', yeni: toplam - zatenOlan(toplam), zaten: zatenOlan(toplam), hata: 0, durduruldu: false };
   },
+  yedekSec: async () => {
+    await sahteIs('yedek', sahteOgeler.length);
+    sahteYedek = { ...sahteYedek, yedek: { yol: 'F:\\AYIKLA yedeği', zaman: new Date().toISOString(), dogrulandi: true } };
+    return sahteYedek;
+  },
+  geriYukleSec: async () => ({ kok: 'G:\\AYIKLA Arşiv', ad: 'AYIKLA Arşiv' }),
   baslangicKlasoru: async () => null,
   yolAl: (f: File) => f.name,
   olaylariDinle: (f) => {

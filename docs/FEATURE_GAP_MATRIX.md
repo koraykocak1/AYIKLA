@@ -48,6 +48,8 @@ Bu yüzden 130 maddenin çoğu **Yok** durumundadır. Bu bir hata değil, ürün
 
 **FAZ 1 #12’den sonra (3 Kasım 2026):** uçtan uca kabul testi (DoD 1–4) yazıldı; sonuçlar yol haritasında "FAZ 1 #12 kabul raporu". Kayıp/bozuk katalogdan yeniden keşif için `arsiv-kurtar.ts` eklendi: 124 "Yok"tan "Kısmen"e çıktı; 041'in kanıtı güncellendi.
 
+**Arşiv ekranlarından sonra (6 Kasım 2026):** motordaki arşiv işleri arayüze bağlandı: Sonuç ekranında "Arşive al" (006, 032), Arşivim ekranında albüm ve etiket (010, 026) ve klasik arama, Kutu ekranında geri al ve onaylı kalıcı sil (013, 117), Yedek kutusunda yedek al + doğrula, geri yükle ve sağlık denetimi (015, 080, 130), düzgün kapatılmamış arşiv için "Devam et" (072). Kanıt: `tests/sunucu.test.ts` (arşive alma, Arşivim/Kutu, yedek/denetim/geri yükleme) ve tarayıcı önizlemesi. Gerçek Electron penceresinde ve ikinci diskte denenmediği, önizleme resimleri de olmadığı (arşivde boş kare) için hiçbiri "Uygulanmış" sayılmadı; sayım değişmedi.
+
 ## Matris
 
 ### A. Ürün hedefi, içe aktarma, sınıflandırma (001–010)

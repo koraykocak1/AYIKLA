@@ -1,4 +1,5 @@
 import type { AyiklaApi } from '../ana/onyukle';
+import type { ArsivGorunumu, ArsivIslemi, ArsivSorgusu, YedekDurumu } from '../ortak/mesajlar';
 import type { ArayuzMedya, ArayuzOlayi, ArsivAlimSonucu, ArsivDurumuCevabi, KatalogDurumuCevabi, ModelDurumuCevabi, Sayim } from '../ortak/mesajlar';
 import type { Grup, SonArsiv } from '../motor/tipler';
 import type { AktarmaSonucu } from '../motor/disari-aktar';
@@ -28,6 +29,13 @@ export const api = {
   arsivDurumu: () => k().istek({ tur: 'arsivDurumu' }) as Promise<ArsivDurumuCevabi>,
   arsivSec: () => k().arsivSec(),
   arsiveAl: (kok: string) => k().arsiveAl(kok) as Promise<ArsivAlimSonucu>,
+  arsivGoster: (sorgu: ArsivSorgusu) => k().istek({ tur: 'arsivGoster', sorgu }) as Promise<ArsivGorunumu>,
+  arsivIslem: (islem: ArsivIslemi) => k().istek({ tur: 'arsivIslem', islem }),
+  bayatKilidiKaldir: () => k().istek({ tur: 'bayatKilidiKaldir' }),
+  yedekDurumu: () => k().istek({ tur: 'yedekDurumu' }) as Promise<YedekDurumu>,
+  arsivDenetle: () => k().istek({ tur: 'arsivDenetle' }) as Promise<YedekDurumu>,
+  yedekSec: () => k().yedekSec() as Promise<YedekDurumu | null>,
+  geriYukleSec: () => k().geriYukleSec() as Promise<ArsivDurumuCevabi | null>,
   klasorSec: () => k().klasorSec(),
   baslangicKlasoru: () => k().baslangicKlasoru(),
   yolAl: (f: File) => k().yolAl(f),

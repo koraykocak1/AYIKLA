@@ -13,6 +13,7 @@ interface Props {
   not?: string;
   onceki?: string[];
   onBaslat: (girdiler: string[], sayim: Sayim) => void;
+  onArsivim: () => void;
 }
 
 /** Klasör bırakılınca sayımın görünmesi için başlamadan önce kısa bekleyiş. */
@@ -34,7 +35,7 @@ const belir = (gecikme: number) => ({
   transition: { duration: sure.yavas, ease: egri.yumusak, delay: gecikme },
 });
 
-export function Karsilama({ not, onceki, onBaslat }: Props) {
+export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
   const [girdiler, setGirdiler] = useState<string[] | null>(null);
   const [sayim, setSayim] = useState<Sayim | null>(null);
   const [sayiliyor, setSayiliyor] = useState(false);
@@ -283,6 +284,9 @@ export function Karsilama({ not, onceki, onBaslat }: Props) {
           )}
           <motion.button className="hakkinda-dugme etiket soluk" onClick={() => setHakkinda((h) => !h)} {...belir(0.9)}>
             Hakkında
+          </motion.button>
+          <motion.button className="hakkinda-dugme etiket soluk" onClick={onArsivim} {...belir(0.9)}>
+            Arşivim
           </motion.button>
         </div>
         <motion.div className="k-alt-sag" {...belir(0.8)}>

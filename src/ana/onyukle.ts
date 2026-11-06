@@ -7,6 +7,8 @@ const api = {
   aktarSec: (): Promise<unknown> => ipcRenderer.invoke('aktar-sec'),
   arsivSec: (): Promise<string | null> => ipcRenderer.invoke('arsiv-sec'),
   arsiveAl: (kok: string): Promise<unknown> => ipcRenderer.invoke('arsive-al', kok),
+  yedekSec: (): Promise<unknown> => ipcRenderer.invoke('yedek-sec'),
+  geriYukleSec: (): Promise<unknown> => ipcRenderer.invoke('geri-yukle-sec'),
   baslangicKlasoru: (): Promise<string | null> => ipcRenderer.invoke('baslangic-klasoru'),
   yolAl: (f: File): string => webUtils.getPathForFile(f),
   olaylariDinle: (f: (o: ArayuzOlayi) => void): (() => void) => {
