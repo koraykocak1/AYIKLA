@@ -308,7 +308,7 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
           </motion.button>
         </div>
         <motion.div className="k-alt-sag" {...belir(0.8)}>
-          <button className="metin-dugme etiket" onClick={() => void bilgisayardaBul()} title="Resimler, Masaüstü, İndirilenler ve Belgeler taranır">
+          <button className="ikincil" onClick={() => void bilgisayardaBul()} title="Resimler, Masaüstü, İndirilenler ve Belgeler taranır">
             Bilgisayarımdaki fotoğrafları bul
           </button>
           <button className="ikincil" onClick={() => void klasorSec()}>
