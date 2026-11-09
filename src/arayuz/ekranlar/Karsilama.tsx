@@ -264,9 +264,9 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
       <footer className="k-alt">
         <div className="k-alt-sol">
           {arsivler.length > 0 && (
-            <section className="son-arsivler" aria-label="Son arşivler">
+            <section className="son-arsivler" aria-label="Son ayıklananlar">
               <motion.h2 className="etiket" {...belir(0.8)}>
-                Son arşivler
+                Son ayıklananlar
               </motion.h2>
               <ul>
                 {arsivler.slice(0, 3).map((a, i) => (
@@ -284,9 +284,6 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
           )}
           <motion.button className="hakkinda-dugme etiket soluk" onClick={() => setHakkinda((h) => !h)} {...belir(0.9)}>
             Hakkında
-          </motion.button>
-          <motion.button className="hakkinda-dugme etiket soluk" onClick={onArsivim} {...belir(0.9)}>
-            Arşivim
           </motion.button>
         </div>
         <motion.div className="k-alt-sag" {...belir(0.8)}>

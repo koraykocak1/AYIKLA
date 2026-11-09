@@ -7,7 +7,7 @@ import { ELENECEK_ID, duzlestir, grupAdiBul, grupMenusu, menuAnahtari, yilAyGrup
 import { elemeAdi, hataMetni, sayi } from '../mantik/bicim';
 import { egri, sure, yay } from '../hareket';
 import { DIGER_ID } from '../../motor/gruplar';
-import { BAYAT_KILIT, type ArayuzMedya } from '../../ortak/mesajlar';
+import type { ArayuzMedya } from '../../ortak/mesajlar';
 import type { Grup } from '../../motor/tipler';
 
 interface Props {
@@ -38,8 +38,6 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
   const [yeniGrup, setYeniGrup] = useState<string | null>(null);
   const [bilgi, setBilgi] = useState<Bilgi | null>(null);
   const [aktarim, setAktarim] = useState<{ bitti: number; toplam: number } | null>(null);
-  const [alim, setAlim] = useState<{ bitti: number; toplam: number; zaten: number } | null>(null);
-  const [arsivKutusu, setArsivKutusu] = useState<{ yol: string | null } | null>(null);
   const grupDugmeleri = useRef(new Map<string, HTMLButtonElement>());
 
   const grupAdi = (id: string) => grupAdiBul(gruplar, id);
@@ -52,7 +50,6 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
     () =>
       api.olaylariDinle((o) => {
         if (o.tur === 'aktarim') setAktarim({ bitti: o.bitti, toplam: o.toplam });
-        else if (o.tur === 'arsivAlim') setAlim({ bitti: o.bitti, toplam: o.toplam, zaten: o.zaten });
       }),
     [],
   );
@@ -151,53 +148,16 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
     }
   }
 
-  /** Bilinen arşiv varsa doğrudan ona alır; yoksa "Arşivin nerede dursun?" kutusu açılır. */
-  async function arsiveAlTikla() {
-    try {
-      const d = await api.arsivDurumu();
-      if (d.kok && d.ad) return void (await arsiveAl(d.kok));
-      if (d.kok) setBilgi({ metin: `Arşiv bulunamadı: ${d.kok}. Disk takılı mı? Ya da başka bir klasör seç.` });
-      setArsivKutusu({ yol: null });
-    } catch (h) {
-      setBilgi({ metin: 'Arşive alınamadı: ' + hataMetni(h) });
-    }
-  }
-
-  async function arsivSec() {
-    const yol = await api.arsivSec();
-    if (yol) setArsivKutusu({ yol });
-  }
-
-  async function arsiveAl(kok: string) {
-    setArsivKutusu(null);
-    setAlim(null);
-    try {
-      // Yalnız açık grup (ekranda gösterilenler) arşive gider
-      const r = await api.arsiveAl(
-        kok,
-        liste.map((m) => m.anahtar),
-      );
-      setBilgi({
-        metin: `${r.durduruldu ? 'Durduruldu: ' : ''}${sayi(r.yeni)} dosya “${r.ad}” arşivine alındı · ${sayi(r.zaten)} zaten arşivdeydi${r.hata ? ` · ${sayi(r.hata)} hata` : ''}. Kaynak klasörlere dokunulmadı.`,
-      });
-    } catch (h) {
-      // Düzgün kapatılmamış arşiv: kilidi kaldırma Arşivim ekranındaki "Devam et" ile yapılır
-      setBilgi({ metin: 'Arşive alınamadı: ' + hataMetni(h).replace(BAYAT_KILIT, '') + (hataMetni(h).startsWith(BAYAT_KILIT) ? ' Arşivim ekranından devam edebilirsin.' : '') });
-    } finally {
-      setAlim(null);
-    }
-  }
-
   const toplam = medya.length;
   const kaydediliyor = aktarim && aktarim.bitti < aktarim.toplam;
-  const ilerleme = alim ?? aktarim;
+  const ilerleme = aktarim;
 
   return (
     <div className="sonuc">
       <motion.div className="s-hale" aria-hidden="true" style={{ x: haleX, y: haleY }} />
 
       {/* Kaydetme ilerlemesi: üstte ince sarı çizgi */}
-      <div className="a-ilerleme" aria-hidden="true" style={{ opacity: kaydediliyor || alim ? 1 : 0 }}>
+      <div className="a-ilerleme" aria-hidden="true" style={{ opacity: kaydediliyor ? 1 : 0 }}>
         <motion.div
           className="a-ilerleme-dolu"
           animate={{ scaleX: ilerleme ? ilerleme.bitti / Math.max(1, ilerleme.toplam) : 0 }}
@@ -270,7 +230,7 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
             Toplam <span className="s-toplam">{sayi(toplam)}</span>
           </p>
           <button className="metin-dugme etiket" onClick={onYeni}>
-            Yeni arşiv
+            Yeni klasör ayıkla
           </button>
         </div>
       </aside>
@@ -298,25 +258,9 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                 </button>
               ))}
             </div>
-            {alim ? (
-              <p className="etiket s-alim" role="status">
-                arşive alınıyor {sayi(alim.bitti)} / {sayi(alim.toplam)}
-                {alim.zaten > 0 && ` · ${sayi(alim.zaten)} kopya zaten arşivde`}
-                {' · '}
-                <button className="metin-dugme etiket" onClick={() => void api.arsivAlimDurdur()}>
-                  Durdur
-                </button>
-              </p>
-            ) : (
-              <>
-                <button className="ikincil" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void aktar()} title={`Yalnız “${seciliAd}” grubu, alt klasör açılmadan kaydedilir`}>
-                  {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : `Klasöre kaydet · ${sayi(liste.length)}`}
-                </button>
-                <button className="altin" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void arsiveAlTikla()} title={`Yalnız “${seciliAd}” grubu arşive alınır`}>
-                  Arşive al · {sayi(liste.length)} ›
-                </button>
-              </>
-            )}
+            <button className="altin" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void aktar()} title={`Yalnız “${seciliAd}” grubu, alt klasör açılmadan kaydedilir`}>
+              {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : `Klasöre kaydet · ${sayi(liste.length)} ›`}
+            </button>
           </div>
         </header>
 
@@ -382,45 +326,6 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                   {g.ad}
                 </button>
               ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {arsivKutusu && (
-          <motion.div
-            className="s-perde"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={(e) => e.target === e.currentTarget && setArsivKutusu(null)}
-          >
-            <motion.section
-              className="model-onay"
-              role="dialog"
-              aria-label="Arşivin nerede dursun?"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: sure.yavas, ease: egri.yumusak }}
-            >
-              <p className="mo-baslik">Arşivin nerede dursun?</p>
-              <p className="etiket s-alim">
-                {seciliAd} · {sayi(liste.length)} dosya arşive alınacak
-              </p>
-              <p className="soluk">
-                Boş bir klasör seç (harici disk olabilir). Aynı fotoğraf iki kez gelirse tek kopya saklanır. Kaynak klasörlerine dokunulmaz.
-              </p>
-              <p className="mo-yol">{arsivKutusu.yol ?? 'Henüz klasör seçilmedi'}</p>
-              <div className="mo-dugmeler">
-                <button className="ikincil" onClick={() => void arsivSec()}>
-                  Değiştir
-                </button>
-                <button className="altin" disabled={!arsivKutusu.yol} onClick={() => arsivKutusu.yol && void arsiveAl(arsivKutusu.yol)}>
-                  Arşive al
-                </button>
-              </div>
-            </motion.section>
           </motion.div>
         )}
       </AnimatePresence>

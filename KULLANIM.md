@@ -4,7 +4,7 @@
 1. `AYIKLA-Kurulum-0.1.0.exe` dosyasına çift tıkla.
 2. Windows "Bilgisayarınız korundu" (SmartScreen) derse **Ek bilgi › Yine de çalıştır**'a bas. Program imzasız olduğu için bu uyarı çıkar; imza ücretli olduğundan şimdilik yok.
 3. Lisansı kabul et, kurulacak klasörü seç. Masaüstüne ve Başlat menüsüne **AYIKLA** kısayolu eklenir.
-4. Kaldırmak için: Ayarlar › Uygulamalar › AYIKLA › Kaldır. Fotoğrafların ve arşivin silinmez.
+4. Kaldırmak için: Ayarlar › Uygulamalar › AYIKLA › Kaldır. Fotoğrafların silinmez.
 
 Geliştiriciler için: `npm run baslat` programı açar, `npm run paketle` kurulum dosyasını `release\` klasörüne üretir.
 
@@ -17,8 +17,6 @@ Geliştiriciler için: `npm run baslat` programı açar, `npm run paketle` kurul
    - Sağ tık: başka gruba taşı. **Elenecekler**'de "Geri al".
    - **+ Grup ekle**: Türkçe bir ad yaz (örn. "Araba"); yapay zekâ arşivi yeniden puanlar.
    - **Klasöre kaydet · N**: açık gruptaki N fotoğrafı seçtiğin klasöre, alt klasör açmadan **kopyalar**.
-   - **Arşive al · N**: açık grubu AYIKLA arşivine alır (aynı fotoğraf iki kez saklanmaz). Arşiv klasörü programın kütüphanesidir; içine Windows'tan değil, **Arşivim** ekranından bakılır.
-5. Karşılama ekranında **Arşivim**: arama, albüm, etiket, Kutu (silinenler 30 gün bekler) ve **Yedek**.
 
 ## Güvenlik
 - Program kaynak fotoğraflarını hiçbir zaman silmez, taşımaz, değiştirmez. Yalnızca okur ve istersen kopyalar.
