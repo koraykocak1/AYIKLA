@@ -169,16 +169,29 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     return son.filter((m) => !m.eleme).flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, m })));
   }
 
-  async function aktar(hedef: string): Promise<AktarmaSonucu> {
+  /** Verilen anahtarların medyası (RAW eşleriyle); verilmezse elenmeyenlerin hepsi. */
+  function istenenler(anahtarlar?: string[]): { yol: string; m: IslenmisMedya }[] {
+    if (!anahtarlar) return secilenler();
+    const k = new Set(anahtarlar);
+    return son.filter((m) => k.has(m.anahtar)).flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, m })));
+  }
+
+  async function aktar(hedef: string, anahtarlar?: string[]): Promise<AktarmaSonucu> {
     const sorun = hedefSorunu(hedef, await kaynakKlasorleri(), a.calismaKlasoru);
     if (sorun) throw new Error(sorun);
     const gs = await gruplar();
     const ad = (id: string) => gs.find((g) => g.id === id)?.ad ?? (id === DIGER_ID ? 'Diğer' : id);
-    // RAW eşleri JPG'nin yanına, aynı klasöre kopyalanır.
-    const ogeler = secilenler().map(({ yol, m }) => ({ yol, grupAdi: ad(m.grupId), tarih: m.tarih }));
-    return disariAktar(ogeler, hedef, (bitti, toplam) => {
-      if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'aktarim', bitti, toplam });
-    });
+    // RAW eşleri JPG'nin yanına, aynı klasöre kopyalanır. Açık grup verildiyse alt klasör açılmaz.
+    const ogeler = istenenler(anahtarlar).map(({ yol, m }) => ({ yol, grupAdi: ad(m.grupId), tarih: m.tarih }));
+    return disariAktar(
+      ogeler,
+      hedef,
+      (bitti, toplam) => {
+        if (bitti === toplam || bitti % 10 === 0) olay({ tur: 'aktarim', bitti, toplam });
+      },
+      undefined,
+      { duz: !!anahtarlar },
+    );
   }
 
   // ------------------------------------------------------------ arşiv
@@ -230,11 +243,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     });
     try {
       // Açık grup verildiyse yalnız o (gösterilen ne ise); yoksa "Klasöre kaydet" ile aynı seçim. RAW eşleri her zaman yanında.
-      const istenen = anahtarlar && new Set(anahtarlar);
-      const kaynak = istenen
-        ? son.filter((m) => istenen.has(m.anahtar)).flatMap((m) => [m.yol, ...(m.ham ?? [])].map((yol) => ({ yol, m })))
-        : secilenler();
-      const dosyalar: IceAlinacak[] = kaynak.map(({ yol, m }) => ({ yol, tur: yol === m.yol ? m.tur : undefined, tarih: m.tarih }));
+      const dosyalar: IceAlinacak[] = istenenler(anahtarlar).map(({ yol, m }) => ({ yol, tur: yol === m.yol ? m.tur : undefined, tarih: m.tarih }));
       olay({ tur: 'arsivAlim', bitti: 0, toplam: dosyalar.length, zaten: 0 });
       const r = await iceAl(
         ar,
@@ -419,7 +428,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       case 'sonArsivler':
         return (await kayitAc()).veri.sonArsivler ?? [];
       case 'aktar':
-        return aktar(i.hedef);
+        return aktar(i.hedef, i.anahtarlar);
       case 'arsivDurumu':
         return arsivDurumu();
       case 'arsiveAl':

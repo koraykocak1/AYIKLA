@@ -308,8 +308,8 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
               </p>
             ) : (
               <>
-                <button className="ikincil" disabled={!!kaydediliyor} onClick={() => void aktar()}>
-                  {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : 'Klasöre kaydet'}
+                <button className="ikincil" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void aktar()} title={`Yalnız “${seciliAd}” grubu, alt klasör açılmadan kaydedilir`}>
+                  {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : `Klasöre kaydet · ${sayi(liste.length)}`}
                 </button>
                 <button className="altin" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void arsiveAlTikla()} title={`Yalnız “${seciliAd}” grubu arşive alınır`}>
                   Arşive al · {sayi(liste.length)} ›

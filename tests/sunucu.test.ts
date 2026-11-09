@@ -179,6 +179,20 @@ describe('sunucu', () => {
     expect(await klasorGoruntusu(s.girdi)).toEqual(once);
   });
 
+  it('açık grubu klasöre alt klasörsüz kaydeder: klasörde yalnız fotoğraflar görünür', async () => {
+    const s = await hazirla();
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    const bitti = s.olaylar().at(-1);
+    if (bitti?.tur !== 'bitti') throw new Error('bitmedi');
+    const mavi = bitti.sonuc.find((m) => m.yol.endsWith('mavi.jpg'))!;
+    const hedef = join(s.kok, 'Hayvanlar');
+    const r = await s.iste<AktarmaSonucu>({ tur: 'aktar', hedef, anahtarlar: [mavi.anahtar] });
+    expect(r).toEqual({ kopyalanan: 1, atlanan: 0, hatalar: [] });
+    expect((await readdir(hedef)).sort()).toEqual(['.ayikla-arsiv', 'mavi.jpg']); // işaret Windows'ta gizli
+    const ikinci = await s.iste<AktarmaSonucu>({ tur: 'aktar', hedef, anahtarlar: [mavi.anahtar] });
+    expect(ikinci).toEqual({ kopyalanan: 0, atlanan: 1, hatalar: [] });
+  });
+
   it('yalnız istenen grubu arşive alır; durdurulunca kalanlara dokunmaz', async () => {
     const s = await hazirla();
     await s.iste({ tur: 'baslat', girdiler: [s.girdi] });

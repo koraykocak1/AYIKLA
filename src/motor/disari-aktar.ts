@@ -1,3 +1,4 @@
+import { execFile } from 'node:child_process';
 import { createHash, randomBytes } from 'node:crypto';
 import { createReadStream, createWriteStream } from 'node:fs';
 import { mkdir, rename, rm, stat, writeFile } from 'node:fs/promises';
@@ -123,6 +124,15 @@ async function isaretKoy(kok: string): Promise<void> {
   } catch (h) {
     if ((h as NodeJS.ErrnoException).code !== 'EEXIST') throw h;
   }
+  // Windows'ta gizlenir: klasörde kullanıcı yalnız fotoğraflarını görsün. Olmazsa önemli değil.
+  if (process.platform === 'win32') {
+    await new Promise<void>((coz) => execFile('attrib', ['+h', join(kok, ARSIV_ISARETI)], { windowsHide: true }, () => coz()));
+  }
+}
+
+export interface AktarmaSecenegi {
+  /** true: grup/yıl/ay klasörü açılmaz, dosyalar doğrudan seçilen klasöre gelir. */
+  duz?: boolean;
 }
 
 type TekSonuc = 'kopyalandi' | 'vardi';
@@ -131,8 +141,8 @@ type TekSonuc = 'kopyalandi' | 'vardi';
  * Tek dosya: geçici dosyaya kopyala → kaynak değişmedi mi bak → kopyanın SHA-256'sını kaynağınkiyle
  * karşılaştır → boş ada taşı. Hedefte aynı içerik zaten varsa kopyalamaz. Kaynağa hiç yazılmaz.
  */
-async function tekDosya(o: AktarilacakOge, kok: string, kanca?: AktarmaKancalari): Promise<TekSonuc> {
-  const klasor = hedefKlasor(kok, o.grupAdi, o.tarih);
+async function tekDosya(o: AktarilacakOge, kok: string, kanca?: AktarmaKancalari, duz = false): Promise<TekSonuc> {
+  const klasor = duz ? kok : hedefKlasor(kok, o.grupAdi, o.tarih);
   await mkdir(klasor, { recursive: true });
   const uzanti = extname(o.yol).normalize('NFC');
   const govde = guvenliAd(basename(o.yol, extname(o.yol)), 200);
@@ -187,13 +197,14 @@ export async function disariAktar(
   kok: string,
   ilerleme?: (bitti: number, toplam: number) => void,
   kanca?: AktarmaKancalari,
+  secenek: AktarmaSecenegi = {},
 ): Promise<AktarmaSonucu> {
   const sonuc: AktarmaSonucu = { kopyalanan: 0, atlanan: 0, hatalar: [] };
   await isaretKoy(kok);
   for (let i = 0; i < ogeler.length; i++) {
     const o = ogeler[i];
     try {
-      if ((await tekDosya(o, kok, kanca)) === 'kopyalandi') sonuc.kopyalanan++;
+      if ((await tekDosya(o, kok, kanca, secenek.duz)) === 'kopyalandi') sonuc.kopyalanan++;
       else sonuc.atlanan++;
     } catch (h) {
       sonuc.hatalar.push({ yol: o.yol, hata: h instanceof Error ? h.message : String(h) });

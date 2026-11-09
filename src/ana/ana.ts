@@ -107,7 +107,10 @@ void app.whenReady().then(() => {
     const r = await dialog.showOpenDialog(pencere, { title: 'Fotoğraf klasörünü seç', properties: ['openDirectory'] });
     return r.canceled ? null : (r.filePaths[0] ?? null);
   });
-  ipcMain.handle('aktar-sec', async () => {
+  ipcMain.handle('aktar-sec', async (_e, anahtarlar: unknown) => {
+    if (anahtarlar !== undefined && !(Array.isArray(anahtarlar) && anahtarlar.every((x) => typeof x === 'string'))) {
+      throw new Error('İzin verilmeyen istek');
+    }
     if (!pencere) return null;
     const r = await dialog.showOpenDialog(pencere, {
       title: 'Kopyaların kaydedileceği klasörü seç',
@@ -115,7 +118,7 @@ void app.whenReady().then(() => {
       properties: ['openDirectory', 'createDirectory'],
     });
     if (r.canceled || !r.filePaths[0]) return null;
-    return iste({ tur: 'aktar', hedef: r.filePaths[0] });
+    return iste({ tur: 'aktar', hedef: r.filePaths[0], anahtarlar: anahtarlar as string[] | undefined });
   });
   // Arşiv klasörü: seçilen yol yalnız arayüze döner (kutuda gösterilir). "Arşive al" yalnız bu pencereden
   // seçilmiş ya da motorun bildiği arşivin yolu için kabul edilir; arayüz başka bir yol uyduramaz.

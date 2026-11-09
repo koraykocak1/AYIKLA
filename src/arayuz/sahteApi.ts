@@ -250,8 +250,8 @@ export const sahteApi: AyiklaApi = {
   },
   klasorSec: async () => 'C:\\Örnek\\Telefon',
   // Kaydetme: hedef klasör "seçilmiş" sayılır, ilerleme olaylarıyla birkaç saniyede biter
-  aktarSec: async () => {
-    const toplam = sonSonuc.length || 100;
+  aktarSec: async (anahtarlar?: string[]) => {
+    const toplam = anahtarlar?.length ?? (sonSonuc.length || 100);
     for (let b = 0; b <= toplam; b += Math.ceil(toplam / 40)) {
       yayinla({ tur: 'aktarim', bitti: b, toplam });
       await bekle(60);
