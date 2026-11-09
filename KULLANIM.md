@@ -1,21 +1,29 @@
 # AYIKLA — Kullanım
 
-## Açmak
-- Masaüstündeki **AYIKLA** simgesine çift tıkla.
-- Bir klasörü simgenin üstüne sürükleyip bırakırsan program o klasörle açılır.
-- Simge yoksa (veya program güncellendiyse) proje klasöründe bir kez şunu çalıştır: `npm run kur`
+## Kurmak
+1. `AYIKLA-Kurulum-0.1.0.exe` dosyasına çift tıkla.
+2. Windows "Bilgisayarınız korundu" (SmartScreen) derse **Ek bilgi › Yine de çalıştır**'a bas. Program imzasız olduğu için bu uyarı çıkar; imza ücretli olduğundan şimdilik yok.
+3. Lisansı kabul et, kurulacak klasörü seç. Masaüstüne ve Başlat menüsüne **AYIKLA** kısayolu eklenir.
+4. Kaldırmak için: Ayarlar › Uygulamalar › AYIKLA › Kaldır. Fotoğrafların ve arşivin silinmez.
+
+Geliştiriciler için: `npm run baslat` programı açar, `npm run paketle` kurulum dosyasını `release\` klasörüne üretir.
 
 ## Kullanmak
 1. Fotoğraf klasörünü pencereye bırak veya **Klasör seç**'e bas.
-2. "… fotoğraf · … video bulundu" yazısı çıkınca **Ayıkla**'ya bas.
+2. "… fotoğraf · … video bulundu" yazısı çıkınca **Ayıkla**'ya bas. İlk seferde yapay zekâ modeli için onay sorulur (~1 GB, bir kez iner).
 3. Fotoğraflar ortadaki yığından gruplarına uçar. **Durdur** dersen sonra kaldığı yerden sürer.
 4. Sonuç ekranında soldan grup seç; fotoğraflar yıl › ay başlıklarıyla dizilir.
    - Tıkla: büyük görünüm (← → ile gez, Esc ile kapat; videolar oynar).
    - Sağ tık: başka gruba taşı. **Elenecekler**'de "Geri al".
    - **+ Grup ekle**: Türkçe bir ad yaz (örn. "Araba"); yapay zekâ arşivi yeniden puanlar.
-   - **Klasörlere kaydet**: seçtiğin klasöre `Grup\Yıl\Ay` düzeninde **kopyalar**.
+   - **Klasöre kaydet · N**: açık gruptaki N fotoğrafı seçtiğin klasöre, alt klasör açmadan **kopyalar**.
+   - **Arşive al · N**: açık grubu AYIKLA arşivine alır (aynı fotoğraf iki kez saklanmaz). Arşiv klasörü programın kütüphanesidir; içine Windows'tan değil, **Arşivim** ekranından bakılır.
+5. Karşılama ekranında **Arşivim**: arama, albüm, etiket, Kutu (silinenler 30 gün bekler) ve **Yedek**.
 
 ## Güvenlik
-- Program hiçbir dosyanı silmez, taşımaz, değiştirmez. Yalnızca okur ve istersen kopyalar.
-- Hiçbir fotoğraf internete gönderilmez. Yapay zekâ modeli yalnızca ilk açılışta bir kez iner (~350 MB).
+- Program kaynak fotoğraflarını hiçbir zaman silmez, taşımaz, değiştirmez. Yalnızca okur ve istersen kopyalar.
+- Hiçbir fotoğraf internete gönderilmez. İnternete yalnız yapay zekâ modeli, senin onayınla, bir kez iner.
 - Programın kendi dosyaları: `C:\Users\<sen>\.ayikla` (küçük resimler, kayıt, model).
+
+## Lisans
+GPL-3.0-or-later (`LICENSE`). Kullanılan bileşenlerin lisansları: `docs/LISANSLAR.md`.
