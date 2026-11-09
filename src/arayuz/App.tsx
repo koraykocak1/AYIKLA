@@ -49,6 +49,7 @@ export function App() {
               setEkran({ ad: 'ayiklama', girdiler, sayim });
             }}
             onArsivim={() => setEkran({ ad: 'arsivim' })}
+            onSonucaDon={medya.length ? () => setEkran({ ad: 'sonuc' }) : undefined}
           />
         )}
         {ekran.ad === 'arsivim' && <Arsivim onKapat={() => setEkran({ ad: 'karsilama' })} />}

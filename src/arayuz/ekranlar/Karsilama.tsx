@@ -14,6 +14,8 @@ interface Props {
   onceki?: string[];
   onBaslat: (girdiler: string[], sayim: Sayim) => void;
   onArsivim: () => void;
+  /** Son ayıklamanın sonucu varsa: sonuç ekranına yeniden ayıklamadan döner. */
+  onSonucaDon?: () => void;
 }
 
 /** Klasör bırakılınca sayımın görünmesi için başlamadan önce kısa bekleyiş. */
@@ -38,7 +40,7 @@ const belir = (gecikme: number) => ({
 /** Windows'un özel klasörleri diskte İngilizce adlı; Gezgin'deki Türkçe adlarıyla gösterilir. */
 const TURKCE_AD: Record<string, string> = { pictures: 'Resimler', desktop: 'Masaüstü', downloads: 'İndirilenler', documents: 'Belgeler' };
 
-export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
+export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
   const [girdiler, setGirdiler] = useState<string[] | null>(null);
   const [sayim, setSayim] = useState<Sayim | null>(null);
   const [sayiliyor, setSayiliyor] = useState(false);
@@ -233,6 +235,11 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
               {!basliyor && !sayiliyor && (
                 <button className="metin-dugme etiket k-ekle" onClick={() => void klasorEkle()}>
                   + klasör ekle
+                </button>
+              )}
+              {onSonucaDon && !basliyor && (
+                <button className="altin k-sonuca" onClick={onSonucaDon}>
+                  Sonuçlara dön ›
                 </button>
               )}
               {sayiliyor && <p className="etiket soluk">Dosyalar sayılıyor…</p>}

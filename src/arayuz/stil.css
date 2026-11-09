@@ -240,6 +240,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .hakkinda-dugme:hover { color: var(--sari); }
 .hakkinda-dugme + .hakkinda-dugme { margin-left: 22px; }
 .k-ekle { margin-top: 6px; color: var(--sari); }
+.k-sonuca { margin-top: 16px; }
 .k-alt-sag { display: flex; align-items: center; gap: 22px; }
 .s-ana { text-align: left; transition: color 0.2s; }
 .s-ana:hover { color: var(--sari); }
