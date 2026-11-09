@@ -10,6 +10,7 @@ const api = {
   yedekSec: (): Promise<unknown> => ipcRenderer.invoke('yedek-sec'),
   geriYukleSec: (): Promise<unknown> => ipcRenderer.invoke('geri-yukle-sec'),
   baslangicKlasoru: (): Promise<string | null> => ipcRenderer.invoke('baslangic-klasoru'),
+  bilinenKlasorler: (): Promise<string[]> => ipcRenderer.invoke('bilinen-klasorler'),
   yolAl: (f: File): string => webUtils.getPathForFile(f),
   olaylariDinle: (f: (o: ArayuzOlayi) => void): (() => void) => {
     const dinleyici = (_e: unknown, o: ArayuzOlayi) => f(o);

@@ -20,6 +20,8 @@ export function App() {
   const [ekran, setEkran] = useState<Ekran>({ ad: 'karsilama' });
   const [gruplar, setGruplar] = useState<Grup[]>([]);
   const [medya, setMedya] = useState<ArayuzMedya[]>([]);
+  // Ana ekrana dönünce son seçilen klasörler seçili gelir; "+ klasör ekle" ile yenisi eklenebilir
+  const [sonGirdiler, setSonGirdiler] = useState<string[] | undefined>(undefined);
 
   useEffect(() => {
     api.gruplar().then(setGruplar).catch(() => {});
@@ -42,7 +44,10 @@ export function App() {
           <Karsilama
             not={ekran.not}
             onceki={ekran.girdiler}
-            onBaslat={(girdiler, sayim) => setEkran({ ad: 'ayiklama', girdiler, sayim })}
+            onBaslat={(girdiler, sayim) => {
+              setSonGirdiler(girdiler);
+              setEkran({ ad: 'ayiklama', girdiler, sayim });
+            }}
             onArsivim={() => setEkran({ ad: 'arsivim' })}
           />
         )}
@@ -63,7 +68,7 @@ export function App() {
           />
         )}
         {ekran.ad === 'sonuc' && (
-          <Sonuc medya={medya} setMedya={setMedya} gruplar={gruplar} setGruplar={setGruplar} onYeni={() => setEkran({ ad: 'karsilama' })} />
+          <Sonuc medya={medya} setMedya={setMedya} gruplar={gruplar} setGruplar={setGruplar} onYeni={() => setEkran({ ad: 'karsilama', girdiler: sonGirdiler })} />
         )}
       </motion.main>
     </AnimatePresence>

@@ -239,6 +239,10 @@ button:disabled { opacity: 0.5; cursor: default; }
 .hakkinda-dugme { margin-top: 14px; padding: 4px 0; transition: color 0.2s; }
 .hakkinda-dugme:hover { color: var(--sari); }
 .hakkinda-dugme + .hakkinda-dugme { margin-left: 22px; }
+.k-ekle { margin-top: 6px; color: var(--sari); }
+.k-alt-sag { display: flex; align-items: center; gap: 22px; }
+.s-ana { text-align: left; transition: color 0.2s; }
+.s-ana:hover { color: var(--sari); }
 .k-alt .ikincil { padding: 12px 20px; letter-spacing: 0.22em; }
 
 /* Son arşivler: sol altta sade liste, solda ince çizgi */

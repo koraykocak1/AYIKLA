@@ -285,6 +285,7 @@ export const sahteApi: AyiklaApi = {
   },
   geriYukleSec: async () => ({ kok: 'G:\\AYIKLA Arşiv', ad: 'AYIKLA Arşiv' }),
   baslangicKlasoru: async () => null,
+  bilinenKlasorler: async () => ['C:\\Users\\Örnek\\Pictures', 'C:\\Users\\Örnek\\Desktop', 'C:\\Users\\Örnek\\Downloads', 'C:\\Users\\Örnek\\Documents'],
   yolAl: (f: File) => f.name,
   olaylariDinle: (f) => {
     dinleyiciler.add(f);

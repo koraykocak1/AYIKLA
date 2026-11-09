@@ -35,6 +35,9 @@ const belir = (gecikme: number) => ({
   transition: { duration: sure.yavas, ease: egri.yumusak, delay: gecikme },
 });
 
+/** Windows'un özel klasörleri diskte İngilizce adlı; Gezgin'deki Türkçe adlarıyla gösterilir. */
+const TURKCE_AD: Record<string, string> = { pictures: 'Resimler', desktop: 'Masaüstü', downloads: 'İndirilenler', documents: 'Belgeler' };
+
 export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
   const [girdiler, setGirdiler] = useState<string[] | null>(null);
   const [sayim, setSayim] = useState<Sayim | null>(null);
@@ -140,6 +143,19 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
     if (k) void sec([k], true);
   }
 
+  /** Seçili klasörlere bir tane daha ekler; önceden ayıklananlar anında gelir, yalnız yeni klasör işlenir. */
+  async function klasorEkle() {
+    const k = await api.klasorSec();
+    if (k && girdiler) void sec([...girdiler.filter((g) => g.toLowerCase() !== k.toLowerCase()), k]);
+  }
+
+  /** Resimler, Masaüstü, İndirilenler, Belgeler (ve varsa OneDrive): bütün disk taranmaz. */
+  async function bilgisayardaBul() {
+    const l = await api.bilinenKlasorler().catch(() => []);
+    if (l.length) void sec(l);
+    else setHata('Resimler, Masaüstü gibi klasörler bulunamadı. "Klasör seç" ile kendin seç.');
+  }
+
   const hazir = !!(girdiler && sayim && sayim.foto + sayim.video > 0);
   const yonerge = ustunde
     ? 'Bırak'
@@ -207,7 +223,12 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
         <AnimatePresence>
           {girdiler && (
             <motion.div className="secim" initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-              <p className="secilen etiket">{girdiler.map(sonParca).join(', ')}</p>
+              <p className="secilen etiket">{girdiler.map((g) => TURKCE_AD[sonParca(g).toLowerCase()] ?? sonParca(g)).join(', ')}</p>
+              {!basliyor && !sayiliyor && (
+                <button className="metin-dugme etiket k-ekle" onClick={() => void klasorEkle()}>
+                  + klasör ekle
+                </button>
+              )}
               {sayiliyor && <p className="etiket soluk">Dosyalar sayılıyor…</p>}
               {sayim && (
                 <p className="bulundu" aria-label={bulunduMetni(sayim)}>
@@ -287,6 +308,9 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
           </motion.button>
         </div>
         <motion.div className="k-alt-sag" {...belir(0.8)}>
+          <button className="metin-dugme etiket" onClick={() => void bilgisayardaBul()} title="Resimler, Masaüstü, İndirilenler ve Belgeler taranır">
+            Bilgisayarımdaki fotoğrafları bul
+          </button>
           <button className="ikincil" onClick={() => void klasorSec()}>
             Klasör seç
           </button>

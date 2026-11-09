@@ -39,6 +39,7 @@ export const api = {
   geriYukleSec: () => k().geriYukleSec() as Promise<ArsivDurumuCevabi | null>,
   klasorSec: () => k().klasorSec(),
   baslangicKlasoru: () => k().baslangicKlasoru(),
+  bilinenKlasorler: () => k().bilinenKlasorler(),
   yolAl: (f: File) => k().yolAl(f),
   olaylariDinle: (f: (o: ArayuzOlayi) => void) => k().olaylariDinle(f),
 };

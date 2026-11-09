@@ -15,7 +15,7 @@ export function turBul(yol: string): MedyaTuru | null {
 }
 
 /** Hiçbir yerde taranmayan Windows sistem klasörleri ve uygulama verileri (önbellek resimleri vb.). */
-const SISTEM_KLASORLERI = new Set(['$recycle.bin', 'system volume information', '$windows.~bt', '$windows.~ws', 'appdata']);
+const SISTEM_KLASORLERI = new Set(['$recycle.bin', 'system volume information', '$windows.~bt', '$windows.~ws', 'appdata', 'node_modules']);
 /** Yalnız sürücü kökündeyse (C:\Windows gibi) atlanan klasörler. */
 const KOK_SISTEM_KLASORLERI = new Set(['windows', 'program files', 'program files (x86)', 'programdata']);
 

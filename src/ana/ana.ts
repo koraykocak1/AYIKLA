@@ -159,6 +159,19 @@ void app.whenReady().then(() => {
     const kok = await klasorSor('Arşivin geri yükleneceği boş klasörü seç', 'Buraya geri yükle');
     return kok ? iste({ tur: 'geriYukle', yedek, kok }) : null;
   });
+  // "Bilgisayarımdaki fotoğrafları bul": fotoğrafların genelde durduğu klasörler (var olanlar). Bütün disk taranmaz.
+  ipcMain.handle('bilinen-klasorler', () => {
+    const adaylar = [app.getPath('pictures'), app.getPath('desktop'), app.getPath('downloads'), app.getPath('documents')];
+    const od = process.env.OneDrive;
+    if (od) adaylar.push(join(od, 'Pictures'), join(od, 'Resimler'), join(od, 'Desktop'), join(od, 'Masaüstü'));
+    const gorulen = new Set<string>();
+    return adaylar.filter((y) => {
+      const a = y.toLowerCase();
+      if (gorulen.has(a) || !klasorMu(y)) return false;
+      gorulen.add(a);
+      return true;
+    });
+  });
   ipcMain.handle('baslangic-klasoru', () => baslangicKlasoru(process.argv, app.getAppPath(), klasorMu));
 
   isciAc();

@@ -166,10 +166,9 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
       </div>
 
       <aside className="s-yan">
-        <p className="k-marka">
-          <span className="k-isaret" aria-hidden="true" />
-          AYIKLA
-        </p>
+        <button className="k-marka s-ana" onClick={onYeni} title="Ana ekrana dön; seçtiğin klasörler korunur, yenisini ekleyebilirsin">
+          <span className="k-isaret" aria-hidden="true" />‹ Ana ekran
+        </button>
         <nav>
           {menu.map((g) => (
             <div key={g.id} style={{ display: 'contents' }}>
