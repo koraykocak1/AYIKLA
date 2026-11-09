@@ -14,12 +14,14 @@ const gruplar: Grup[] = [
   { id: 'doga', ad: 'Doğa', tarifler: [] },
 ];
 
-const sonArsivler: SonArsiv[] = [{ girdiler: ['C:\\Örnek\\Telefon'], tarih: new Date().toISOString(), foto: 1240, video: 86 }];
+// Adres '?temiz' ile açılırsa program ilk kez açılmış gibi davranır: geçmiş yok, arşiv yok, model onayı sorulur
+const TEMIZ = location.search.includes('temiz');
+const sonArsivler: SonArsiv[] = TEMIZ ? [] : [{ girdiler: ['C:\\Örnek\\Telefon'], tarih: new Date().toISOString(), foto: 1240, video: 86 }];
 
 // Adres "?ilk" ile açılırsa modeller inmemiş sayılır: onay adımı denenir
 let sahteIzin = false;
 function sahteModelDurumu(): ModelDurumuCevabi {
-  if (!location.search.includes('ilk') || sahteIzin) return { indirmeGerekli: false, paketler: [], toplamMB: 0 };
+  if (!(TEMIZ || location.search.includes('ilk')) || sahteIzin) return { indirmeGerekli: false, paketler: [], toplamMB: 0 };
   return {
     indirmeGerekli: true,
     toplamMB: 1050,
@@ -31,7 +33,7 @@ function sahteModelDurumu(): ModelDurumuCevabi {
 }
 
 // Adres "?arsivyok" ile açılırsa bilinen arşiv yok sayılır: "Arşivin nerede dursun?" kutusu denenir
-let sahteArsiv: ArsivDurumuCevabi = location.search.includes('arsivyok')
+let sahteArsiv: ArsivDurumuCevabi = TEMIZ || location.search.includes('arsivyok')
   ? { kok: null, ad: null }
   : { kok: 'E:\\AYIKLA Arşiv', ad: 'AYIKLA Arşiv' };
 
@@ -64,6 +66,7 @@ let sahteYedek: YedekDurumu = {
 };
 
 function sahteGorunum(s: ArsivSorgusu): ArsivGorunumu {
+  if (!sahteArsiv.kok) throw new Error('Henüz arşiv yok. Sonuç ekranında “Arşive al” ile başla.');
   if (sahteKilit) throw new Error('bayat-kilit:Bu arşiv son kullanımda düzgün kapatılmamış.');
   const canli = sahteOgeler.filter((o) => o.silinme === null);
   const kutu = sahteOgeler.filter((o) => o.silinme !== null);
