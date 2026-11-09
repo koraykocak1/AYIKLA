@@ -10,7 +10,7 @@ Geliştiriciler için: `npm run baslat` programı açar, `npm run paketle` kurul
 
 ## Kullanmak
 1. Fotoğraf klasörünü pencereye bırak veya **Klasör seç**'e bas.
-2. "… fotoğraf · … video bulundu" yazısı çıkınca **Ayıkla**'ya bas. İlk seferde yapay zekâ modeli için onay sorulur (~1 GB, bir kez iner).
+2. "… fotoğraf · … video bulundu" yazısı çıkınca **Ayıkla**'ya bas. İlk seferde yapay zekâ modeli kendiliğinden bir kez iner (~610 MB; grup eklersen çeviri modeli ~440 MB).
 3. Fotoğraflar ortadaki yığından gruplarına uçar. **Durdur** dersen sonra kaldığı yerden sürer.
 4. Sonuç ekranında soldan grup seç; fotoğraflar yıl › ay başlıklarıyla dizilir.
    - Tıkla: büyük görünüm (← → ile gez, Esc ile kapat; videolar oynar).
@@ -20,7 +20,7 @@ Geliştiriciler için: `npm run baslat` programı açar, `npm run paketle` kurul
 
 ## Güvenlik
 - Program kaynak fotoğraflarını hiçbir zaman silmez, taşımaz, değiştirmez. Yalnızca okur ve istersen kopyalar.
-- Hiçbir fotoğraf internete gönderilmez. İnternete yalnız yapay zekâ modeli, senin onayınla, bir kez iner.
+- Hiçbir fotoğraf internete gönderilmez. İnternete yalnız yapay zekâ modeli bir kez iner.
 - Programın kendi dosyaları: `C:\Users\<sen>\.ayikla` (küçük resimler, kayıt, model).
 
 ## Lisans

@@ -85,10 +85,16 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
 
   /** Model diskteyse true; inmemişse onay kutusunu açar ve false döner. Durum okunamazsa motor yine onaysız indirmez. */
   async function indirmeSorulmadi(): Promise<boolean> {
+    // Kullanıcı kararı (2026-11-09): onay kutusu yok; model ilk ayıklamada kendiliğinden bir kez iner.
+    // Bilgisi Hakkında'da. İzin kaydedilemezse eski kutu yedek olarak açılır.
     const d = await api.modelDurumu().catch(() => null);
     if (d?.indirmeGerekli) {
-      setOnay(d);
-      return false;
+      try {
+        await api.modelIzniVer();
+      } catch {
+        setOnay(d);
+        return false;
+      }
     }
     return true;
   }
