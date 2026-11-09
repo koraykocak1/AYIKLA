@@ -152,7 +152,7 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
   /** Resimler, Masaüstü, İndirilenler, Belgeler (ve varsa OneDrive): bütün disk taranmaz. */
   async function bilgisayardaBul() {
     const l = await api.bilinenKlasorler().catch(() => []);
-    if (l.length) void sec(l);
+    if (l.length) void sec(l, true); // "Klasör seç" gibi: sayım bitince ayıklama kendiliğinden başlar
     else setHata('Resimler, Masaüstü gibi klasörler bulunamadı. "Klasör seç" ile kendin seç.');
   }
 
@@ -164,7 +164,7 @@ export function Karsilama({ not, onceki, onBaslat, onArsivim }: Props) {
       : basliyor
       ? 'Ayıklama başlıyor…'
       : hazir
-        ? 'Başlamak için ayıkla’ya bas'
+        ? 'Başlamak için ortadaki AYIKLA yazısına tıkla'
         : 'Klasörü küreye bırak';
 
   return (
