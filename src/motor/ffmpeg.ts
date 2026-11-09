@@ -3,6 +3,8 @@ import { promisify } from 'node:util';
 import ffmpegYolu from 'ffmpeg-static';
 
 const calistir = promisify(execFile);
+// Kurulu programda ffmpeg.exe paketin (app.asar) dışına açılır; oradan çalıştırılmalı.
+const FFMPEG = (ffmpegYolu as unknown as string).replace(/app\.asar([\\/])/, 'app.asar.unpacked$1');
 
 export interface VideoBilgisi {
   sure: number;
@@ -37,7 +39,7 @@ export async function videoBilgisi(yol: string): Promise<VideoBilgisi> {
   // Çıkış dosyası verilmediği için ffmpeg bilgileri yazıp 1 koduyla çıkar; bu beklenen durumdur.
   let metin: string;
   try {
-    const { stderr } = await calistir(ffmpegYolu as unknown as string, ['-hide_banner', '-nostdin', '-i', yol]);
+    const { stderr } = await calistir(FFMPEG, ['-hide_banner', '-nostdin', '-i', yol]);
     metin = stderr;
   } catch (h) {
     metin = String((h as { stderr?: string }).stderr ?? '');
@@ -48,7 +50,7 @@ export async function videoBilgisi(yol: string): Promise<VideoBilgisi> {
 }
 
 export async function kareCikar(yol: string, saniye: number, hedef: string): Promise<void> {
-  await calistir(ffmpegYolu as unknown as string, [
+  await calistir(FFMPEG, [
     '-y', '-v', 'error', '-ss', saniye.toFixed(2), '-i', yol, '-frames:v', '1', '-vf', 'scale=384:-2', hedef,
   ]);
 }

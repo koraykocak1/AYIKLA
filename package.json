@@ -1,6 +1,9 @@
 {
   "name": "ayikla",
   "version": "0.1.0",
+  "description": "Fotoğraf ve videoları yerel yapay zekâyla ayıklayan, kaynağa dokunmayan masaüstü programı",
+  "author": "KAINE",
+  "license": "GPL-3.0-or-later",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,7 +14,8 @@
     "baslat": "npm run derle && electron .",
     "simge": "tsx scripts/simge.ts",
     "kur": "npm run derle && powershell -NoProfile -ExecutionPolicy Bypass -File scripts/kisayol.ps1",
-    "ekran": "node scripts/ekran-goruntusu.mjs"
+    "ekran": "node scripts/ekran-goruntusu.mjs",
+    "paketle": "npm run derle && electron-builder --win"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.2",
@@ -34,6 +38,7 @@
     "@types/three": "^0.187.0",
     "@vitejs/plugin-react": "^6.1.2",
     "electron": "^45.2.1",
+    "electron-builder": "26.17.0",
     "esbuild": "^0.28.2",
     "playwright-core": "^1.64.1",
     "tsx": "^4.23.15",
@@ -49,5 +54,37 @@
     "electron@45.2.1": true
   },
   "main": "dist/ana.cjs",
-  "productName": "AYIKLA"
+  "productName": "AYIKLA",
+  "build": {
+    "appId": "com.ayikla.app",
+    "productName": "AYIKLA",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**",
+      "simge/**",
+      "LICENSE",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**",
+      "node_modules/sharp/**",
+      "node_modules/@img/**",
+      "node_modules/better-sqlite3/**",
+      "node_modules/onnxruntime-node/**"
+    ],
+    "npmRebuild": false,
+    "win": {
+      "target": "nsis",
+      "icon": "simge/ayikla.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "license": "LICENSE",
+      "artifactName": "AYIKLA-Kurulum-${version}.exe",
+      "shortcutName": "AYIKLA"
+    }
+  }
 }
