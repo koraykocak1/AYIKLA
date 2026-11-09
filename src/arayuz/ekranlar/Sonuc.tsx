@@ -135,7 +135,8 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
   async function aktar() {
     try {
       setAktarim(null);
-      const r = await api.aktarSec();
+      // Yalnız açık grup, alt klasörsüz: seçilen klasörde yalnız bu fotoğraflar olur
+      const r = await api.aktarSec(liste.map((m) => m.anahtar));
       setAktarim(null);
       if (!r) return;
       const disk = r.hatalar.some((h) => /ENOSPC|no space/i.test(h.hata));
