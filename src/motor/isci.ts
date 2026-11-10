@@ -136,7 +136,9 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
       }
       m.ham = esler.get(d.yol);
       m.grupId = grupBelirle(m, gv);
-      m.eleme = m.geriAlindi ? null : m.elleElendi ? 'elle' : m.tur === 'foto' ? (m.kalite.karanlik ? 'karanlik' : m.kalite.bulanik ? 'bulanik' : null) : null;
+      // Kullanıcı kararı (2026-11-11): karanlık ve bulanık kareler elenmez (gece ve bilerek bulanık çekilenler
+      // de istenir); normal gruplarına gider. Elenecekler'de yalnız kopyalar ve elle ayrılanlar kalır.
+      m.eleme = m.geriAlindi ? null : m.elleElendi ? 'elle' : null;
       sonuc.push(m);
       a.olay({ tur: 'dosya', medya: m, sira: i + 1, toplam: dosyalar.length });
     } catch (h) {

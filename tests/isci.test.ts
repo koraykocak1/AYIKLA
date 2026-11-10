@@ -56,8 +56,11 @@ describe('isci', () => {
     expect(bul('IMG_20230105_100000.jpg').grupId).toBe('m');
     expect(bul('video.mp4').grupId).toBe('k');
     expect(bul('video.mp4').onizlemeler).toHaveLength(3);
-    expect(bul('bulanik.jpg').eleme).toBe('bulanik');
-    expect(bul('karanlik.jpg').eleme).toBe('karanlik');
+    // Karanlık ve bulanık kareler elenmez (kullanıcı kararı); kalite bilgisi yine ölçülür
+    expect(bul('bulanik.jpg').eleme).toBeNull();
+    expect(bul('karanlik.jpg').eleme).toBeNull();
+    expect(bul('bulanik.jpg').kalite.bulanik).toBe(true);
+    expect(bul('karanlik.jpg').kalite.karanlik).toBe(true);
 
     // İki kırmızı kopyadan büyük olan kalır, küçük olan "kopya" olur
     expect(bul('IMG_20240812_100001.jpg').eleme).toBeNull();
@@ -173,7 +176,7 @@ describe('isci', () => {
     expect(j.ham).toEqual([nef]);
   });
 
-  it('geri alınan dosya elenmez', async () => {
+  it('elle elenen yeniden ayıklamada elenmiş kalır; geri alınan elenmez', async () => {
     const kok = await geciciKlasor();
     const girdi = join(kok, 'girdi');
     await mkdir(girdi);
@@ -181,14 +184,19 @@ describe('isci', () => {
     const { model } = sahteModel();
     const calisma = join(kok, 'calisma');
     const ilk = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
-    expect(ilk[0].eleme).toBe('bulanik');
+    expect(ilk[0].eleme).toBeNull();
 
     const d = await katalogAc(calisma);
-    Object.values(d.veri.medya)[0].geriAlindi = true;
+    Object.values(d.veri.medya)[0].elleElendi = true;
     await d.kaydet();
-
     const ikinci = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
-    expect(ikinci[0].eleme).toBeNull();
+    expect(ikinci[0].eleme).toBe('elle');
+
+    const d2 = await katalogAc(calisma);
+    Object.values(d2.veri.medya)[0].geriAlindi = true;
+    await d2.kaydet();
+    const ucuncu = await ayikla({ girdiler: [girdi], calismaKlasoru: calisma, gruplar: GRUPLAR, model, olay: () => {} });
+    expect(ucuncu[0].eleme).toBeNull();
   });
 
   it('yenidenPuanla yeni grup listesine göre dağıtır, resimleri yeniden işlemez', async () => {
