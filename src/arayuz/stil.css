@@ -526,3 +526,18 @@ button:disabled { opacity: 0.5; cursor: default; }
 .ks-sec[aria-pressed='true'] { background: var(--sari); border-color: var(--sari); }
 .ks-kart.secili .ks-resim { outline: 2px solid var(--sari); outline-offset: -2px; }
 .kart-sahnesi.kure .ks-sec { display: none; }
+
+/* Üstüne gelince hafif yakınlaşma (Apple tarzı): resim çerçevenin içinde büyür, düğmeler ve gruplar hafifçe tepki verir */
+.ks-resim { transition: outline-color 0.3s var(--egri), box-shadow 0.3s var(--egri), transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.ks-resim img { transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.kart-sahnesi.izgara .ks-resim:hover { transform: scale(1.03); }
+.kart-sahnesi.izgara .ks-resim:hover img { transform: scale(1.08); }
+.ikincil { transition: color 0.2s, border-color 0.2s, background-color 0.2s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.ikincil:hover:not(:disabled) { transform: scale(1.04); }
+.s-ad { display: inline-block; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.s-grup:hover .s-ad { transform: translateX(4px); }
+.metin-dugme { display: inline-block; transition: color 0.2s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.metin-dugme:hover { transform: scale(1.05); }
+@media (prefers-reduced-motion: reduce) {
+  .ks-resim, .ks-resim img, .ikincil, .s-ad, .metin-dugme { transition: none; transform: none !important; }
+}
