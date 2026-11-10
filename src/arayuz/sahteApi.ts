@@ -16,7 +16,7 @@ const gruplar: Grup[] = [
 
 // Adres '?temiz' ile açılırsa program ilk kez açılmış gibi davranır: geçmiş yok, arşiv yok, model onayı sorulur
 const TEMIZ = location.search.includes('temiz');
-const sonArsivler: SonArsiv[] = TEMIZ ? [] : [{ girdiler: ['C:\\Örnek\\Telefon'], tarih: new Date().toISOString(), foto: 1240, video: 86 }];
+const sonArsivler: SonArsiv[] = TEMIZ ? [] : [{ girdiler: ['C:\\Örnek klasör'], tarih: new Date().toISOString(), foto: 1240, video: 86 }];
 
 // Adres "?ilk" ile açılırsa modeller inmemiş sayılır: onay adımı denenir
 let sahteIzin = false;
@@ -138,7 +138,7 @@ function sahteMedya(i: number): ArayuzMedya {
   const eleme = Math.random() < 0.1 ? (i % 2 ? 'bulanik' : 'karanlik') : null;
   return {
     anahtar: `sahte-${i}`,
-    yol: `C:\\Örnek\\Telefon\\IMG_${1000 + i}.jpg`,
+    yol: `C:\\Örnek klasör\\IMG_${1000 + i}.jpg`,
     tur: i % 23 === 0 ? 'video' : 'foto',
     boyut: 2_000_000,
     degisme: Date.now(),
@@ -256,7 +256,7 @@ export const sahteApi: AyiklaApi = {
         return null;
     }
   },
-  klasorSec: async () => 'C:\\Örnek\\Telefon',
+  klasorSec: async () => 'C:\\Örnek klasör',
   // Kaydetme: hedef klasör "seçilmiş" sayılır, ilerleme olaylarıyla birkaç saniyede biter
   aktarSec: async (anahtarlar?: string[]) => {
     const toplam = anahtarlar?.length ?? (sonSonuc.length || 100);
