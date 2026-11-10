@@ -141,12 +141,8 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
   }, [deneme]);
 
   const oran = sayac.toplam ? Math.min(1, sayac.taranan / sayac.toplam) : 0;
-  const durumMetni =
-    model.durum === 'yukleniyor'
-      ? 'Yapay zekâ hazırlanıyor…'
-      : calisiyor
-        ? `Yapay zekâ ${model.cihaz === 'dml' ? 'ekran kartında' : 'işlemcide'}`
-        : '';
+  // Yalnız hazırlanırken söylenir; ekran kartı/işlemci gibi teknik bilgi kullanıcıya gösterilmez
+  const durumMetni = model.durum === 'yukleniyor' ? 'Yapay zekâ hazırlanıyor…' : '';
 
   return (
     <div className="ayiklama" data-durum={calisiyor ? 'calisiyor' : 'hazirlaniyor'}>
