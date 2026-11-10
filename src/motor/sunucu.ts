@@ -414,6 +414,7 @@ export function sunucuOlustur(a: SunucuAyarlari) {
         return degistir(i.anahtar, (m) => {
           m.elleGrup = grupId;
           m.grupId = grupId;
+          m.elleElendi = false;
           if (m.eleme) {
             m.eleme = null;
             m.geriAlindi = true;
@@ -424,6 +425,13 @@ export function sunucuOlustur(a: SunucuAyarlari) {
         return degistir(i.anahtar, (m) => {
           m.eleme = null;
           m.geriAlindi = true;
+          m.elleElendi = false;
+        });
+      case 'ele':
+        return degistir(i.anahtar, (m) => {
+          m.eleme = 'elle';
+          m.elleElendi = true;
+          m.geriAlindi = false;
         });
       case 'sonArsivler':
         return (await kayitAc()).veri.sonArsivler ?? [];

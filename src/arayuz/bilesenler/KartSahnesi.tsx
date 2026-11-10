@@ -15,6 +15,9 @@ interface Props {
   ucanlar: Map<string, { x: number; y: number }>;
   onAc: (sira: number, kutu: DOMRect) => void;
   onSagTik: (e: ReactMouseEvent, m: ArayuzMedya) => void;
+  /** Seçili kartların anahtarları; biri seçiliyken karta tıklamak da seçer (büyük görünüm açılmaz). */
+  secimler?: Set<string>;
+  onSec?: (sira: number, aralik: boolean) => void;
 }
 
 /** Bir kartın canlı durumu: yeri, büyüklüğü, saydamlığı ve bunların hızları (yay motoru). */
@@ -49,7 +52,7 @@ const UST = 6; // sahnenin üst boşluğu (px)
  * KÜRE (gösteri): kartlar kendi yaylarıyla küre yüzeyine uçar; küre yavaş döner, sürükleyince ataletle çevrilir,
  * fare yukarı-aşağı eğer, arkadakiler soluk. Kürede en çok `ayar.kureEnFazla` kart durur.
  */
-export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik }: Props) {
+export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik, secimler, onSec }: Props) {
   const kap = useRef<HTMLDivElement>(null);
   const basliklar = useRef<HTMLDivElement>(null);
   const cubuk = useRef<HTMLDivElement>(null);
@@ -267,7 +270,7 @@ export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik 
   return (
     <div
       ref={kap}
-      className={`kart-sahnesi ${gorunum}`}
+      className={`kart-sahnesi ${gorunum}${secimler?.size ? ' seciyor' : ''}`}
       onWheel={(e) => {
         if (ic.gorunum === 'izgara') ic.hedefKaydir += e.deltaY;
         // Kürede tekerlek küreyi döndürür; bırakınca ataletle yavaşlar
@@ -313,13 +316,27 @@ export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik 
         if (!m) return null;
         const { tarih, saat } = tarihSaat(m.tarih);
         return (
-          <div key={m.anahtar} ref={(el) => kaydet(m.anahtar, el)} className="ks-kart" style={{ width: yer.kartEn }}>
+          <div key={m.anahtar} ref={(el) => kaydet(m.anahtar, el)} className={`ks-kart${secimler?.has(m.anahtar) ? ' secili' : ''}`} style={{ width: yer.kartEn }}>
+            {onSec && (
+              <button
+                className="ks-sec"
+                aria-label={secimler?.has(m.anahtar) ? 'Seçimi kaldır' : 'Seç'}
+                aria-pressed={!!secimler?.has(m.anahtar)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSec(i, e.shiftKey);
+                }}
+              >
+                {secimler?.has(m.anahtar) ? '✓' : ''}
+              </button>
+            )}
             <button
               className="ks-resim"
               style={{ height: yer.kartBoy, background: m.renk }}
               title={m.yol}
               onClick={(e) => {
                 if (ic.surukle?.oynadi) return;
+                if (secimler?.size && onSec) return onSec(i, e.shiftKey);
                 onAc(i, e.currentTarget.getBoundingClientRect());
               }}
               onContextMenu={(e) => {

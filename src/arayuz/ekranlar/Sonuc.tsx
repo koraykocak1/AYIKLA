@@ -76,6 +76,48 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
     return () => window.removeEventListener('pointermove', izle);
   }, []);
 
+  // Çoklu seçim: grup değişince ya da Esc ile temizlenir
+  const [secimler, setSecimler] = useState<Set<string>>(new Set());
+  const sonSecilen = useRef<number | null>(null);
+  const [topluMenu, setTopluMenu] = useState<{ x: number; y: number } | null>(null);
+  useEffect(() => {
+    setSecimler(new Set());
+    sonSecilen.current = null;
+  }, [secili]);
+  useEffect(() => {
+    const tus = (e: KeyboardEvent) => e.key === 'Escape' && setSecimler(new Set());
+    window.addEventListener('keydown', tus);
+    return () => window.removeEventListener('keydown', tus);
+  }, []);
+
+  /** Tek kartı seçer/bırakır; Shift ile son seçilenden buna kadar hepsini seçer. */
+  function sec(i: number, aralik: boolean) {
+    setSecimler((s) => {
+      const y = new Set(s);
+      if (aralik && sonSecilen.current !== null) {
+        const [a, b] = [Math.min(sonSecilen.current, i), Math.max(sonSecilen.current, i)];
+        for (let k = a; k <= b; k++) if (liste[k]) y.add(liste[k].anahtar);
+      } else if (y.has(liste[i].anahtar)) y.delete(liste[i].anahtar);
+      else y.add(liste[i].anahtar);
+      return y;
+    });
+    sonSecilen.current = i;
+  }
+
+  /** Seçilenlere aynı işlemi uygular; bitince seçim temizlenir. */
+  async function topluIslem(f: (m: ArayuzMedya) => Promise<ArayuzMedya>, mesaj: string) {
+    const hedef = liste.filter((m) => secimler.has(m.anahtar));
+    try {
+      const yeniler = new Map<string, ArayuzMedya>();
+      for (const m of hedef) yeniler.set(m.anahtar, await f(m));
+      setMedya((l) => l.map((m) => yeniler.get(m.anahtar) ?? m));
+      setSecimler(new Set());
+      setBilgi({ metin: `${sayi(hedef.length)} fotoğraf ${mesaj}` });
+    } catch (h) {
+      setBilgi({ metin: hataMetni(h) });
+    }
+  }
+
   /** Kart görünümden ayrılıyorsa önce soldaki grubunun üstüne uçar, sonra listede güncellenir. */
   async function guncelle(yeni: ArayuzMedya) {
     const hedefId = menuAnahtari(yeni);
@@ -133,7 +175,8 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
     try {
       setAktarim(null);
       // Yalnız açık grup, alt klasörsüz: seçilen klasörde yalnız bu fotoğraflar olur
-      const r = await api.aktarSec(liste.map((m) => m.anahtar));
+      // Seçim varsa yalnız seçilenler, yoksa bütün grup
+      const r = await api.aktarSec((secimler.size ? liste.filter((m) => secimler.has(m.anahtar)) : liste).map((m) => m.anahtar));
       setAktarim(null);
       if (!r) return;
       const disk = r.hatalar.some((h) => /ENOSPC|no space/i.test(h.hata));
@@ -228,9 +271,6 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
           <p className="etiket soluk">
             Toplam <span className="s-toplam">{sayi(toplam)}</span>
           </p>
-          <button className="metin-dugme etiket" onClick={onYeni}>
-            Yeni klasör ayıkla
-          </button>
         </div>
       </aside>
 
@@ -258,10 +298,48 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
               ))}
             </div>
             <button className="altin" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void aktar()} title={`Yalnız “${seciliAd}” grubu, alt klasör açılmadan kaydedilir`}>
-              {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : `Klasöre kaydet · ${sayi(liste.length)} ›`}
+              {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : (secimler.size ? `Seçilenleri kaydet · ${sayi(secimler.size)} ›` : `Klasöre kaydet · ${sayi(liste.length)} ›`)}
             </button>
           </div>
         </header>
+
+        {/* Seçim satırı */}
+        <div className="ar-secim etiket s-secim">
+          {secimler.size > 0 ? (
+            <>
+              <span className="s-alim">{sayi(secimler.size)} seçili</span>
+              {' · '}
+              <button className="metin-dugme etiket" onClick={(e) => setTopluMenu({ x: e.clientX, y: e.clientY })}>
+                başka gruba taşı
+              </button>
+              {' · '}
+              {secili === ELENECEK_ID ? (
+                <button className="metin-dugme etiket" onClick={() => void topluIslem((m) => api.geriAl(m.anahtar), 'geri alındı')}>
+                  geri al · elenmesin
+                </button>
+              ) : (
+                <button className="metin-dugme etiket" onClick={() => void topluIslem((m) => api.ele(m.anahtar), 'Elenecekler’e atıldı; dosyalar yerinde duruyor')}>
+                  elenecekler’e at
+                </button>
+              )}
+              {' · '}
+              <button className="metin-dugme etiket" onClick={() => setSecimler(new Set(liste.map((m) => m.anahtar)))}>
+                tümünü seç
+              </button>
+              {' · '}
+              <button className="metin-dugme etiket" onClick={() => setSecimler(new Set())}>
+                seçimi kaldır
+              </button>
+            </>
+          ) : (
+            liste.length > 0 &&
+            gorunum === 'izgara' && (
+              <button className="metin-dugme etiket" onClick={() => setSecimler(new Set(liste.map((m) => m.anahtar)))}>
+                tümünü seç · ya da fotoğrafın köşesindeki daireye tıkla
+              </button>
+            )
+          )}
+        </div>
 
         {/* Grup değişince eski kartlar düşüp söner, yenileri sırayla uçarak gelir */}
         <AnimatePresence mode="popLayout">
@@ -283,6 +361,8 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                   setBuyuk(i);
                 }}
                 onSagTik={(e, m) => setSagTik({ x: e.clientX, y: e.clientY, m })}
+                secimler={secimler}
+                onSec={sec}
               />
             )}
           </motion.div>
@@ -320,6 +400,34 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                   onClick={() => {
                     void tasi(sagTik.m, g.id);
                     setSagTik(null);
+                  }}
+                >
+                  {g.ad}
+                </button>
+              ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {topluMenu && (
+          <motion.div
+            className="sag-menu"
+            style={{ left: Math.min(topluMenu.x, window.innerWidth - 240), top: Math.min(topluMenu.y + 8, window.innerHeight - 420) }}
+            initial={{ opacity: 0, scale: 0.92, y: -6 }}
+            animate={{ opacity: 1, scale: 1, y: 0, transition: yay.canli }}
+            exit={{ opacity: 0, transition: { duration: sure.hizli, ease: egri.cikis } }}
+            onMouseLeave={() => setTopluMenu(null)}
+          >
+            <p className="menu-baslik">Seçilenleri şu gruba taşı</p>
+            {[...gruplar, { id: DIGER_ID, ad: 'Diğer' }]
+              .filter((g) => g.id !== secili)
+              .map((g) => (
+                <button
+                  key={g.id}
+                  onClick={() => {
+                    setTopluMenu(null);
+                    void topluIslem((m) => api.grupTasi(m.anahtar, g.id), `“${g.ad}” grubuna taşındı`);
                   }}
                 >
                   {g.ad}

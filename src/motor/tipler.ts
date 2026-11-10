@@ -31,7 +31,7 @@ export interface Grup {
   ingilizce?: string; // kullanıcı grubunun İngilizce karşılığı (tarifler bundan üretilir)
 }
 
-export type ElemeNedeni = 'kopya' | 'bulanik' | 'karanlik';
+export type ElemeNedeni = 'kopya' | 'bulanik' | 'karanlik' | 'elle';
 
 export interface IslenmisMedya {
   anahtar: string;
@@ -52,6 +52,7 @@ export interface IslenmisMedya {
   eleme: ElemeNedeni | null;
   elleGrup?: string;
   geriAlindi?: boolean; // kullanıcı "Geri al" dedi: elenmez
+  elleElendi?: boolean; // kullanıcı "Elenecekler'e at" dedi: yeniden ayıklamada da elenmiş kalır
   renk?: string; // kartın rengi (#rrggbb), animasyon için
   ham?: string[]; // aynı karenin RAW (NEF) eşleri: ayrıca gösterilmez, dışa aktarırken yanına kopyalanır
 }

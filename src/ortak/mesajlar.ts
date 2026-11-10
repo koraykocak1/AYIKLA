@@ -19,6 +19,7 @@ export type IsciIstegi =
   | { id: number; tur: 'grupEkle'; ad: string }
   | { id: number; tur: 'grupTasi'; anahtar: string; grupId: string }
   | { id: number; tur: 'geriAl'; anahtar: string }
+  | { id: number; tur: 'ele'; anahtar: string }
   | { id: number; tur: 'sonArsivler' }
   /** `anahtarlar` verilirse yalnız onlar, alt klasörsüz (düz) kaydedilir: Sonuç ekranındaki açık grup. */
   | { id: number; tur: 'aktar'; hedef: string; anahtarlar?: string[] }

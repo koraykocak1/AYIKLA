@@ -21,6 +21,7 @@ export const api = {
   grupEkle: (ad: string) => k().istek({ tur: 'grupEkle', ad }) as Promise<{ grup: Grup; sonuc: ArayuzMedya[] }>,
   grupTasi: (anahtar: string, grupId: string) => k().istek({ tur: 'grupTasi', anahtar, grupId }) as Promise<ArayuzMedya>,
   geriAl: (anahtar: string) => k().istek({ tur: 'geriAl', anahtar }) as Promise<ArayuzMedya>,
+  ele: (anahtar: string) => k().istek({ tur: 'ele', anahtar }) as Promise<ArayuzMedya>,
   modelDurumu: () => k().istek({ tur: 'modelDurumu' }) as Promise<ModelDurumuCevabi>,
   modelIzniVer: () => k().istek({ tur: 'modelIzniVer' }) as Promise<ModelDurumuCevabi>,
   katalogDurumu: () => k().istek({ tur: 'katalogDurumu' }) as Promise<KatalogDurumuCevabi>,

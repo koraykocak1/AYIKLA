@@ -41,7 +41,7 @@ export function tarihSaat(iso: string): { tarih: string; saat: string } {
   };
 }
 
-const ELEME_ADLARI: Record<ElemeNedeni, string> = { kopya: 'Kopya', bulanik: 'Bulanık', karanlik: 'Karanlık' };
+const ELEME_ADLARI: Record<ElemeNedeni, string> = { kopya: 'Kopya', bulanik: 'Bulanık', karanlik: 'Karanlık', elle: 'Elle ayrıldı' };
 export function elemeAdi(e: ElemeNedeni): string {
   return ELEME_ADLARI[e];
 }

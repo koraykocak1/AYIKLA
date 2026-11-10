@@ -136,7 +136,7 @@ export async function ayikla(a: IsciAyarlari): Promise<IslenmisMedya[]> {
       }
       m.ham = esler.get(d.yol);
       m.grupId = grupBelirle(m, gv);
-      m.eleme = m.geriAlindi ? null : m.tur === 'foto' ? (m.kalite.karanlik ? 'karanlik' : m.kalite.bulanik ? 'bulanik' : null) : null;
+      m.eleme = m.geriAlindi ? null : m.elleElendi ? 'elle' : m.tur === 'foto' ? (m.kalite.karanlik ? 'karanlik' : m.kalite.bulanik ? 'bulanik' : null) : null;
       sonuc.push(m);
       a.olay({ tur: 'dosya', medya: m, sira: i + 1, toplam: dosyalar.length });
     } catch (h) {

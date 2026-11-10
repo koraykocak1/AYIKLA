@@ -7,7 +7,7 @@ import { disariAktar, hedefSorunu } from './motor/disari-aktar';
 import { katalogAc } from './motor/katalog';
 import { CEVIRI_PAKETI, CLIP_PAKETI, ModelIzni } from './motor/model-izni';
 
-const ELEME_ADI = { kopya: 'Elenecek › Kopya', bulanik: 'Elenecek › Bulanık', karanlik: 'Elenecek › Karanlık' } as const;
+const ELEME_ADI = { kopya: 'Elenecek › Kopya', bulanik: 'Elenecek › Bulanık', karanlik: 'Elenecek › Karanlık', elle: 'Elenecek › Elle ayrıldı' } as const;
 
 async function main() {
   const [klasor, ...secenekler] = process.argv.slice(2);

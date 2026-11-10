@@ -518,3 +518,11 @@ button:disabled { opacity: 0.5; cursor: default; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
 }
+
+/* Çoklu seçim: kartın köşesinde daire; biri seçiliyken hepsinde görünür */
+.s-secim { min-height: 22px; padding: 0 0 10px; }
+.ks-sec { position: absolute; top: 8px; left: 8px; z-index: 2; width: 22px; height: 22px; border-radius: 50%; border: 1.5px solid rgba(255, 255, 255, 0.75); background: rgba(0, 0, 0, 0.4); color: #000; font-size: 13px; font-weight: 700; line-height: 1; opacity: 0; transition: opacity 0.2s, background-color 0.2s; }
+.ks-kart:hover .ks-sec, .kart-sahnesi.seciyor .ks-sec { opacity: 1; }
+.ks-sec[aria-pressed='true'] { background: var(--sari); border-color: var(--sari); }
+.ks-kart.secili .ks-resim { outline: 2px solid var(--sari); outline-offset: -2px; }
+.kart-sahnesi.kure .ks-sec { display: none; }

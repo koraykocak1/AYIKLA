@@ -231,12 +231,17 @@ export const sahteApi: AyiklaApi = {
         durdurIstegi = true;
         return null;
       case 'grupTasi':
+      case 'ele':
       case 'geriAl': {
         const i0 = sonSonuc.findIndex((m) => m.anahtar === i.anahtar);
         if (i0 < 0) throw new Error('Dosya bulunamadı');
         const m = sonSonuc[i0];
         const yeni: ArayuzMedya =
-          i.tur === 'grupTasi' ? { ...m, grupId: i.grupId, elleGrup: i.grupId, eleme: null } : { ...m, eleme: null, geriAlindi: true };
+          i.tur === 'grupTasi'
+            ? { ...m, grupId: i.grupId, elleGrup: i.grupId, eleme: null }
+            : i.tur === 'ele'
+              ? { ...m, eleme: 'elle', elleElendi: true, geriAlindi: false }
+              : { ...m, eleme: null, geriAlindi: true };
         sonSonuc[i0] = yeni;
         return yeni;
       }
