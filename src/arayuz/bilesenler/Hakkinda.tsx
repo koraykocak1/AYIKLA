@@ -49,7 +49,7 @@ export function Hakkinda({ onKapat }: { onKapat: () => void }) {
       <p className="mo-baslik">
         AYIKLA 0.2.0 <span className="mo-boyut">· GPLv3</span>
       </p>
-      <p className="soluk">Ücretsiz ve açık kaynak. Fotoğrafların bilgisayarından çıkmaz.</p>
+      <p className="soluk">Ücretsiz ve açık kaynak. Fotoğrafların bilgisayarından çıkmaz. Açılışta yalnız yeni sürüm var mı diye GitHub'a bakar.</p>
       <ul>
         {SATIRLAR.map((s) => (
           <li key={s.ad}>

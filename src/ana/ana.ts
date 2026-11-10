@@ -1,4 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, Menu, net, protocol, screen, utilityProcess, type UtilityProcess } from 'electron';
+import { autoUpdater } from 'electron-updater';
 import { statSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
@@ -179,7 +180,33 @@ void app.whenReady().then(() => {
 
   isciAc();
   pencereAc();
+  if (app.isPackaged) guncellemeyiDenetle();
 });
+
+/**
+ * Otomatik güncelleme: açılışta GitHub'daki son sürüme bakar, varsa arka planda indirir ve sorar.
+ * Yalnız sürüm bilgisi ve kurulum dosyası iner; hiçbir fotoğraf ya da kişisel bilgi gönderilmez.
+ * İnternet yoksa sessizce geçer; "Sonra" denirse program kapanınca kendiliğinden yüklenir.
+ */
+function guncellemeyiDenetle(): void {
+  autoUpdater.autoDownload = true;
+  autoUpdater.autoInstallOnAppQuit = true;
+  autoUpdater.on('error', () => {});
+  autoUpdater.on('update-downloaded', async (b) => {
+    if (!pencere) return;
+    const r = await dialog.showMessageBox(pencere, {
+      type: 'info',
+      title: 'AYIKLA',
+      message: `Yeni sürüm hazır (${b.version})`,
+      detail: 'Şimdi yeniden başlatıp yükleyebilirsin. "Sonra" dersen program kapanınca kendiliğinden yüklenir.',
+      buttons: ['Şimdi yeniden başlat', 'Sonra'],
+      defaultId: 0,
+      cancelId: 1,
+    });
+    if (r.response === 0) autoUpdater.quitAndInstall();
+  });
+  void autoUpdater.checkForUpdates().catch(() => {});
+}
 
 app.on('window-all-closed', () => {
   isci?.kill();
