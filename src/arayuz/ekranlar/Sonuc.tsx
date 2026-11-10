@@ -303,39 +303,21 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
           </div>
         </header>
 
-        {/* Seçim satırı */}
+        {/* Seçim satırı: sade; işlemler tıklayınca açılan menüde */}
         <div className="ar-secim etiket s-secim">
           {secimler.size > 0 ? (
             <>
               <span className="s-alim">{sayi(secimler.size)} seçili</span>
               {' · '}
               <button className="metin-dugme etiket" onClick={(e) => setTopluMenu({ x: e.clientX, y: e.clientY })}>
-                başka gruba taşı
-              </button>
-              {' · '}
-              {secili === ELENECEK_ID ? (
-                <button className="metin-dugme etiket" onClick={() => void topluIslem((m) => api.geriAl(m.anahtar), 'geri alındı')}>
-                  geri al · elenmesin
-                </button>
-              ) : (
-                <button className="metin-dugme etiket" onClick={() => void topluIslem((m) => api.ele(m.anahtar), 'Elenecekler’e atıldı; dosyalar yerinde duruyor')}>
-                  elenecekler’e at
-                </button>
-              )}
-              {' · '}
-              <button className="metin-dugme etiket" onClick={() => setSecimler(new Set(liste.map((m) => m.anahtar)))}>
-                tümünü seç
-              </button>
-              {' · '}
-              <button className="metin-dugme etiket" onClick={() => setSecimler(new Set())}>
-                seçimi kaldır
+                işlemler ▾
               </button>
             </>
           ) : (
             liste.length > 0 &&
             gorunum === 'izgara' && (
               <button className="metin-dugme etiket" onClick={() => setSecimler(new Set(liste.map((m) => m.anahtar)))}>
-                tümünü seç · ya da fotoğrafın köşesindeki daireye tıkla
+                tümünü seç
               </button>
             )
           )}
@@ -419,7 +401,27 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
             exit={{ opacity: 0, transition: { duration: sure.hizli, ease: egri.cikis } }}
             onMouseLeave={() => setTopluMenu(null)}
           >
-            <p className="menu-baslik">Seçilenleri şu gruba taşı</p>
+            {secili === ELENECEK_ID ? (
+              <button
+                className="vurgu"
+                onClick={() => {
+                  setTopluMenu(null);
+                  void topluIslem((m) => api.geriAl(m.anahtar), 'geri alındı');
+                }}
+              >
+                Geri al · elenmesin
+              </button>
+            ) : (
+              <button
+                onClick={() => {
+                  setTopluMenu(null);
+                  void topluIslem((m) => api.ele(m.anahtar), 'Elenecekler’e atıldı; dosyalar yerinde duruyor');
+                }}
+              >
+                Elenecekler’e at
+              </button>
+            )}
+            <p className="menu-baslik">Şu gruba taşı</p>
             {[...gruplar, { id: DIGER_ID, ad: 'Diğer' }]
               .filter((g) => g.id !== secili)
               .map((g) => (
@@ -433,6 +435,23 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                   {g.ad}
                 </button>
               ))}
+            <p className="menu-baslik">Seçim</p>
+            <button
+              onClick={() => {
+                setTopluMenu(null);
+                setSecimler(new Set(liste.map((m) => m.anahtar)));
+              }}
+            >
+              Tümünü seç
+            </button>
+            <button
+              onClick={() => {
+                setTopluMenu(null);
+                setSecimler(new Set());
+              }}
+            >
+              Seçimi kaldır
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
