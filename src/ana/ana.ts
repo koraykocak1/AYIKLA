@@ -76,6 +76,9 @@ function pencereAc(): void {
     webPreferences: { preload: join(__dirname, 'onyukle.cjs'), contextIsolation: true, sandbox: true },
   });
   pencere.once('ready-to-show', () => pencere?.show());
+  // Güvenlik: pencere hiçbir siteye gitmez, yeni pencere açmaz (yalnız programın kendi sayfası)
+  pencere.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  pencere.webContents.on('will-navigate', (e) => e.preventDefault());
   pencere.on('closed', () => {
     pencere = null;
   });
