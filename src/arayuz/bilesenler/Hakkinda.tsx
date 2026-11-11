@@ -47,7 +47,7 @@ export function Hakkinda({ onKapat }: { onKapat: () => void }) {
       transition={{ duration: sure.yavas, ease: egri.yumusak }}
     >
       <p className="mo-baslik">
-        AYIKLA 0.2.4 <span className="mo-boyut">· GPLv3</span>
+        AYIKLA 0.2.5 <span className="mo-boyut">· GPLv3</span>
       </p>
       <p className="soluk">Fotoğrafların bilgisayarından çıkmaz; yalnız güncelleme için GitHub'a bakar.</p>
       <ul>

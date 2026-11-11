@@ -81,24 +81,6 @@ export const grupKuresi = {
   donusHizi: 0.24, // saniyede (radyan)
 } as const;
 
-/** Gruplar ile halka arasındaki zerrecikli "AYIKLA" yazısı (C tarzı: çok kalın, seyrek iri zerrecik, füme). */
-export const ayiklaYazisi = {
-  merkezY: 0.385,
-  boyOrani: 0.095, // yazı boyu = ekranın kısa kenarı × bu oran
-  harfAraligi: 0.22, // karşılamadaki geniş aralıkla uyumlu (yazı boyuna oran)
-  aralikOrani: 0.065, // zerrecikler arası (yazı boyuna oran)
-  zerreOrani: 0.046, // zerrecik boyu (yazı boyuna oran)
-  belirme: 0.9, // bütün yazının birden belirme süresi (sn)
-  gecikme: 1.2, // küre aşağı inerken bekler (sn)
-  yansima: 0.18, // ayna yansımasının parlaklığı
-  itmeYaricapi: 90, // fare zerrecikleri dağıtır, yavaşça geri toplanırlar
-  itmeGucu: 1.2,
-  hizEtkisi: 0.25,
-  surukleme: 0,
-  donusYayi: 0.06,
-  surtunme: 0.8,
-} as const;
-
 /** Sonuç ekranındaki kartlar: ızgara ⇄ küre uçuşu, kaydırma ve küre gösterisi. */
 export const kartSahnesi = {
   sertlik: 120, // kart yayı (sertlik); her kart ±%15 farklı

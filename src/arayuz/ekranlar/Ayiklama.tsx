@@ -3,7 +3,6 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { egri, halka, kure, sure, yay } from '../hareket';
 import { api } from '../api';
-import { AyiklaYazisi } from '../bilesenler/AyiklaYazisi';
 import { GrupKureleri } from '../bilesenler/GrupKureleri';
 import { NoktaKure } from '../bilesenler/NoktaKure';
 import { YildizTozu } from '../bilesenler/YildizTozu';
@@ -155,7 +154,6 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
       <div className="a-sahne">
         <GrupKureleri sahne={sahne} gruplar={kureler} toplam={sayac.toplam} />
         <NoktaKure yer={kureYeri} />
-        <AyiklaYazisi />
         <YildizTozu sahne={sahne} gruplar={kureler} />
       </div>
 
