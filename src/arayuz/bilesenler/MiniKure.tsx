@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { hareketiAzalt } from '../hareket';
 
 const BOYUT = 24; // ekranda px
 const YILDIZ = 4;
@@ -29,7 +30,7 @@ export function MiniKure() {
     const dpr = window.devicePixelRatio || 1;
     c.width = c.height = Math.round(BOYUT * dpr);
     x.scale(dpr, dpr);
-    const azalt = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const azalt = hareketiAzalt();
     let id = 0;
 
     const ciz = (t: number) => {

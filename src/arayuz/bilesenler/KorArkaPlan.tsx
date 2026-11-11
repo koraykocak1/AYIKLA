@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { kor } from '../hareket';
+import { kor, hareketiAzalt } from '../hareket';
 
 interface Kivilcim {
   x: number;
@@ -25,7 +25,7 @@ export function KorArkaPlan() {
     const c = tuval.current;
     const x = c?.getContext('2d');
     if (!c || !x) return;
-    const azalt = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const azalt = hareketiAzalt();
     let W = 0;
     let H = 0;
     const boyutla = () => {

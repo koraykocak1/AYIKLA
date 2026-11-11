@@ -22,7 +22,7 @@ import {
   type ArsivSorgusu,
   type YedekDurumu,
 } from '../ortak/mesajlar';
-import { type ArayuzMedya, type ArayuzOlayi, type ArsivAlimSonucu, type ArsivDurumuCevabi, type IsciIstegi, type IsciMesaji, type KatalogDurumuCevabi, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
+import { type AcilisCevabi, type ArayuzMedya, type ArayuzOlayi, type ArsivAlimSonucu, type ArsivDurumuCevabi, type IsciIstegi, type IsciMesaji, type KatalogDurumuCevabi, type ModelDurumuCevabi, type Sayim } from '../ortak/mesajlar';
 import type { Grup, IslenmisMedya, SahneModeli } from './tipler';
 
 export interface SunucuAyarlari {
@@ -112,7 +112,11 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     return disa(bellek ?? m);
   }
 
-  async function baslat(girdiler: string[]): Promise<{ adet: number; durduruldu: boolean }> {
+  /**
+   * `sessiz`: açılışta son ayıklamayı geri getirirken ekrana dosya dosya olay gitmez (önbellekten gelen
+   * binlerce dosya animasyonla yeniden oynatılmasın); yalnız yeni bulunan dosyalar için `acilis` ilerlemesi gider.
+   */
+  async function baslat(girdiler: string[], sessiz = false): Promise<{ adet: number; durduruldu: boolean; sonuc: IslenmisMedya[] }> {
     const md = await model();
     const durdur = new AbortController();
     durdurucu = durdur;
@@ -120,6 +124,8 @@ export function sunucuOlustur(a: SunucuAyarlari) {
     const sirala = (f: () => Promise<void> | void) => {
       zincir = zincir.then(f);
     };
+    const bilinen = sessiz ? new Set(Object.keys((await kayitAc()).veri.medya)) : null;
+    let yeni = 0;
     const sonuc = await ayikla({
       girdiler,
       calismaKlasoru: a.calismaKlasoru,
@@ -127,6 +133,10 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       model: md,
       durdur: durdur.signal,
       olay: (o) => {
+        if (bilinen) {
+          if (o.tur === 'dosya' && !bilinen.has(o.medya.anahtar)) olay({ tur: 'acilis', yeni: ++yeni, sira: o.sira, toplam: o.toplam });
+          return;
+        }
         if (o.tur === 'dosya') {
           sirala(async () => olay({ tur: 'dosya', medya: await disa(o.medya), sira: o.sira, toplam: o.toplam }));
         } else if (o.tur !== 'bitti') {
@@ -147,8 +157,21 @@ export function sunucuOlustur(a: SunucuAyarlari) {
       video: sonuc.filter((m) => m.tur === 'video').length,
     });
     await k.kaydet();
-    olay({ tur: 'bitti', sonuc: await disaListe(sonuc), durduruldu });
-    return { adet: sonuc.length, durduruldu };
+    if (!sessiz) olay({ tur: 'bitti', sonuc: await disaListe(sonuc), durduruldu });
+    return { adet: sonuc.length, durduruldu, sonuc };
+  }
+
+  /**
+   * Program açılınca son ayıklamayı geri getirir: klasörler yeniden gezilir ama önbellekteki dosyalar
+   * yeniden incelenmez; yalnız yeni eklenen fotoğraflar işlenip gruplarına konur.
+   * Daha önce ayıklama yoksa, model henüz indirilmemişse ya da hiç dosya kalmadıysa null döner.
+   */
+  async function acilis(): Promise<AcilisCevabi | null> {
+    const s = (await kayitAc()).veri.sonArsivler?.[0];
+    if (!s || !(await a.modelIzni.kullanilabilirMi(CLIP_PAKETI))) return null;
+    const r = await baslat(s.girdiler, true);
+    if (r.durduruldu || !r.sonuc.length) return null;
+    return { girdiler: s.girdiler, sonuc: await disaListe(r.sonuc) };
   }
 
   /** Girdilerden klasör olanlar: hedef bunların içinde ya da onları içine alan bir yer olamaz. */
@@ -392,8 +415,12 @@ export function sunucuOlustur(a: SunucuAyarlari) {
         };
         return sayim;
       }
-      case 'baslat':
-        return baslat(i.girdiler);
+      case 'baslat': {
+        const r = await baslat(i.girdiler);
+        return { adet: r.adet, durduruldu: r.durduruldu };
+      }
+      case 'acilis':
+        return acilis();
       case 'durdur':
         durdurucu?.abort();
         return true;

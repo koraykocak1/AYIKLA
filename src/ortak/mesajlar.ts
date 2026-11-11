@@ -14,6 +14,8 @@ export interface Sayim {
 export type IsciIstegi =
   | { id: number; tur: 'say'; girdiler: string[] }
   | { id: number; tur: 'baslat'; girdiler: string[] }
+  /** Program açılışı: son ayıklamayı önbellekten geri getirir, yalnız yeni dosyaları işler. */
+  | { id: number; tur: 'acilis' }
   | { id: number; tur: 'durdur' }
   | { id: number; tur: 'gruplar' }
   | { id: number; tur: 'grupEkle'; ad: string }
@@ -106,6 +108,11 @@ export interface ModelDurumuCevabi {
   toplamMB: number;
 }
 
+export interface AcilisCevabi {
+  girdiler: string[];
+  sonuc: ArayuzMedya[];
+}
+
 type IdsizIstek<T> = T extends unknown ? Omit<T, 'id'> : never;
 /** Kimliği ana süreç ekler; arayüz kimliksiz gönderir. */
 export type Istek = IdsizIstek<IsciIstegi>;
@@ -118,6 +125,8 @@ export type ArayuzOlayi =
   | { tur: 'okunamadi'; yol: string; hata: string }
   | { tur: 'kopyalar'; anahtarlar: string[] }
   | { tur: 'bitti'; sonuc: ArayuzMedya[]; durduruldu: boolean }
+  /** Açılışta yeni bulunan bir dosya işlendi (`yeni`: şimdiye dek kaç yeni dosya, `sira/toplam`: tüm dosyalarda nerede). */
+  | { tur: 'acilis'; yeni: number; sira: number; toplam: number }
   | { tur: 'aktarim'; bitti: number; toplam: number }
   | { tur: 'arsivAlim'; bitti: number; toplam: number; zaten: number }
   | { tur: 'arsivIs'; ad: 'yedek' | 'denetim'; bitti: number; toplam: number };

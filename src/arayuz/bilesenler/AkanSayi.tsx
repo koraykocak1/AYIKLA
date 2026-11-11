@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
-import { motion, useMotionValue, useReducedMotion, useSpring, useTransform } from 'motion/react';
-import { yay } from '../hareket';
+import { motion, useMotionValue, useSpring, useTransform } from 'motion/react';
+import { yay, hareketiAzalt } from '../hareket';
 import { sayi } from '../mantik/bicim';
 
 /** Sayı değiştikçe hedefe doğru akarak sayar (azaltılmış harekette doğrudan yazar). */
 export function AkanSayi({ deger }: { deger: number }) {
-  const azalt = useReducedMotion();
+  const azalt = hareketiAzalt();
   const ham = useMotionValue(azalt ? deger : 0);
   const yumusak = useSpring(ham, yay.sayac);
   const metin = useTransform(yumusak, (v) => sayi(Math.round(v)));

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import { dosyaAdresi, onizlemeAdresi, sonParca, tarihSaat } from '../mantik/bicim';
-import { egri, sure, yay } from '../hareket';
+import { egri, sure, yay, hareketiAzalt } from '../hareket';
 import type { ArayuzMedya } from '../../ortak/mesajlar';
 
 interface Props {
@@ -31,7 +31,7 @@ const kayma = {
 /** Tıklanan dosyayı büyük gösterir; videolar oynar; ← → ile gezilir, Esc kapatır. */
 export function BuyukGorunum({ liste, sira, setSira, grupAdi, acilis }: Props) {
   const m = liste[sira];
-  const azalt = useReducedMotion();
+  const azalt = hareketiAzalt();
   const onceki = useRef(sira);
   const yon = sira >= onceki.current ? 1 : -1;
   useEffect(() => {

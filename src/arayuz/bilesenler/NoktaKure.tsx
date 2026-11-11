@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { kure } from '../hareket';
+import { kure, hareketiAzalt } from '../hareket';
 
 interface Props {
   /** Klasör kürenin üstünde sürüklenirken noktalar daha parlak yanar. */
@@ -52,7 +52,7 @@ export function NoktaKure({ parlak = false, yer }: Props) {
     const c = tuval.current;
     const x = c?.getContext('2d');
     if (!c || !x) return;
-    const azalt = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const azalt = hareketiAzalt();
     const noktalar = noktalariDiz(kure.noktaSayisi);
 
     let W = 0;

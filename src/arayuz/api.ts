@@ -1,6 +1,6 @@
 import type { AyiklaApi } from '../ana/onyukle';
 import type { ArsivGorunumu, ArsivIslemi, ArsivSorgusu, YedekDurumu } from '../ortak/mesajlar';
-import type { ArayuzMedya, ArayuzOlayi, ArsivAlimSonucu, ArsivDurumuCevabi, KatalogDurumuCevabi, ModelDurumuCevabi, Sayim } from '../ortak/mesajlar';
+import type { AcilisCevabi, ArayuzMedya, ArayuzOlayi, ArsivAlimSonucu, ArsivDurumuCevabi, KatalogDurumuCevabi, ModelDurumuCevabi, Sayim } from '../ortak/mesajlar';
 import type { Grup, SonArsiv } from '../motor/tipler';
 import type { AktarmaSonucu } from '../motor/disari-aktar';
 
@@ -16,6 +16,7 @@ const k = () => window.ayikla;
 export const api = {
   say: (girdiler: string[]) => k().istek({ tur: 'say', girdiler }) as Promise<Sayim>,
   baslat: (girdiler: string[]) => k().istek({ tur: 'baslat', girdiler }) as Promise<{ adet: number; durduruldu: boolean }>,
+  acilis: () => k().istek({ tur: 'acilis' }) as Promise<AcilisCevabi | null>,
   durdur: () => k().istek({ tur: 'durdur' }),
   gruplar: () => k().istek({ tur: 'gruplar' }) as Promise<Grup[]>,
   grupEkle: (ad: string) => k().istek({ tur: 'grupEkle', ad }) as Promise<{ grup: Grup; sonuc: ArayuzMedya[] }>,

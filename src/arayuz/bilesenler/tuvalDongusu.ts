@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { hareketiAzalt } from '../hareket';
 
 /** Farenin tuvale göre yeri ve son karedeki kayması. Fare yokken `var` false. */
 export interface Fare {
@@ -38,7 +39,7 @@ export function useTuvalDongusu(ciz: (k: Kare) => void, enFazlaDpr = 2) {
     const c = tuval.current;
     const x = c?.getContext('2d');
     if (!c || !x) return;
-    const azalt = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const azalt = hareketiAzalt();
     let W = 0;
     let H = 0;
     const boyutla = () => {

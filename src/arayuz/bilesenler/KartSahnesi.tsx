@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from 'react';
-import { kartSahnesi as ayar } from '../hareket';
+import { kartSahnesi as ayar, hareketiAzalt } from '../hareket';
 import { elemeAdi, onizlemeAdresi, tarihSaat } from '../mantik/bicim';
 import { KART, gorunenAralik, izgaraYerlesimi, kureYerlesimi, type IzgaraYerlesimi } from '../mantik/kartDuzeni';
 import type { YilBolumu } from '../mantik/gruplama';
@@ -114,7 +114,7 @@ export function KartSahnesi({ bolumler, liste, gorunum, ucanlar, onAc, onSagTik,
 
   // Tek döngü: kaydırma, küre dönüşü ve tüm kartların yayları
   useEffect(() => {
-    const azalt = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const azalt = hareketiAzalt();
     let son = performance.now();
     let istek = 0;
 

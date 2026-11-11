@@ -227,6 +227,11 @@ export const sahteApi: AyiklaApi = {
         return { foto: 1240, video: 86, ham: 0 };
       case 'baslat':
         return sahteAyiklama();
+      case 'acilis':
+        // Adres "?acilis" ile açılırsa program son ayıklamayı geri getirmiş gibi doğrudan sonuç ekranı gelir
+        if (!location.search.includes('acilis')) return null;
+        await sahteAyiklama();
+        return { girdiler: ['C:\\Örnek klasör'], sonuc: sonSonuc };
       case 'durdur':
         durdurIstegi = true;
         return null;

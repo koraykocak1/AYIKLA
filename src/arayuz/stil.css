@@ -409,7 +409,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 /* Seçili kısım: altın gradyan, üzerinden yavaşça ışık geçer */
 .s-anahtar-isik { position: absolute; inset: 0; border-radius: 999px; background: linear-gradient(110deg, #e0a80c 0%, #facc15 35%, #fff3b0 50%, #facc15 65%, #e0a80c 100%); background-size: 250% 100%; animation: s-anahtar-isilti 3.5s linear infinite; box-shadow: 0 0 14px rgba(250, 204, 21, 0.35); }
 @keyframes s-anahtar-isilti { from { background-position: 100% 0; } to { background-position: -150% 0; } }
-@media (prefers-reduced-motion: reduce) { .s-anahtar-isik { animation: none; } }
 
 .s-sahne { position: relative; flex: 1; min-height: 0; }
 .s-bos { padding: 80px 0; text-align: center; }
@@ -522,10 +521,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 
 
-/* Hareketi azalt: CSS geçişleri anlık olur (tuval ve Motion animasyonları bunu kendileri yönetir) */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
-}
 
 /* Çoklu seçim: kartın köşesinde daire; biri seçiliyken hepsinde görünür */
 .s-secim { min-height: 22px; padding: 0 0 10px; }
@@ -546,9 +541,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 .s-grup:hover .s-ad { transform: translateX(4px); }
 .metin-dugme { display: inline-block; transition: color 0.2s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .metin-dugme:hover { transform: scale(1.05); }
-@media (prefers-reduced-motion: reduce) {
-  .ks-resim, .ks-resim img, .ikincil, .s-ad, .metin-dugme { transition: none; transform: none !important; }
-}
 /* Markanın yanındaki küçük dönen küre (eski sarı noktanın yerine) */
 .mini-kure { display: inline-block; flex: none; vertical-align: middle; }
 
@@ -558,7 +550,6 @@ button:disabled { opacity: 0.5; cursor: default; }
 .s-kaydet:hover:not(:disabled) .s-kaydet-simge { transform: rotateY(360deg) scale(1.15); }
 .s-kaydet-ok { display: inline-block; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .s-kaydet:hover:not(:disabled) .s-kaydet-ok { transform: translateX(4px); }
-@media (prefers-reduced-motion: reduce) { .s-kaydet { animation: none; } .s-kaydet-simge, .s-kaydet-ok { transition: none; } }
 
 /* Sol grup listesi: kapak resimli kartlar; seçili kartın çerçevesi altın, kartlar arasında kayar */
 .s-yan nav { gap: 6px; perspective: 500px; }
@@ -570,3 +561,8 @@ button:disabled { opacity: 0.5; cursor: default; }
 .s-kapak { position: relative; width: 30px; height: 30px; flex: none; border-radius: 7px; overflow: hidden; transform-style: preserve-3d; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
 .s-kapak img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .s-grup.elenecek .s-kapak { filter: grayscale(1) brightness(0.7); }
+
+/* Açılış: son ayıklama önbellekten geri gelirken kısa bekleme ekranı */
+.acilis { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; padding: 0 24px; }
+.acilis-baslik { font-size: 22px; color: var(--metin); animation: acilis-nabiz 1.6s ease-in-out infinite; }
+@keyframes acilis-nabiz { 50% { opacity: 0.45; } }

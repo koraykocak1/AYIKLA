@@ -92,6 +92,21 @@ describe('sunucu', () => {
     expect(arsivler).toEqual([expect.objectContaining({ girdiler: [s.girdi], foto: 2, video: 1 })]);
   });
 
+  it('açılışta son ayıklamayı önbellekten getirir; yalnız yeni dosyayı işler, dosya dosya olay yollamaz', async () => {
+    const s = await hazirla();
+    expect(await s.iste({ tur: 'acilis' })).toBeNull(); // daha önce ayıklama yok
+    await s.iste({ tur: 'baslat', girdiler: [s.girdi] });
+    await desenliResim(join(s.girdi, 'yeni.jpg'), { renk: [40, 40, 220], tohum: 7 });
+    const once = s.olaylar().length;
+
+    const c = await s.iste<{ girdiler: string[]; sonuc: ArayuzMedya[] }>({ tur: 'acilis' });
+    expect(c.girdiler).toEqual([s.girdi]);
+    expect(c.sonuc).toHaveLength(4);
+    const yeni = s.olaylar().slice(once);
+    expect(yeni.filter((o) => o.tur === 'dosya' || o.tur === 'bitti')).toHaveLength(0);
+    expect(yeni.filter((o) => o.tur === 'acilis')).toEqual([expect.objectContaining({ tur: 'acilis', yeni: 1, toplam: 4 })]);
+  });
+
   it('yeni grup ekleyince Türkçe adı çevirir ve arşivi yeniden puanlar', async () => {
     const s = await hazirla();
     await s.iste({ tur: 'baslat', girdiler: [s.girdi] });

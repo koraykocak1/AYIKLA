@@ -1,7 +1,6 @@
 /**
  * Hareket değerleri tek yerde: süreler (sn), eğriler ve yaylar. Bileşenler sayı yazmaz, buradan alır.
- * Kural: yalnızca transform ve opacity (gerekirse filter) canlandırılır; "azaltılmış hareket"
- * tercihinde Motion dönüşümleri kendisi kapatır (App'teki MotionConfig), CSS'te ayrıca kapatılır.
+ * Kural: yalnızca transform ve opacity (gerekirse filter) canlandırılır.
  */
 export const sure = {
   anlik: 0.08,
@@ -119,4 +118,13 @@ export const kartSahnesi = {
 /** Sıralı giriş gecikmesi: ilk birkaç öğe sırayla gelir, gerisi beklemez (binlerce öğede gecikme birikmesin). */
 export function siraliGecikme(i: number, adim = 0.03, ust = 24): number {
   return Math.min(i, ust) * adim;
+}
+
+/**
+ * Hareket azaltılsın mı? Şimdilik hep hayır. Kullanıcı kararı (2026-11-12): Windows'ta "Animasyon efektleri"
+ * kapalı bir bilgisayarda program tamamen durağan görünüyordu; animasyonlar programın parçası sayılır,
+ * sistem ayarına bakılmaz. İleride programın kendi ayarı gelirse yalnız burası değişir.
+ */
+export function hareketiAzalt(): boolean {
+  return false;
 }
