@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { HAZIR_GRUPLAR, kullaniciGrubu, ekranGoruntusuAdiMi, puanlamaTarifleri } from '../src/motor/gruplar';
 
 describe('gruplar', () => {
-  it('hazır listede 10 grup var, id’ler benzersiz', () => {
-    expect(HAZIR_GRUPLAR).toHaveLength(10);
-    expect(new Set(HAZIR_GRUPLAR.map((g) => g.id)).size).toBe(10);
+  it('hazır listede 11 grup var, id’ler benzersiz', () => {
+    expect(HAZIR_GRUPLAR).toHaveLength(11);
+    expect(new Set(HAZIR_GRUPLAR.map((g) => g.id)).size).toBe(11);
   });
 
   it('kullanıcı grubu Türkçe adı korur, ana konu odaklı İngilizce tarif üretir (yalın kelime yok)', () => {

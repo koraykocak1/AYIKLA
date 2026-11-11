@@ -239,6 +239,9 @@ button:disabled { opacity: 0.5; cursor: default; }
 .hakkinda-dugme { margin-top: 14px; padding: 4px 0; transition: color 0.2s; }
 .hakkinda-dugme:hover { color: var(--sari); }
 .hakkinda-dugme + .hakkinda-dugme { margin-left: 22px; }
+/* Alt şeridin boş alanı tıklamayı yutmasın (üstündeki Hakkında kutusunun Kapat düğmesi çalışsın) */
+.k-alt { pointer-events: none; }
+.k-alt button, .k-alt section, .k-alt a { pointer-events: auto; }
 .k-ekle { margin-top: 6px; color: var(--sari); }
 .k-sonuca { margin-top: 16px; }
 .k-alt-sag { display: flex; align-items: center; gap: 22px; }

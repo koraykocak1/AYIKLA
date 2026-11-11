@@ -23,6 +23,14 @@ const NOKTALAR = kureNoktalari(grupKuresi.noktaSayisi);
  * Üstte yan yana grup küreleri (canvas 2B). Her küre grubuna varmış fotoğraf sayısıyla büyür, altında adı ve sayısı
  * yazar. Etiketler hep aynı çizgide durur; küre büyüse de yazılar kaymaz.
  */
+/** Ayıklama ekranında kürenin altındaki ad: ilk sözcük, gerekirse sonu "…" ile kısaltılır. */
+function kisaAd(x: CanvasRenderingContext2D, ad: string, genislik: number): string {
+  const tam = ad.split(' / ')[0].split(' ')[0].toLocaleUpperCase('tr');
+  let m = tam;
+  while (m.length > 2 && x.measureText(m === tam ? m : m + '…').width > genislik) m = m.slice(0, -1);
+  return m === tam ? m : m + '…';
+}
+
 export function GrupKureleri({ sahne, gruplar, toplam }: { sahne: RefObject<AyiklamaSahnesi>; gruplar: SahneGrubu[]; toplam: number }) {
   const yaricaplar = useRef<Record<string, number>>({});
 
@@ -61,7 +69,8 @@ export function GrupKureleri({ sahne, gruplar, toplam }: { sahne: RefObject<Ayik
 
       const ay = gy + enBuyuk + 22;
       x.fillStyle = g.elenecek ? '#78716c' : '#d6d3d1';
-      x.fillText(g.ad.toLocaleUpperCase('tr'), gx + bosluk / 2, ay);
+      // Kısa ad ("Deniz / Plaj" → "DENİZ"); kürenin payına sığmazsa kısaltılır, üst üste binmez
+      x.fillText(kisaAd(x, g.ad, W / gruplar.length - 12), gx + bosluk / 2, ay);
       x.fillStyle = g.elenecek ? '#a8a29e' : '#facc15';
       x.fillText(sayi(adet), gx + bosluk / 2, ay + 17);
     });

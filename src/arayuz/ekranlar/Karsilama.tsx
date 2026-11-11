@@ -65,6 +65,7 @@ export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
   async function sec(g: string[], kendiliginden = false) {
     if (!g.length) return;
     clearTimeout(zamanlayici.current);
+    setHakkinda(false); // klasör seçilince Hakkında kutusu kapanır
     setBasliyor(false);
     setOnay(null);
     setGirdiler(g);

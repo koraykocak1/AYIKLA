@@ -13,6 +13,12 @@ export const HAZIR_GRUPLAR: Grup[] = [
   { id: 'orman', ad: 'Orman / Doğa', tarifler: ['a photo of a forest', 'trees and green nature', 'a hiking trail in the woods', 'a green landscape with fields and trees'] },
   { id: 'dag', ad: 'Dağ', tarifler: ['a photo of mountains', 'a mountain landscape', 'a rocky mountain peak'] },
   { id: 'sehir', ad: 'Şehir', tarifler: ['a photo of a city street', 'buildings in a city', 'a town square', 'a historic building'] },
+  // Ev ve bahçe: bu grup yokken ev dışı ve bahçe fotoğrafları İnsanlar'a düşüyordu (kullanıcı denemesi, 2026-11-11)
+  {
+    id: 'ev',
+    ad: 'Ev / Bahçe',
+    tarifler: ['a photo of a house', 'the outside of a house or a cottage', 'a garden with flowers and grass', 'a backyard with a lawn and trees', 'an aerial drone view of a house and garden'],
+  },
   { id: 'kar', ad: 'Kar', tarifler: ['a snowy landscape', 'a photo of snow', 'winter with snow and ice'] },
   { id: 'gece', ad: 'Gece', tarifler: ['a city at night', 'city lights at night', 'a dark night sky with stars'] },
   {
