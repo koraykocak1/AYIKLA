@@ -1,21 +1,36 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import sharp from 'sharp';
-import { icoYap } from '../src/ana/ico';
 
+/**
+ * Program simgesini üretir: `simge/ayikla-512.png` (köşeleri saydam ana görsel) →
+ * `simge/ayikla.png` (256) ve çok boyutlu `simge/ayikla.ico` (16–256; Windows her yerde uygun boyutu seçer).
+ * Ana görsel `simge/ayikla-kaynak.png`'den kırpıldı (Higgsfield / GPT Image ile üretildi, 2026-11-11).
+ */
 const kok = resolve(import.meta.dirname, '..');
-// Koyu zemin, altın çerçeve, dağınık kartların üstünde altın bir "A".
-const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
-  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f3dcaa"/><stop offset="1" stop-color="#c9a764"/></linearGradient></defs>
-  <rect x="8" y="8" width="240" height="240" rx="56" fill="#0b0a09"/>
-  <rect x="14" y="14" width="228" height="228" rx="50" fill="none" stroke="#e8c98a" stroke-opacity="0.45" stroke-width="3"/>
-  <rect x="58" y="132" width="62" height="46" rx="6" fill="#2a241b" transform="rotate(-14 89 155)"/>
-  <rect x="138" y="138" width="62" height="46" rx="6" fill="#3a3123" transform="rotate(11 169 161)"/>
-  <path fill="url(#g)" fill-rule="evenodd" d="M128 46 L200 210 L170 210 L155 172 L101 172 L86 210 L56 210 Z M128 96 L111 146 L145 146 Z"/>
-</svg>`;
+const ana = readFileSync(resolve(kok, 'simge', 'ayikla-512.png'));
+const BOYUTLAR = [16, 24, 32, 48, 64, 128, 256];
 
-mkdirSync(resolve(kok, 'simge'), { recursive: true });
-const png = await sharp(Buffer.from(svg)).png().toBuffer();
-writeFileSync(resolve(kok, 'simge', 'ayikla.png'), png);
-writeFileSync(resolve(kok, 'simge', 'ayikla.ico'), icoYap(png, 256));
+const resimler = await Promise.all(BOYUTLAR.map((b) => sharp(ana).resize(b, b).png().toBuffer()));
+
+// ICO: 6 baytlık başlık + her resim için 16 baytlık kayıt + PNG verileri
+const bas = Buffer.alloc(6 + 16 * resimler.length);
+bas.writeUInt16LE(0, 0);
+bas.writeUInt16LE(1, 2);
+bas.writeUInt16LE(resimler.length, 4);
+let konum = bas.length;
+resimler.forEach((png, i) => {
+  const k = 6 + 16 * i;
+  const b = BOYUTLAR[i];
+  bas.writeUInt8(b >= 256 ? 0 : b, k);
+  bas.writeUInt8(b >= 256 ? 0 : b, k + 1);
+  bas.writeUInt16LE(1, k + 4);
+  bas.writeUInt16LE(32, k + 6);
+  bas.writeUInt32LE(png.length, k + 8);
+  bas.writeUInt32LE(konum, k + 12);
+  konum += png.length;
+});
+
+writeFileSync(resolve(kok, 'simge', 'ayikla.png'), resimler[BOYUTLAR.indexOf(256)]);
+writeFileSync(resolve(kok, 'simge', 'ayikla.ico'), Buffer.concat([bas, ...resimler]));
 console.log('simge/ayikla.png ve simge/ayikla.ico üretildi');
