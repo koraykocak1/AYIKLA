@@ -294,6 +294,35 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
               {(['izgara', 'kure'] as const).map((g) => (
                 <button key={g} role="tab" aria-selected={gorunum === g} className={gorunum === g ? 'secili' : ''} onClick={() => setGorunum(g)}>
                   {gorunum === g && <motion.span className="s-anahtar-isik" layoutId="s-anahtar" transition={yay.canli} />}
+                  {/* Seçilince simge 3D döner; küre seçiliyken küre simgesi yavaşça dönmeye devam eder */}
+                  <motion.svg
+                    className="s-anahtar-simge"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                    key={`${g}-${gorunum === g}`}
+                    initial={gorunum === g ? { rotateY: -180, scale: 0.6 } : false}
+                    animate={gorunum === g && g === 'kure' ? { rotateY: 0, scale: 1, rotate: 360 } : { rotateY: 0, scale: 1 }}
+                    transition={
+                      gorunum === g && g === 'kure'
+                        ? { rotateY: yay.canli, scale: yay.canli, rotate: { duration: 9, ease: 'linear', repeat: Infinity } }
+                        : yay.canli
+                    }
+                  >
+                    {g === 'izgara' ? (
+                      <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round">
+                        <rect x="4" y="4" width="6.5" height="6.5" rx="1.2" />
+                        <rect x="13.5" y="4" width="6.5" height="6.5" rx="1.2" />
+                        <rect x="4" y="13.5" width="6.5" height="6.5" rx="1.2" />
+                        <rect x="13.5" y="13.5" width="6.5" height="6.5" rx="1.2" />
+                      </g>
+                    ) : (
+                      <g fill="none" stroke="currentColor" strokeWidth="1.8">
+                        <circle cx="12" cy="12" r="8" />
+                        <ellipse cx="12" cy="12" rx="3.6" ry="8" />
+                        <path d="M4.5 9h15M4.5 15h15" />
+                      </g>
+                    )}
+                  </motion.svg>
                   <span>{g === 'izgara' ? 'Izgara' : 'Küre'}</span>
                 </button>
               ))}
