@@ -551,3 +551,11 @@ button:disabled { opacity: 0.5; cursor: default; }
 }
 /* Markanın yanındaki küçük dönen küre (eski sarı noktanın yerine) */
 .mini-kure { display: inline-block; flex: none; vertical-align: middle; }
+
+/* Klasöre kaydet: Izgara/Küre seçiciyle aynı dil (hap, ışıltılı altın, 3D dönen simge) */
+.s-kaydet { display: flex; align-items: center; gap: 9px; white-space: nowrap; flex: none; border-radius: 999px; padding: 12px 22px; perspective: 400px; background: linear-gradient(110deg, #e0a80c 0%, #facc15 35%, #fff3b0 50%, #facc15 65%, #e0a80c 100%); background-size: 250% 100%; animation: s-anahtar-isilti 3.5s linear infinite; box-shadow: 0 0 18px rgba(250, 204, 21, 0.3); }
+.s-kaydet-simge { width: 16px; height: 16px; flex: none; transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.s-kaydet:hover:not(:disabled) .s-kaydet-simge { transform: rotateY(360deg) scale(1.15); }
+.s-kaydet-ok { display: inline-block; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
+.s-kaydet:hover:not(:disabled) .s-kaydet-ok { transform: translateX(4px); }
+@media (prefers-reduced-motion: reduce) { .s-kaydet { animation: none; } .s-kaydet-simge, .s-kaydet-ok { transition: none; } }

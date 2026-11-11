@@ -327,8 +327,18 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                 </button>
               ))}
             </div>
-            <button className="altin" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void aktar()} title={`Yalnız “${seciliAd}” grubu, alt klasör açılmadan kaydedilir`}>
-              {kaydediliyor ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}` : (secimler.size ? `Seçilenleri kaydet · ${sayi(secimler.size)} ›` : `Klasöre kaydet · ${sayi(liste.length)} ›`)}
+            <button className="altin s-kaydet" disabled={!!kaydediliyor || liste.length === 0} onClick={() => void aktar()} title={`Yalnız “${seciliAd}” grubu, alt klasör açılmadan kaydedilir`}>
+              <svg className="s-kaydet-simge" viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M3.5 7.5a2 2 0 0 1 2-2h4l2 2h7a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2h-13a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinejoin="round" />
+              </svg>
+              <span>
+                {kaydediliyor
+                  ? `Kaydediliyor · %${Math.round((100 * aktarim!.bitti) / Math.max(1, aktarim!.toplam))}`
+                  : secimler.size
+                    ? `Seçilenleri kaydet · ${sayi(secimler.size)}`
+                    : `Klasöre kaydet · ${sayi(liste.length)}`}
+              </span>
+              {!kaydediliyor && <span className="s-kaydet-ok">›</span>}
             </button>
           </div>
         </header>
