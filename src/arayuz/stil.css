@@ -545,4 +545,4 @@ button:disabled { opacity: 0.5; cursor: default; }
   .ks-resim, .ks-resim img, .ikincil, .s-ad, .metin-dugme { transition: none; transform: none !important; }
 }
 /* Markanın yanındaki küçük dönen küre (eski sarı noktanın yerine) */
-.mini-kure { display: inline-block; flex: none; vertical-align: middle; filter: drop-shadow(0 0 6px rgba(250, 204, 21, 0.55)); }
+.mini-kure { display: inline-block; flex: none; vertical-align: middle; }
