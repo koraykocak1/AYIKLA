@@ -1,3 +1,4 @@
+import { MiniKure } from '../bilesenler/MiniKure';
 import { useEffect, useMemo, useRef, useState, type Dispatch, type SetStateAction } from 'react';
 import { AnimatePresence, motion, useSpring } from 'motion/react';
 import { api } from '../api';
@@ -210,7 +211,7 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
 
       <aside className="s-yan">
         <button className="k-marka s-ana" onClick={onYeni} title="Ana ekrana dön; seçtiğin klasörler korunur, yenisini ekleyebilirsin">
-          <span className="k-isaret" aria-hidden="true" />‹ Ana ekran
+          <MiniKure />‹ Ana ekran
         </button>
         <nav>
           {menu.map((g) => (

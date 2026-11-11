@@ -1,3 +1,4 @@
+import { MiniKure } from '../bilesenler/MiniKure';
 import { useEffect, useRef, useState, type DragEvent, type ReactNode } from 'react';
 import { AkanSayi } from '../bilesenler/AkanSayi';
 import { NoktaKure } from '../bilesenler/NoktaKure';
@@ -203,7 +204,7 @@ export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
       {/* Üst şerit: marka solda, açıklama sağda */}
       <header className="k-ust">
         <motion.p className="k-marka" {...belir(0.5)}>
-          <span className="k-isaret" aria-hidden="true" />
+          <MiniKure />
           AYIKLA
         </motion.p>
         <motion.p className="etiket soluk" {...belir(0.6)}>

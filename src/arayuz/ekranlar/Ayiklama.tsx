@@ -1,3 +1,4 @@
+import { MiniKure } from '../bilesenler/MiniKure';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { egri, halka, kure, sure, yay } from '../hareket';
@@ -160,7 +161,7 @@ export function Ayiklama({ girdiler, sayim, gruplar, onBitti }: Props) {
 
       <header className="a-ust">
         <motion.p className="k-marka" {...belir(0.2)}>
-          <span className="k-isaret" aria-hidden="true" />
+          <MiniKure />
           AYIKLA
         </motion.p>
         <motion.p className="etiket soluk" {...belir(0.3)}>
