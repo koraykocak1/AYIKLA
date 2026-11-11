@@ -1,7 +1,7 @@
 # AYIKLA — Kullanım
 
 ## Kurmak
-1. `AYIKLA-Kurulum-0.2.2.exe` dosyasına çift tıkla.
+1. `AYIKLA-Kurulum-0.2.3.exe` dosyasına çift tıkla.
 2. Windows "Bilgisayarınız korundu" (SmartScreen) derse **Ek bilgi › Yine de çalıştır**'a bas. Program imzasız olduğu için bu uyarı çıkar; imza ücretli olduğundan şimdilik yok.
 3. Lisansı kabul et, kurulacak klasörü seç. Masaüstüne ve Başlat menüsüne **AYIKLA** kısayolu eklenir.
 4. Kaldırmak için: Ayarlar › Uygulamalar › AYIKLA › Kaldır. Fotoğrafların silinmez.
