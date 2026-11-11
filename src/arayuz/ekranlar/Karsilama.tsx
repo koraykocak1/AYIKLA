@@ -54,6 +54,7 @@ export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
   const [onaylaniyor, setOnaylaniyor] = useState(false);
   const [katalogNotu, setKatalogNotu] = useState<string | null>(null);
   const [hakkinda, setHakkinda] = useState(false);
+  const [sonlarAcik, setSonlarAcik] = useState(false);
   const zamanlayici = useRef<number | undefined>(undefined);
   useEffect(() => () => clearTimeout(zamanlayici.current), []);
 
@@ -65,7 +66,8 @@ export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
   async function sec(g: string[], kendiliginden = false) {
     if (!g.length) return;
     clearTimeout(zamanlayici.current);
-    setHakkinda(false); // klasör seçilince Hakkında kutusu kapanır
+    setHakkinda(false); // klasör seçilince Hakkında kutusu ve son ayıklananlar listesi kapanır
+    setSonlarAcik(false);
     setBasliyor(false);
     setOnay(null);
     setGirdiler(g);
@@ -298,11 +300,9 @@ export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
       {/* Alt şerit: son arşivler solda, klasör seç sağda — ikisi aynı alt çizgide */}
       <footer className="k-alt">
         <div className="k-alt-sol">
-          {arsivler.length > 0 && (
+          {/* Son ayıklananlar: yalnız tıklanınca açılır */}
+          {arsivler.length > 0 && sonlarAcik && (
             <section className="son-arsivler" aria-label="Son ayıklananlar">
-              <motion.h2 className="etiket" {...belir(0.8)}>
-                Son ayıklananlar
-              </motion.h2>
               <ul>
                 {arsivler.slice(0, 3).map((a, i) => (
                   <motion.li key={a.girdiler.join('|')} {...belir(0.85 + siraliGecikme(i, 0.06))}>
@@ -316,6 +316,11 @@ export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
                 ))}
               </ul>
             </section>
+          )}
+          {arsivler.length > 0 && (
+            <motion.button className="hakkinda-dugme etiket soluk" onClick={() => setSonlarAcik((a) => !a)} {...belir(0.9)}>
+              Son ayıklananlar {sonlarAcik ? '▴' : '▾'}
+            </motion.button>
           )}
           <motion.button className="hakkinda-dugme etiket soluk" onClick={() => setHakkinda((h) => !h)} {...belir(0.9)}>
             Hakkında
