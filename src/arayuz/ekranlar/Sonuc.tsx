@@ -5,7 +5,7 @@ import { api } from '../api';
 import { BuyukGorunum } from '../bilesenler/BuyukGorunum';
 import { KartSahnesi, type Gorunum } from '../bilesenler/KartSahnesi';
 import { ELENECEK_ID, duzlestir, grupAdiBul, grupMenusu, menuAnahtari, yilAyGrupla } from '../mantik/gruplama';
-import { elemeAdi, hataMetni, sayi } from '../mantik/bicim';
+import { elemeAdi, hataMetni, onizlemeAdresi, sayi } from '../mantik/bicim';
 import { egri, sure, yay } from '../hareket';
 import { DIGER_ID } from '../../motor/gruplar';
 import type { ArayuzMedya } from '../../ortak/mesajlar';
@@ -28,6 +28,16 @@ const UCUS_MS = 560; // taşınan kartın soldaki gruba uçma süresi
 
 export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
   const menu = useMemo(() => grupMenusu(gruplar, medya), [gruplar, medya]);
+  // Her grubun kapak resmi: o gruptaki en yeni fotoğraf
+  const kapaklar = useMemo(() => {
+    const k = new Map<string, ArayuzMedya>();
+    for (const m of medya) {
+      const id = menuAnahtari(m);
+      const o = k.get(id);
+      if (!o || m.tarih > o.tarih) k.set(id, m);
+    }
+    return k;
+  }, [medya]);
   const [secili, setSecili] = useState<string>(() => menu[0]?.id ?? DIGER_ID);
   const bolumler = useMemo(() => yilAyGrupla(medya.filter((m) => menuAnahtari(m) === secili)), [medya, secili]);
   const liste = useMemo(() => duzlestir(bolumler), [bolumler]);
@@ -229,7 +239,18 @@ export function Sonuc({ medya, setMedya, gruplar, setGruplar, onYeni }: Props) {
                   setBuyuk(null);
                 }}
               >
+                {/* Seçili kartın altın çerçevesi kartlar arasında yaylanarak kayar */}
                 {g.id === secili && <motion.span className="s-isaret" layoutId="s-isaret" transition={yay.canli} />}
+                <motion.span
+                  className="s-kapak"
+                  style={{ background: kapaklar.get(g.id)?.renk ?? '#2a2622' }}
+                  animate={{ rotateY: g.id === secili ? 360 : 0 }}
+                  transition={yay.canli}
+                >
+                  {kapaklar.get(g.id)?.onizlemeler[0] && (
+                    <img src={onizlemeAdresi(kapaklar.get(g.id)!.onizlemeler[0])} alt="" draggable={false} onError={(e) => (e.currentTarget.style.visibility = 'hidden')} />
+                  )}
+                </motion.span>
                 <span className="s-ad">{g.ad}</span>
                 {/* Sayı değişince kısa bir an parlar */}
                 <motion.span

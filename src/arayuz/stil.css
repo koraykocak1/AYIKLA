@@ -559,3 +559,14 @@ button:disabled { opacity: 0.5; cursor: default; }
 .s-kaydet-ok { display: inline-block; transition: transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1); }
 .s-kaydet:hover:not(:disabled) .s-kaydet-ok { transform: translateX(4px); }
 @media (prefers-reduced-motion: reduce) { .s-kaydet { animation: none; } .s-kaydet-simge, .s-kaydet-ok { transition: none; } }
+
+/* Sol grup listesi: kapak resimli kartlar; seçili kartın çerçevesi altın, kartlar arasında kayar */
+.s-yan nav { gap: 6px; perspective: 500px; }
+.s-grup { padding: 6px 12px 6px 7px; border-radius: 10px; border: 1px solid rgba(255, 255, 255, 0.06); justify-content: flex-start; transition: color 0.25s, background-color 0.25s, transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s; }
+.s-grup:hover { transform: translateX(3px); border-color: rgba(250, 204, 21, 0.35); }
+.s-grup.secili { background: rgba(250, 204, 21, 0.07); border-color: transparent; }
+.s-grup .s-adet { margin-left: auto; }
+.s-isaret { left: -1px; top: -1px; right: -1px; bottom: -1px; width: auto; border-radius: 10px; background: none; border: 1.5px solid var(--sari); box-shadow: 0 0 14px rgba(250, 204, 21, 0.35); pointer-events: none; }
+.s-kapak { position: relative; width: 30px; height: 30px; flex: none; border-radius: 7px; overflow: hidden; transform-style: preserve-3d; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+.s-kapak img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.s-grup.elenecek .s-kapak { filter: grayscale(1) brightness(0.7); }
