@@ -305,7 +305,7 @@ export function Karsilama({ not, onceki, onBaslat, onSonucaDon }: Props) {
             <section className="son-arsivler" aria-label="Son ayıklananlar">
               <ul>
                 {arsivler.slice(0, 3).map((a, i) => (
-                  <motion.li key={a.girdiler.join('|')} {...belir(0.85 + siraliGecikme(i, 0.06))}>
+                  <motion.li key={a.girdiler.join('|')} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.18, delay: i * 0.03 }}>
                     <button onClick={() => void sec(a.girdiler, true)}>
                       <span className="ad">{a.girdiler.map(sonParca).join(', ')}</span>
                       <span className="etiket soluk">
